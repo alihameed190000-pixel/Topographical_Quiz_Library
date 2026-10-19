@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TfL Topographical Course Package – Keeping Left</title>
+<meta name="description" content="Keeping Left topographical route-drawing exam simulator for TfL taxi knowledge practice.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --blue: #1f6fd0; --blue-dark: #164f96; --bar: #f1f3f6; --line: #cfd5de;
+    --green: #1fa84f; --red: #e02424; --orange: #f08a00;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: "Segoe UI", Roboto, Arial, sans-serif; color: #1c2430; }
+  #app { display: grid; height: 100%; grid-template-rows: 40px 1fr 56px; grid-template-columns: 250px 1fr; }
+  #breadcrumb { grid-column: 1 / 3; display: flex; align-items: center; padding: 0 16px; background: #fff;
+    border-bottom: 1px solid var(--line); font-size: 14px; color: #4a5565; gap: 8px; }
+  #breadcrumb .sep { color: #9aa4b2; }
+  #breadcrumb .current { color: #1c2430; font-weight: 600; }
+  #sidebar { background: #fff; border-right: 1px solid var(--line); padding: 18px 16px; overflow: auto; }
+  #sidebar .site { font-weight: 700; color: var(--blue); font-size: 15px; margin-bottom: 18px; }
+  #sidebar h2 { font-size: 18px; margin: 0 0 10px; }
+  #sidebar p { margin: 0 0 10px; font-size: 14.5px; line-height: 1.45; }
+  #sidebar .qno { margin-top: 24px; font-size: 12px; color: #7a8594; text-transform: uppercase; letter-spacing: .08em; }
+  #main { position: relative; min-width: 0; min-height: 0; }
+  #controls { position: absolute; z-index: 1000; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px;
+    background: rgba(255,255,255,.92); padding: 6px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+  #controls button { font: 700 12.5px "Segoe UI", Arial, sans-serif; letter-spacing: .04em; padding: 8px 14px; border: 1px solid #b6bfcc;
+    background: #fff; border-radius: 6px; cursor: pointer; color: #1c2430; transition: background .15s, transform .05s; }
+  #controls button:hover { background: #e9eef6; }
+  #controls button:active { transform: translateY(1px); }
+  #controls button.on { background: var(--orange); border-color: #c46f00; color: #fff; }
+  #map { position: absolute; inset: 0; background: #eef2f6; }
+  #map.drawing, #map.drawing .leaflet-container, #map.drawing .leaflet-interactive { cursor: crosshair !important; }
+  .leaflet-container { cursor: grab; }
+  .leaflet-container:active { cursor: grabbing; }
+  .teardrop-marker { background: transparent; border: none; }
+  #bottom { grid-column: 1 / 3; display: flex; align-items: center; justify-content: center; position: relative;
+    background: var(--bar); border-top: 1px solid var(--line); }
+  #bottom a { color: var(--blue); font-size: 14.5px; cursor: pointer; text-decoration: underline; }
+  #next { position: absolute; right: 18px; top: 10px; height: 36px; padding: 0 26px; border: 0; border-radius: 18px;
+    background: var(--blue); color: #fff; font: 600 14.5px "Segoe UI", Arial, sans-serif; cursor: pointer; transition: background .15s; }
+  #next:hover { background: var(--blue-dark); }
+  #overlay { position: fixed; inset: 0; z-index: 5000; display: none; align-items: center; justify-content: center; background: rgba(20,30,45,.7); }
+  #overlay.show { display: flex; }
+  #overlay .card { background: #fff; border-radius: 12px; padding: 34px 44px; width: 420px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+  #overlay h2 { margin: 0 0 20px; }
+  .bar { height: 12px; background: #e3e8ef; border-radius: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #2d86ee, #1fa84f); transition: width 2.2s ease; }
+  #continue { margin-top: 22px; display: none; padding: 10px 34px; border: 0; border-radius: 20px; background: var(--blue); color: #fff; font: 600 15px "Segoe UI", Arial, sans-serif; cursor: pointer; }
+  /* Answer-view tab */
+  body.answer #controls, body.answer #next { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="breadcrumb" aria-label="Breadcrumb">
+    <span>TfL Topographical Course Package</span><span class="sep">&gt;</span>
+    <span>Basics</span><span class="sep">&gt;</span>
+    <span>Keeping Left</span><span class="sep">&gt;</span>
+    <span class="current">Keeping Left</span>
+  </nav>
+
+  <aside id="sidebar">
+    <div class="site">www.serupractice.com</div>
+    <h1 style="display:none">Keeping Left Exam Simulator</h1>
+    <h2>Practice keeping left.</h2>
+    <p>Draw a route from the green marker to the red marker.</p>
+    <div class="qno" id="qno"></div>
+  </aside>
+
+  <main id="main">
+    <div id="controls">
+      <button id="btnDraw" type="button">DRAW</button>
+      <button id="btnBack" type="button">BACK</button>
+      <button id="btnDelete" type="button">DELETE</button>
+      <button id="btnBright" type="button">BRIGHT</button>
+      <button id="btnHome" type="button">HOME</button>
+    </div>
+    <div id="map"></div>
+  </main>
+
+  <footer id="bottom">
+    <a id="answerLink">Click here to view answer in a new tab.</a>
+    <button id="next" type="button">Next</button>
+  </footer>
+</div>
+
+<div id="overlay" role="dialog" aria-modal="true">
+  <div class="card">
+    <h2>Quiz Completed</h2>
+    <div class="bar"><i id="fill"></i></div>
+    <button id="continue" type="button">Continue</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Coordinate system & CRS Lock ----------
+     CRS.Simple with Transformation(1, 0, 1, 0) and scale = 2^z.
+     At zoom 8: 1 tile = 256px = 1 coordinate unit.
+     Coordinates are expressed as [lat = tileY, lng = tileX] in Zoom-8 tile units.
+     For any zoom level z (4..8), crs.latLngToPoint(latlng, z) scales strictly by 2^(z-8)
+     so physical streets across tiles/8, tiles/7, tiles/6, tiles/5, tiles/4 are 100% locked. */
+  var CRS = L.extend({}, L.CRS.Simple, {
+    transformation: new L.Transformation(1, 0, 1, 0),
+    scale: function (z) { return Math.pow(2, z); },
+    zoom: function (s) { return Math.log(s) / Math.LN2; },
+    infinite: true
+  });
+
+  /* ---------- Teardrop SVG Pin Generator ----------
+     Size 28x40 with iconAnchor: [14, 40] locking the sharp tip to the exact street coordinate. */
+  function createTeardropPin(type) {
+    var fill = type === 'start' ? '#1fa84f' : '#e02424';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">' +
+      '<path d="M 14 39.5 C 13 36 2 24 2 14 A 12 12 0 1 1 26 14 C 26 24 15 36 14 39.5 Z" ' +
+      'fill="' + fill + '" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>' +
+      '<circle cx="14" cy="14" r="4.5" fill="#ffffff"/>' +
+      '</svg>';
+    return L.divIcon({
+      className: 'teardrop-marker',
+      html: '<div style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.45)); width: 28px; height: 40px; line-height: 0;">' + svg + '</div>',
+      iconSize: [28, 40],
+      iconAnchor: [14, 40]
+    });
+  }
+
+  /* ---------- Questions calibrated to KeepingLeft16Oct4 ---------- */
+  var QUESTIONS = [
+    {
+      // Question 1:
+      // Green Marker: West of "BELLEVUE RD." on Wandsworth Common edge, NW of Bellevue / St James's Dr junction.
+      // Red Marker: Directly on "BOLINGBROKE GRO." over letters "OKE" at Thurleigh Rd T-junction.
+      // Initial Home: Zoom 8 centered so Earlsfield Rd (B234) is on far left and Clapham South on far right.
+      title: "Bellevue Rd to Bolingbroke Grove",
+      homeCenter: [97.72, 114.35],
+      homeZoom: 8,
+      start: [98.355, 113.625],
+      end: [97.090, 113.906],
+      answer: [
+        [98.355, 113.625],
+        [98.300, 113.675],
+        [98.245, 113.725],
+        [98.130, 113.795],
+        [97.980, 113.880],
+        [97.830, 113.955],
+        [97.680, 114.030],
+        [97.580, 114.020],
+        [97.460, 113.980],
+        [97.350, 113.955],
+        [97.230, 113.930],
+        [97.090, 113.906]
+      ]
+    },
+    {
+      // Question 2: Nightingale Lane East to West
+      title: "Nightingale Lane East to West",
+      homeCenter: [97.04, 115.18],
+      homeZoom: 8,
+      start: [96.420, 116.320],
+      end: [97.660, 114.050],
+      answer: [
+        [96.420, 116.320],
+        [96.480, 116.080],
+        [96.580, 115.780],
+        [96.720, 115.400],
+        [96.900, 115.000],
+        [97.100, 114.650],
+        [97.300, 114.350],
+        [97.500, 114.150],
+        [97.660, 114.050]
+      ]
+    },
+    {
+      // Question 3: Rowfant Rd to Bellevue Rd
+      title: "Rowfant Rd to Bellevue Rd",
+      homeCenter: [98.53, 114.31],
+      homeZoom: 8,
+      start: [98.700, 115.000],
+      end: [98.355, 113.625],
+      answer: [
+        [98.700, 115.000],
+        [98.620, 114.780],
+        [98.500, 114.500],
+        [98.380, 114.150],
+        [98.245, 113.725],
+        [98.300, 113.675],
+        [98.355, 113.625]
+      ]
+    }
+  ];
+
+  QUESTIONS.forEach(function (q) {
+    q.route = [];
+  });
+
+  /* ---------- Map Initialization ---------- */
+  var answerMode = /[?&]answer=(\d)/.exec(location.search);
+  var map = L.map('map', {
+    crs: CRS,
+    minZoom: 4,
+    maxZoom: 8,
+    zoom: 8,
+    center: QUESTIONS[0].homeCenter,
+    attributionControl: false,
+    zoomSnap: 1,
+    zoomControl: true
+  });
+
+  var GCS = 'https://storage.googleapis.com/map-serpractice-photos/tile_{z}_{x}-{y}.png';
+  var BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+  var tiles = L.tileLayer('exercises/KeepingLeft16Oct4/tiles/{z}/{x}/{y}.png', {
+    tileSize: 256,
+    minZoom: 4,
+    maxZoom: 8,
+    noWrap: true,
+    opacity: 1
+  }).addTo(map);
+
+  tiles.on('tileerror', function (e) {
+    var t = e.tile;
+    if (!t._fb) {
+      t._fb = true;
+      t.src = GCS.replace('{z}', e.coords.z).replace('{x}', e.coords.x).replace('{y}', e.coords.y);
+    } else {
+      t.onerror = null;
+      t.src = BLANK;
+    }
+  });
+
+  /* ---------- Layers & Markers ---------- */
+  var qi = 0;
+  var isDrawing = false;
+  var bright = true;
+  var lastMouseLatLng = null;
+
+  // Drawn route polylines: dark navy casing + vibrant cyan core
+  var routeCasing = L.polyline([], {
+    color: '#003366',
+    weight: 6,
+    lineCap: 'round',
+    lineJoin: 'round',
+    opacity: 1,
+    interactive: false
+  }).addTo(map);
+
+  var routeCore = L.polyline([], {
+    color: '#00bfff',
+    weight: 3.5,
+    lineCap: 'round',
+    lineJoin: 'round',
+    opacity: 1,
+    interactive: false
+  }).addTo(map);
+
+  // Live elastic preview polylines (stretching from last locked vertex to cursor)
+  var previewCasing = L.polyline([], {
+    color: '#003366',
+    weight: 6,
+    lineCap: 'round',
+    lineJoin: 'round',
+    opacity: 0.85,
+    interactive: false
+  }).addTo(map);
+
+  var previewCore = L.polyline([], {
+    color: '#00bfff',
+    weight: 3.5,
+    lineCap: 'round',
+    lineJoin: 'round',
+    opacity: 0.85,
+    interactive: false
+  }).addTo(map);
+
+  var markerLayer = L.layerGroup().addTo(map);
+  var answerLayer = L.layerGroup().addTo(map);
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function updateRouteLayers() {
+    var pts = QUESTIONS[qi].route;
+    routeCasing.setLatLngs(pts);
+    routeCore.setLatLngs(pts);
+  }
+
+  function updatePreview(mouseLatLng) {
+    var pts = QUESTIONS[qi].route;
+    if (isDrawing && pts.length > 0 && mouseLatLng) {
+      var seg = [pts[pts.length - 1], mouseLatLng];
+      previewCasing.setLatLngs(seg);
+      previewCore.setLatLngs(seg);
+    } else {
+      previewCasing.setLatLngs([]);
+      previewCore.setLatLngs([]);
+    }
+  }
+
+  function setDrawing(on) {
+    isDrawing = on;
+    var btn = $('btnDraw');
+    btn.textContent = on ? 'STOP' : 'DRAW';
+    btn.classList.toggle('on', on);
+    $('map').classList.toggle('drawing', on);
+
+    if (on) {
+      if (lastMouseLatLng && QUESTIONS[qi].route.length > 0) {
+        updatePreview(lastMouseLatLng);
+      }
+    } else {
+      updatePreview(null);
+    }
+  }
+
+  function loadQuestion(i) {
+    qi = i;
+    var q = QUESTIONS[i];
+    setDrawing(false);
+    markerLayer.clearLayers();
+
+    // Start (Green) and End (Red) teardrop pins anchored at sharp bottom tip
+    L.marker(q.start, { icon: createTeardropPin('start'), interactive: false, keyboard: false }).addTo(markerLayer);
+    L.marker(q.end, { icon: createTeardropPin('end'), interactive: false, keyboard: false }).addTo(markerLayer);
+
+    updateRouteLayers();
+    updatePreview(null);
+
+    map.setView(q.homeCenter, q.homeZoom, { animate: false });
+    $('qno').textContent = 'Question ' + (i + 1) + ' of ' + QUESTIONS.length;
+    $('next').textContent = (i === QUESTIONS.length - 1) ? 'Finish Quiz' : 'Next';
+  }
+
+  /* ---------- Clean Click & Mouse Tracking Mechanics ---------- */
+  var mapDiv = $('map');
+  var downPos = null;
+
+  mapDiv.addEventListener('mousedown', function (e) {
+    if (e.button === 0) {
+      downPos = { x: e.clientX, y: e.clientY };
+    }
+  });
+
+  mapDiv.addEventListener('mouseup', function (e) {
+    if (e.button !== 0 || !downPos) return;
+    var dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+    downPos = null;
+
+    // If movement > 5px, user was dragging/panning the map -> ignore, do not drop point
+    if (dist > 5) return;
+    if (!isDrawing) return;
+
+    var latlng = map.mouseEventToLatLng(e);
+    var pt = [latlng.lat, latlng.lng];
+    QUESTIONS[qi].route.push(pt);
+    updateRouteLayers();
+    updatePreview(latlng);
+  });
+
+  map.on('mousemove', function (e) {
+    lastMouseLatLng = e.latlng;
+    if (isDrawing && QUESTIONS[qi].route.length > 0) {
+      updatePreview(e.latlng);
+    }
+  });
+
+  /* ---------- Control Buttons ---------- */
+  $('btnDraw').onclick = function () {
+    setDrawing(!isDrawing);
+  };
+
+  $('btnBack').onclick = function () {
+    if (QUESTIONS[qi].route.length > 0) {
+      QUESTIONS[qi].route.pop();
+      updateRouteLayers();
+      if (isDrawing && QUESTIONS[qi].route.length > 0 && lastMouseLatLng) {
+        updatePreview(lastMouseLatLng);
+      } else {
+        updatePreview(null);
+      }
+    }
+  };
+
+  $('btnDelete').onclick = function () {
+    if (confirm('Clear the Route?')) {
+      QUESTIONS[qi].route = [];
+      updateRouteLayers();
+      updatePreview(null);
+      setDrawing(false);
+    }
+  };
+
+  $('btnBright').onclick = function () {
+    bright = !bright;
+    tiles.setOpacity(bright ? 1.0 : 0.35);
+  };
+
+  $('btnHome').onclick = function () {
+    var q = QUESTIONS[qi];
+    map.setView(q.homeCenter, q.homeZoom);
+  };
+
+  $('answerLink').onclick = function () {
+    var base = location.href.split('?')[0].split('#')[0];
+    window.open(base + '?answer=' + (qi + 1), '_blank');
+  };
+
+  $('next').onclick = function () {
+    if (qi < QUESTIONS.length - 1) {
+      loadQuestion(qi + 1);
+      return;
+    }
+    finishQuiz();
+  };
+
+  function finishQuiz() {
+    var ov = $('overlay'), fill = $('fill'), cont = $('continue');
+    cont.style.display = 'none';
+    fill.style.width = '0';
+    ov.classList.add('show');
+    setTimeout(function () { fill.style.width = '100%'; }, 50);
+    setTimeout(function () { cont.style.display = 'inline-block'; }, 2400);
+  }
+
+  $('continue').onclick = function () {
+    QUESTIONS.forEach(function (q) { q.route = []; });
+    $('overlay').classList.remove('show');
+    loadQuestion(0);
+  };
+
+  /* ---------- Answer Mode Tab (?answer=N) ---------- */
+  if (answerMode) {
+    document.body.classList.add('answer');
+    var n = Math.max(0, Math.min(QUESTIONS.length - 1, parseInt(answerMode[1], 10) - 1));
+    loadQuestion(n);
+
+    // Render Answer route with dark navy casing and green line
+    L.polyline(QUESTIONS[n].answer, {
+      color: '#003366',
+      weight: 7,
+      lineCap: 'round',
+      lineJoin: 'round',
+      opacity: 0.95
+    }).addTo(answerLayer);
+
+    L.polyline(QUESTIONS[n].answer, {
+      color: '#1fa84f',
+      weight: 4.5,
+      lineCap: 'round',
+      lineJoin: 'round',
+      opacity: 0.95
+    }).addTo(answerLayer);
+
+    $('answerLink').textContent = 'Answer route – ' + QUESTIONS[n].title;
+    $('answerLink').onclick = null;
+    $('answerLink').style.textDecoration = 'none';
+    $('answerLink').style.cursor = 'default';
+  } else {
+    loadQuestion(0);
+  }
+})();
+</script>
+</body>
+</html>

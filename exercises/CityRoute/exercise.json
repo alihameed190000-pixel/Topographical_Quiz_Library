@@ -1,0 +1,13 @@
+{
+  "id": "CityRoute",
+  "title": "CityRoute",
+  "type": "route-drawing",
+  "tileUrlTemplate": "tiles/{z}/{x}/{y}.png",
+  "zoomLevels": [
+    5
+  ],
+  "startMarker": null,
+  "endMarker": null,
+  "answerRoute": null,
+  "status": "TILES_ONLY_REQUIRES_QUESTION_CONFIGURATION"
+}

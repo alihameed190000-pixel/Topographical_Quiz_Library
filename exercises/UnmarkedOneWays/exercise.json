@@ -1,0 +1,15 @@
+{
+  "id": "UnmarkedOneWays",
+  "title": "UnmarkedOneWays",
+  "type": "route-drawing",
+  "tileUrlTemplate": "tiles/{z}/{x}/{y}.png",
+  "zoomLevels": [
+    6,
+    8,
+    9
+  ],
+  "startMarker": null,
+  "endMarker": null,
+  "answerRoute": null,
+  "status": "TILES_ONLY_REQUIRES_QUESTION_CONFIGURATION"
+}

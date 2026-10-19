@@ -1,0 +1,18 @@
+{
+  "id": "KeepingLeft330",
+  "title": "KeepingLeft330",
+  "type": "route-drawing",
+  "tileUrlTemplate": "tiles/{z}/{x}/{y}.png",
+  "zoomLevels": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "startMarker": null,
+  "endMarker": null,
+  "answerRoute": null,
+  "status": "TILES_ONLY_REQUIRES_QUESTION_CONFIGURATION"
+}

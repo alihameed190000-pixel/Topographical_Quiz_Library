@@ -1,0 +1,965 @@
+{
+  "source": "C:\\Users\\Lenovo\\Desktop\\Topographical Map",
+  "pngs_examined": 1767,
+  "exercise_groups": 19,
+  "group_reports": [
+    {
+      "group": "AvoidingDeadEnds",
+      "files": 24,
+      "zooms": [
+        {
+          "zoom": 8,
+          "files": 24,
+          "unique_positions": 12,
+          "x_range": [
+            97,
+            99
+          ],
+          "y_range": [
+            71,
+            74
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\AvoidingDeadEnds\\previews\\zoom_8.jpg"
+        }
+      ]
+    },
+    {
+      "group": "AvoidingPedestrianZones",
+      "files": 24,
+      "zooms": [
+        {
+          "zoom": 9,
+          "files": 24,
+          "unique_positions": 8,
+          "x_range": [
+            257,
+            258
+          ],
+          "y_range": [
+            150,
+            153
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\AvoidingPedestrianZones\\previews\\zoom_9.jpg"
+        }
+      ]
+    },
+    {
+      "group": "AvoidingRestrictedZone",
+      "files": 24,
+      "zooms": [
+        {
+          "zoom": 8,
+          "files": 24,
+          "unique_positions": 8,
+          "x_range": [
+            106,
+            107
+          ],
+          "y_range": [
+            82,
+            85
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\AvoidingRestrictedZone\\previews\\zoom_8.jpg"
+        }
+      ]
+    },
+    {
+      "group": "CityRoute",
+      "files": 96,
+      "zooms": [
+        {
+          "zoom": 5,
+          "files": 96,
+          "unique_positions": 12,
+          "x_range": [
+            14,
+            16
+          ],
+          "y_range": [
+            8,
+            11
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\CityRoute\\previews\\zoom_5.jpg"
+        }
+      ]
+    },
+    {
+      "group": "ClosedRoadsRoutes",
+      "files": 66,
+      "zooms": [
+        {
+          "zoom": 6,
+          "files": 66,
+          "unique_positions": 6,
+          "x_range": [
+            33,
+            34
+          ],
+          "y_range": [
+            16,
+            18
+          ],
+          "bounding_grid_cells": 6,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 6
+            }
+          ],
+          "preview": "exercises\\ClosedRoadsRoutes\\previews\\zoom_6.jpg"
+        }
+      ]
+    },
+    {
+      "group": "KeepingLeft16Oct4",
+      "files": 811,
+      "zooms": [
+        {
+          "zoom": 4,
+          "files": 150,
+          "unique_positions": 14,
+          "x_range": [
+            6,
+            8
+          ],
+          "y_range": [
+            4,
+            8
+          ],
+          "bounding_grid_cells": 15,
+          "unfilled_cells_in_bounding_rectangle": 1,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 14
+            }
+          ],
+          "preview": "exercises\\KeepingLeft16Oct4\\previews\\zoom_4.jpg"
+        },
+        {
+          "zoom": 5,
+          "files": 116,
+          "unique_positions": 22,
+          "x_range": [
+            12,
+            15
+          ],
+          "y_range": [
+            10,
+            15
+          ],
+          "bounding_grid_cells": 24,
+          "unfilled_cells_in_bounding_rectangle": 2,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 22
+            }
+          ],
+          "preview": "exercises\\KeepingLeft16Oct4\\previews\\zoom_5.jpg"
+        },
+        {
+          "zoom": 6,
+          "files": 119,
+          "unique_positions": 15,
+          "x_range": [
+            27,
+            29
+          ],
+          "y_range": [
+            22,
+            26
+          ],
+          "bounding_grid_cells": 15,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 15
+            }
+          ],
+          "preview": "exercises\\KeepingLeft16Oct4\\previews\\zoom_6.jpg"
+        },
+        {
+          "zoom": 7,
+          "files": 178,
+          "unique_positions": 12,
+          "x_range": [
+            56,
+            58
+          ],
+          "y_range": [
+            47,
+            50
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\KeepingLeft16Oct4\\previews\\zoom_7.jpg"
+        },
+        {
+          "zoom": 8,
+          "files": 248,
+          "unique_positions": 17,
+          "x_range": [
+            113,
+            116
+          ],
+          "y_range": [
+            95,
+            99
+          ],
+          "bounding_grid_cells": 20,
+          "unfilled_cells_in_bounding_rectangle": 3,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 17
+            }
+          ],
+          "preview": "exercises\\KeepingLeft16Oct4\\previews\\zoom_8.jpg"
+        }
+      ]
+    },
+    {
+      "group": "KeepingLeft330",
+      "files": 62,
+      "zooms": [
+        {
+          "zoom": 4,
+          "files": 8,
+          "unique_positions": 8,
+          "x_range": [
+            6,
+            7
+          ],
+          "y_range": [
+            4,
+            7
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\KeepingLeft330\\previews\\zoom_4.jpg"
+        },
+        {
+          "zoom": 5,
+          "files": 8,
+          "unique_positions": 8,
+          "x_range": [
+            13,
+            14
+          ],
+          "y_range": [
+            11,
+            14
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\KeepingLeft330\\previews\\zoom_5.jpg"
+        },
+        {
+          "zoom": 6,
+          "files": 12,
+          "unique_positions": 12,
+          "x_range": [
+            27,
+            29
+          ],
+          "y_range": [
+            23,
+            26
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\KeepingLeft330\\previews\\zoom_6.jpg"
+        },
+        {
+          "zoom": 7,
+          "files": 12,
+          "unique_positions": 12,
+          "x_range": [
+            55,
+            57
+          ],
+          "y_range": [
+            47,
+            50
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\KeepingLeft330\\previews\\zoom_7.jpg"
+        },
+        {
+          "zoom": 8,
+          "files": 14,
+          "unique_positions": 14,
+          "x_range": [
+            113,
+            116
+          ],
+          "y_range": [
+            96,
+            99
+          ],
+          "bounding_grid_cells": 16,
+          "unfilled_cells_in_bounding_rectangle": 2,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 14
+            }
+          ],
+          "preview": "exercises\\KeepingLeft330\\previews\\zoom_8.jpg"
+        },
+        {
+          "zoom": 9,
+          "files": 8,
+          "unique_positions": 8,
+          "x_range": [
+            230,
+            231
+          ],
+          "y_range": [
+            192,
+            195
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\KeepingLeft330\\previews\\zoom_9.jpg"
+        }
+      ]
+    },
+    {
+      "group": "NavigatingCentralReservations",
+      "files": 24,
+      "zooms": [
+        {
+          "zoom": 6,
+          "files": 24,
+          "unique_positions": 8,
+          "x_range": [
+            19,
+            20
+          ],
+          "y_range": [
+            20,
+            23
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\NavigatingCentralReservations\\previews\\zoom_6.jpg"
+        }
+      ]
+    },
+    {
+      "group": "NavigatingFlyoverRoundabouts",
+      "files": 16,
+      "zooms": [
+        {
+          "zoom": 8,
+          "files": 16,
+          "unique_positions": 8,
+          "x_range": [
+            103,
+            104
+          ],
+          "y_range": [
+            83,
+            86
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\NavigatingFlyoverRoundabouts\\previews\\zoom_8.jpg"
+        }
+      ]
+    },
+    {
+      "group": "NavigatingRoadsOnTop",
+      "files": 18,
+      "zooms": [
+        {
+          "zoom": 6,
+          "files": 18,
+          "unique_positions": 9,
+          "x_range": [
+            24,
+            26
+          ],
+          "y_range": [
+            14,
+            16
+          ],
+          "bounding_grid_cells": 9,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 9
+            }
+          ],
+          "preview": "exercises\\NavigatingRoadsOnTop\\previews\\zoom_6.jpg"
+        }
+      ]
+    },
+    {
+      "group": "OneWayRoadsV1",
+      "files": 24,
+      "zooms": [
+        {
+          "zoom": 9,
+          "files": 24,
+          "unique_positions": 6,
+          "x_range": [
+            270,
+            271
+          ],
+          "y_range": [
+            139,
+            141
+          ],
+          "bounding_grid_cells": 6,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 6
+            }
+          ],
+          "preview": "exercises\\OneWayRoadsV1\\previews\\zoom_9.jpg"
+        }
+      ]
+    },
+    {
+      "group": "PassingFootbridge",
+      "files": 32,
+      "zooms": [
+        {
+          "zoom": 6,
+          "files": 32,
+          "unique_positions": 8,
+          "x_range": [
+            24,
+            25
+          ],
+          "y_range": [
+            14,
+            17
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\PassingFootbridge\\previews\\zoom_6.jpg"
+        }
+      ]
+    },
+    {
+      "group": "PassingFootpath",
+      "files": 24,
+      "zooms": [
+        {
+          "zoom": 8,
+          "files": 24,
+          "unique_positions": 8,
+          "x_range": [
+            114,
+            115
+          ],
+          "y_range": [
+            77,
+            80
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\PassingFootpath\\previews\\zoom_8.jpg"
+        }
+      ]
+    },
+    {
+      "group": "PassingRailwayLines",
+      "files": 36,
+      "zooms": [
+        {
+          "zoom": 9,
+          "files": 36,
+          "unique_positions": 12,
+          "x_range": [
+            264,
+            266
+          ],
+          "y_range": [
+            156,
+            159
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\PassingRailwayLines\\previews\\zoom_9.jpg"
+        }
+      ]
+    },
+    {
+      "group": "PlotADirectRoute",
+      "files": 99,
+      "zooms": [
+        {
+          "zoom": 6,
+          "files": 99,
+          "unique_positions": 9,
+          "x_range": [
+            32,
+            34
+          ],
+          "y_range": [
+            19,
+            21
+          ],
+          "bounding_grid_cells": 9,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 9
+            }
+          ],
+          "preview": "exercises\\PlotADirectRoute\\previews\\zoom_6.jpg"
+        }
+      ]
+    },
+    {
+      "group": "RoundaboutsV1",
+      "files": 32,
+      "zooms": [
+        {
+          "zoom": 9,
+          "files": 32,
+          "unique_positions": 8,
+          "x_range": [
+            168,
+            169
+          ],
+          "y_range": [
+            146,
+            149
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\RoundaboutsV1\\previews\\zoom_9.jpg"
+        }
+      ]
+    },
+    {
+      "group": "Tunnel",
+      "files": 90,
+      "zooms": [
+        {
+          "zoom": 6,
+          "files": 90,
+          "unique_positions": 9,
+          "x_range": [
+            32,
+            34
+          ],
+          "y_range": [
+            19,
+            21
+          ],
+          "bounding_grid_cells": 9,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 9
+            }
+          ],
+          "preview": "exercises\\Tunnel\\previews\\zoom_6.jpg"
+        }
+      ]
+    },
+    {
+      "group": "UnmarkedOneWays",
+      "files": 72,
+      "zooms": [
+        {
+          "zoom": 6,
+          "files": 24,
+          "unique_positions": 12,
+          "x_range": [
+            23,
+            25
+          ],
+          "y_range": [
+            14,
+            17
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\UnmarkedOneWays\\previews\\zoom_6.jpg"
+        },
+        {
+          "zoom": 8,
+          "files": 6,
+          "unique_positions": 6,
+          "x_range": [
+            97,
+            98
+          ],
+          "y_range": [
+            85,
+            87
+          ],
+          "bounding_grid_cells": 6,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 6
+            }
+          ],
+          "preview": "exercises\\UnmarkedOneWays\\previews\\zoom_8.jpg"
+        },
+        {
+          "zoom": 9,
+          "files": 42,
+          "unique_positions": 6,
+          "x_range": [
+            269,
+            270
+          ],
+          "y_range": [
+            167,
+            169
+          ],
+          "bounding_grid_cells": 6,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 6
+            }
+          ],
+          "preview": "exercises\\UnmarkedOneWays\\previews\\zoom_9.jpg"
+        }
+      ]
+    },
+    {
+      "group": "all_tiles",
+      "files": 193,
+      "zooms": [
+        {
+          "zoom": 4,
+          "files": 8,
+          "unique_positions": 8,
+          "x_range": [
+            6,
+            7
+          ],
+          "y_range": [
+            4,
+            7
+          ],
+          "bounding_grid_cells": 8,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 8
+            }
+          ],
+          "preview": "exercises\\all_tiles\\previews\\zoom_4.jpg"
+        },
+        {
+          "zoom": 5,
+          "files": 19,
+          "unique_positions": 19,
+          "x_range": [
+            13,
+            16
+          ],
+          "y_range": [
+            8,
+            14
+          ],
+          "bounding_grid_cells": 28,
+          "unfilled_cells_in_bounding_rectangle": 9,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 19
+            }
+          ],
+          "preview": "exercises\\all_tiles\\previews\\zoom_5.jpg"
+        },
+        {
+          "zoom": 6,
+          "files": 50,
+          "unique_positions": 50,
+          "x_range": [
+            19,
+            34
+          ],
+          "y_range": [
+            14,
+            26
+          ],
+          "bounding_grid_cells": 208,
+          "unfilled_cells_in_bounding_rectangle": 158,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 50
+            }
+          ],
+          "preview": "exercises\\all_tiles\\previews\\zoom_6.jpg"
+        },
+        {
+          "zoom": 7,
+          "files": 12,
+          "unique_positions": 12,
+          "x_range": [
+            55,
+            57
+          ],
+          "y_range": [
+            47,
+            50
+          ],
+          "bounding_grid_cells": 12,
+          "unfilled_cells_in_bounding_rectangle": 0,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 12
+            }
+          ],
+          "preview": "exercises\\all_tiles\\previews\\zoom_7.jpg"
+        },
+        {
+          "zoom": 8,
+          "files": 56,
+          "unique_positions": 56,
+          "x_range": [
+            97,
+            116
+          ],
+          "y_range": [
+            71,
+            99
+          ],
+          "bounding_grid_cells": 580,
+          "unfilled_cells_in_bounding_rectangle": 524,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 56
+            }
+          ],
+          "preview": "exercises\\all_tiles\\previews\\zoom_8.jpg"
+        },
+        {
+          "zoom": 9,
+          "files": 48,
+          "unique_positions": 48,
+          "x_range": [
+            168,
+            271
+          ],
+          "y_range": [
+            139,
+            195
+          ],
+          "bounding_grid_cells": 5928,
+          "unfilled_cells_in_bounding_rectangle": 5880,
+          "conflicts": [],
+          "dimensions": [
+            {
+              "width": 256,
+              "height": 256,
+              "count": 48
+            }
+          ],
+          "preview": "exercises\\all_tiles\\previews\\zoom_9.jpg"
+        }
+      ]
+    }
+  ],
+  "cross_group_coordinate_conflicts": [],
+  "invalid_or_unrecognised": [],
+  "complete_london_map_verified": false,
+  "important": "Coordinates may be local to each exercise; a continuous London map cannot be confirmed from filenames or bounding rectangles alone. Review previews and georeferencing before merging."
+}

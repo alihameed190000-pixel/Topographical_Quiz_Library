@@ -34,18 +34,19 @@
     #app {
       display: grid;
       height: 100%;
-      grid-template-rows: 40px 1fr 56px;
-      grid-template-columns: 250px 1fr;
+      width: 100%;
+      grid-template-rows: 38px auto 1fr 52px;
+      grid-template-columns: 1fr;
     }
 
     #breadcrumb {
-      grid-column: 1 / 3;
+      grid-column: 1;
       display: flex;
       align-items: center;
       padding: 0 16px;
       background: #fff;
       border-bottom: 1px solid var(--line);
-      font-size: 14px;
+      font-size: 13.5px;
       color: #4a5565;
       gap: 8px;
     }
@@ -60,42 +61,85 @@
     }
 
     #sidebar {
-      background: #fff;
-      border-right: 1px solid var(--line);
-      padding: 18px 16px;
-      overflow: auto;
+      grid-column: 1;
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
-    #sidebar .site {
+    #sidebar .instruction-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    #sidebar .site,
+    #sidebar .domain-label {
       font-weight: 700;
       color: var(--blue);
-      font-size: 15px;
-      margin-bottom: 18px;
+      font-size: 14px;
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    #sidebar .instruction-divider {
+      color: #cbd5e1;
+      font-size: 13px;
+      user-select: none;
     }
 
     #sidebar h2 {
-      font-size: 18px;
-      margin: 0 0 10px;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+      white-space: nowrap;
     }
 
     #sidebar p {
-      margin: 0 0 10px;
-      font-size: 14.5px;
-      line-height: 1.45;
+      margin: 0;
+      font-size: 13.5px;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    #sidebar .qno-wrap {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      margin-left: auto;
     }
 
     #sidebar .qno {
-      margin-top: 24px;
-      font-size: 12px;
-      color: #7a8594;
+      margin: 0;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #164f96;
+      background: #e9f2fd;
+      border: 1px solid #bfdbfe;
+      padding: 4px 12px;
+      border-radius: 12px;
       text-transform: uppercase;
-      letter-spacing: .08em;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
     }
 
     #main {
+      grid-column: 1;
       position: relative;
       min-width: 0;
       min-height: 0;
+      width: 100%;
+      height: 100%;
     }
 
     #controls {
@@ -246,7 +290,7 @@
     }
 
     #bottom {
-      grid-column: 1 / 3;
+      grid-column: 1;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -340,43 +384,1195 @@
     body.answer #next {
       display: none;
     }
+
+    /* ==========================================================================
+       CUSTOMER AUTHENTICATION GATE & COURSE PORTAL STYLES
+       ========================================================================== */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: linear-gradient(135deg, #091528 0%, #10264d 50%, #0d1e3a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .auth-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 440px;
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      animation: authCardFadeIn 0.3s ease-out;
+    }
+
+    @keyframes authCardFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .auth-header {
+      background: #0d1e3a;
+      color: #ffffff;
+      padding: 24px 28px 20px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .auth-brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #63b3ed;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .auth-title {
+      margin: 0 0 6px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .auth-subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: #a0aec0;
+      line-height: 1.4;
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 13px 16px;
+      background: transparent;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .auth-tab.active {
+      color: #0d1e3a;
+      background: #ffffff;
+    }
+
+    .auth-tab.active::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #1f6fd0;
+    }
+
+    .auth-alert {
+      margin: 16px 24px 0;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .auth-alert.success {
+      background: #edfdf2;
+      color: #1e7e34;
+      border: 1px solid #c3e6cb;
+    }
+
+    .auth-alert.error {
+      background: #fdf2f2;
+      color: #c53030;
+      border: 1px solid #f8b4b4;
+    }
+
+    .auth-alert.info {
+      background: #ebf8ff;
+      color: #2b6cb0;
+      border: 1px solid #bee3f8;
+    }
+
+    .auth-form {
+      padding: 22px 28px 26px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 12px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    .input-wrapper input {
+      width: 100%;
+      padding: 10px 40px 10px 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13.5px;
+      font-family: inherit;
+      color: #1e293b;
+      background: #f8fafc;
+      transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+
+    .input-wrapper input:focus {
+      outline: none;
+      border-color: #1f6fd0;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(31, 111, 208, 0.15);
+    }
+
+    .btn-toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #64748b;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: color 0.15s, background-color 0.15s;
+    }
+
+    .btn-toggle-password:hover {
+      color: #1e293b;
+      background: #f1f5f9;
+    }
+
+    .btn-auth-submit {
+      width: 100%;
+      margin-top: 8px;
+      padding: 11px 16px;
+      background: #1f6fd0;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s, transform 0.05s;
+    }
+
+    .btn-auth-submit:hover {
+      background: #164f96;
+    }
+
+    .btn-auth-submit:active {
+      transform: translateY(1px);
+    }
+
+    .auth-demo-hint {
+      margin-top: 14px;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .auth-demo-hint code {
+      color: #1e293b;
+      font-weight: 600;
+      background: #edf2f7;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .auth-switch-prompt {
+      margin-top: 16px;
+      font-size: 12.5px;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .auth-switch-prompt a {
+      color: #1f6fd0;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .auth-switch-prompt a:hover {
+      text-decoration: underline;
+    }
+
+    /* Course Portal Layout */
+    .course-portal {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .global-header {
+      height: 48px;
+      background: #0a162b;
+      border-bottom: 1px solid #162a4d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      color: #ffffff;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4299e1;
+    }
+
+    .header-branding {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+    }
+
+    .brand-company {
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-divider {
+      color: #4a5568;
+    }
+
+    .brand-portal {
+      color: #a0aec0;
+      font-weight: 500;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: #cbd5e1;
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #1f6fd0;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .user-greeting strong {
+      color: #ffffff;
+    }
+
+    .btn-logout {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      background: rgba(231, 76, 60, 0.15);
+      border: 1px solid rgba(231, 76, 60, 0.4);
+      color: #fca5a5;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-logout:hover {
+      background: #e74c3c;
+      color: #ffffff;
+      border-color: #e74c3c;
+    }
+
+    /* Course Body (Sidebar + Content) */
+    .course-body {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       LEFT-HAND COURSE NAVIGATION SIDEBAR (280px)
+       ========================================================================== */
+    .course-sidebar {
+      width: 280px;
+      min-width: 280px;
+      height: 100%;
+      background: #ffffff;
+      border-right: 1px solid #dce3ed;
+      display: flex;
+      flex-direction: column;
+      transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
+      user-select: none;
+      z-index: 10;
+    }
+
+    .course-sidebar.collapsed {
+      margin-left: -280px;
+    }
+
+    /* 1. Top Dark Navy Header (#0d1e3a) */
+    .sidebar-header-navy {
+      background-color: #0d1e3a;
+      color: #ffffff;
+      padding: 13px 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* 2. Sub-Header (#133165) */
+    .sidebar-subheader {
+      background-color: #133165;
+      color: #ffffff;
+      padding: 10px 14px 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .subheader-content {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .subheader-content .doc-icon {
+      flex-shrink: 0;
+      color: #90cdf4;
+    }
+
+    .subheader-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.25;
+    }
+
+    .btn-circle-collapse {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.16);
+      border: none;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-circle-collapse:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.06);
+    }
+
+    /* 3. Section Label (#eef1f6) */
+    .sidebar-section-label {
+      background-color: #eef1f6;
+      color: #4a5568;
+      padding: 8px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* 4. Navigation Container & Items */
+    .sidebar-nav-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #2d3748;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-item:hover {
+      background: #f8fafc;
+      color: #1a202c;
+    }
+
+    .nav-item.active {
+      background: #e9f2fd;
+      color: #164f96;
+      font-weight: 600;
+      border-left: 3px solid #1f6fd0;
+      padding-left: 13px;
+    }
+
+    .nav-item-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4a5568;
+    }
+
+    .nav-item.active .nav-item-icon-wrap {
+      color: #1f6fd0;
+    }
+
+    /* Accordion Head */
+    .accordion-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .accordion-head:hover {
+      background: #f8fafc;
+    }
+
+    .accordion-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .accordion-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #1a202c;
+    }
+
+    .accordion-count {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 1px;
+    }
+
+    .chevron-arrow {
+      color: #718096;
+      transition: transform 0.2s ease;
+    }
+
+    .nav-accordion.collapsed .chevron-arrow {
+      transform: rotate(-90deg);
+    }
+
+    /* Accordion Sub-items */
+    .accordion-content {
+      background: #fcfdfe;
+    }
+
+    .nav-subitem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px 9px 24px;
+      cursor: pointer;
+      border-bottom: 1px solid #f8fafc;
+      font-size: 13px;
+      color: #4a5568;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-subitem:hover {
+      background: #f1f5f9;
+      color: #1a202c;
+    }
+
+    .nav-subitem.active {
+      background: #e9f2fd;
+      color: #164f96;
+      font-weight: 600;
+      border-left: 3px solid #1f6fd0;
+      padding-left: 21px;
+    }
+
+    .nav-subitem.active .subitem-text {
+      color: #164f96;
+    }
+
+    .subitem-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-badge-quiz {
+      background: #1f6fd0;
+      color: #ffffff;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .nav-subitem.active .nav-badge-quiz {
+      background: #164f96;
+    }
+
+    /* Floating Expand Button (shown when sidebar is collapsed) */
+    .btn-floating-expand {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 1000;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #133165;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-floating-expand:hover {
+      background: #1f6fd0;
+      transform: scale(1.08);
+    }
+
+    /* ==========================================================================
+       MAIN WORKSPACE AREA & PLACEHOLDER CARD
+       ========================================================================== */
+    .main-workspace-area {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+
+    /* Keeping #app 100% inside workspace */
+    #app {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Placeholder View */
+    .placeholder-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      background: #f8fafc;
+    }
+
+    .placeholder-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 42px 36px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      animation: authCardFadeIn 0.25s ease-out;
+    }
+
+    .placeholder-badge {
+      display: inline-block;
+      background: #edf2f7;
+      color: #4a5568;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 18px;
+    }
+
+    .placeholder-icon-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #ebf5fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .placeholder-title {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a202c;
+    }
+
+    .placeholder-text {
+      margin: 0 0 24px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #64748b;
+    }
+
+    .btn-return-quiz {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      background: #1f6fd0;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
+    }
+
+    .btn-return-quiz:hover {
+      background: #164f96;
+    }
+
+    .btn-return-quiz:active {
+      transform: translateY(1px);
+    }
   </style>
 </head>
 
 <body>
-  <div id="app">
-    <nav id="breadcrumb" aria-label="Breadcrumb">
-      <span>TfL Topographical Course Package</span><span class="sep">&gt;</span>
-      <span>Basics</span><span class="sep">&gt;</span>
-      <span>Keeping Left</span><span class="sep">&gt;</span>
-      <span class="current">Keeping Left</span>
-    </nav>
-
-    <aside id="sidebar">
-      <div class="site">www.serupractice.com</div>
-      <h1 style="display:none">Keeping Left Exam Simulator</h1>
-      <h2>Practice keeping left.</h2>
-      <p>Draw a route from the green marker to the red marker.</p>
-      <div class="qno" id="qno"></div>
-    </aside>
-
-    <main id="main">
-      <div id="controls">
-        <button id="btnDraw" type="button">DRAW</button>
-        <button id="btnBack" type="button">BACK</button>
-        <button id="btnDelete" type="button">DELETE</button>
-        <button id="btnBright" type="button">BRIGHT</button>
-        <button id="btnHome" type="button">HOME</button>
+  <!-- 1. Customer Authentication Gate -->
+  <div id="authGate" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-brand-badge">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="13" rx="2" ry="2" />
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+          </svg>
+          <span>SMART TAXI SOLUTIONS LTD</span>
+        </div>
+        <h1 class="auth-title">Topographical Exam Portal</h1>
+        <p class="auth-subtitle">Sign in or create an account to access the exam simulator</p>
       </div>
-      <div id="map"></div>
-      <div id="cursorFollower" class="cursor-follower"></div>
-      <div id="cursorTooltip" class="cursor-tooltip">Click to start drawing line</div>
-    </main>
 
-    <footer id="bottom">
-      <a id="answerLink">Click here to view answer in a new tab.</a>
-      <button id="next" type="button">Next</button>
-    </footer>
+      <!-- Auth Tabs -->
+      <div class="auth-tabs">
+        <button id="tabLogin" class="auth-tab active" type="button">Sign In</button>
+        <button id="tabSignup" class="auth-tab" type="button">Create Account</button>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="authAlert" class="auth-alert" style="display: none;"></div>
+
+      <!-- LOGIN FORM -->
+      <form id="formLogin" class="auth-form" autocomplete="on">
+        <div class="form-group">
+          <label for="loginIdentifier">Email ID or Phone Number</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            <input type="text" id="loginIdentifier" placeholder="e.g. candidate@smarttaxi.co.uk" required
+              autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <input type="password" id="loginPassword" placeholder="Enter your password" required
+              autocomplete="current-password">
+            <button type="button" class="btn-toggle-password" id="toggleLoginPassword" title="Show/hide password"
+              aria-label="Toggle password visibility">
+              <svg class="eye-open" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg class="eye-closed" style="display: none;" viewBox="0 0 24 24" width="17" height="17" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="btnSubmitLogin">
+          Sign In to Simulator
+        </button>
+
+        <div class="auth-demo-hint">
+          <span>Demo: <code>candidate@smarttaxi.co.uk</code> / <code>password123</code></span>
+        </div>
+
+        <div class="auth-switch-prompt">
+          Don't have an account? <a href="#" id="linkGoToSignup">Create an account</a>
+        </div>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="formSignup" class="auth-form" style="display: none;" autocomplete="on">
+        <div class="form-group">
+          <label for="signupName">Full Name</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <input type="text" id="signupName" placeholder="e.g. John Doe" required autocomplete="name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="signupPhone">Phone Number</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            <input type="tel" id="signupPhone" placeholder="e.g. +44 7123 456789" required autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="signupEmail">Email ID</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            <input type="email" id="signupEmail" placeholder="e.g. john@example.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="signupPassword">Password</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <input type="password" id="signupPassword" placeholder="Create a secure password" required
+              autocomplete="new-password">
+            <button type="button" class="btn-toggle-password" id="toggleSignupPassword" title="Show/hide password"
+              aria-label="Toggle password visibility">
+              <svg class="eye-open" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg class="eye-closed" style="display: none;" viewBox="0 0 24 24" width="17" height="17" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="btnSubmitSignup">
+          Submit / Sign Up
+        </button>
+
+        <div class="auth-switch-prompt">
+          Already registered? <a href="#" id="linkGoToLogin">Sign in here</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Authenticated Course Portal -->
+  <div id="coursePortal" class="course-portal" style="display: none;">
+    <!-- Top Global Header -->
+    <header id="globalHeader" class="global-header">
+      <div class="header-left">
+        <div class="header-logo-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="13" rx="2" ry="2" />
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+          </svg>
+        </div>
+        <div class="header-branding">
+          <span class="brand-company">Smart Taxi Solutions Ltd</span>
+          <span class="brand-divider">/</span>
+          <span class="brand-portal">Topographical Exam Preparations</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="user-pill">
+          <div class="user-avatar" id="headerAvatar">TC</div>
+          <span class="user-greeting">Logged in as <strong id="headerUserName">Candidate</strong></span>
+        </div>
+        <button id="btnLogout" class="btn-logout" type="button" title="Log out of session">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span>Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Course Body: Sidebar + Main Content -->
+    <div class="course-body">
+      <!-- Left-Hand Course Navigation Sidebar (Exact Match to Specification) -->
+      <aside id="courseSidebar" class="course-sidebar">
+        <!-- 1. Top Dark Navy Header (#0d1e3a) -->
+        <div class="sidebar-header-navy">
+          TOPOGRAPHICAL EXAM PREPARATIONS
+        </div>
+
+        <!-- 2. Sub-Header (#133165) -->
+        <div class="sidebar-subheader">
+          <div class="subheader-content">
+            <svg class="doc-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+            <span class="subheader-title">Topographical Exam Preparation Course</span>
+          </div>
+          <button id="btnCollapseSidebar" class="btn-circle-collapse" type="button" title="Collapse sidebar">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 3. Section Label (#eef1f6) -->
+        <div class="sidebar-section-label">
+          ROUTE PLANNING TUTORIALS
+        </div>
+
+        <!-- 4. Accordion / Menu Items -->
+        <div class="sidebar-nav-container">
+          <!-- Introduction -->
+          <div class="nav-item" data-route="introduction" data-title="Introduction">
+            <div class="nav-item-icon-wrap">
+              <svg class="icon-target" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+              </svg>
+            </div>
+            <span class="nav-item-text">Introduction</span>
+          </div>
+
+          <!-- Basics Accordion (Expanded by default) -->
+          <div class="nav-accordion" id="accordionBasics">
+            <div class="accordion-head" id="headBasics">
+              <div class="accordion-info">
+                <span class="accordion-name">Basics</span>
+                <span class="accordion-count">4 Topics | 3 Quizzes</span>
+              </div>
+              <svg class="chevron-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <div class="accordion-content" id="bodyBasics">
+              <!-- 1. Circle icon + Using the Interactive Map -->
+              <div class="nav-subitem" data-route="using-map" data-title="Using the Interactive Map">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8fa0b5" stroke-width="2">
+                  <circle cx="12" cy="12" r="8" />
+                </svg>
+                <span class="subitem-text">Using the Interactive Map</span>
+              </div>
+              <!-- 2. Green checkmark circle icon + Keeping Left -->
+              <div class="nav-subitem" data-route="keeping-left-tutorial" data-title="Keeping Left">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="#2ecc71">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m8 12 3 3 5-5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span class="subitem-text">Keeping Left</span>
+              </div>
+              <!-- 3. Book-check icon + Keeping Left with right-aligned QUIZ badge (Active by default) -->
+              <div class="nav-subitem active" data-route="keeping-left-quiz" data-title="Keeping Left"
+                id="itemKeepingLeftQuiz">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  <polyline points="9 10 11 12 15 8" />
+                </svg>
+                <span class="subitem-text">Keeping Left</span>
+                <span class="nav-badge-quiz">QUIZ</span>
+              </div>
+              <!-- 4. Circle icon + One-Way Roads -->
+              <div class="nav-subitem" data-route="one-way-tutorial" data-title="One-Way Roads">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8fa0b5" stroke-width="2">
+                  <circle cx="12" cy="12" r="8" />
+                </svg>
+                <span class="subitem-text">One-Way Roads</span>
+              </div>
+              <!-- 5. Book-check icon + One-way roads with right-aligned QUIZ badge -->
+              <div class="nav-subitem" data-route="one-way-quiz" data-title="One-way roads">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  <polyline points="9 10 11 12 15 8" />
+                </svg>
+                <span class="subitem-text">One-way roads</span>
+                <span class="nav-badge-quiz">QUIZ</span>
+              </div>
+              <!-- 6. Circle icon + Roundabouts -->
+              <div class="nav-subitem" data-route="roundabouts-tutorial" data-title="Roundabouts">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8fa0b5" stroke-width="2">
+                  <circle cx="12" cy="12" r="8" />
+                </svg>
+                <span class="subitem-text">Roundabouts</span>
+              </div>
+              <!-- 7. Book-check icon + Roundabouts with right-aligned QUIZ badge -->
+              <div class="nav-subitem" data-route="roundabouts-quiz" data-title="Roundabouts">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  <polyline points="9 10 11 12 15 8" />
+                </svg>
+                <span class="subitem-text">Roundabouts</span>
+                <span class="nav-badge-quiz">QUIZ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pass-throughs Accordion (Collapsed with right chevron) -->
+          <div class="nav-accordion collapsed" id="accordionPassThroughs">
+            <div class="accordion-head" id="headPassThroughs">
+              <div class="accordion-info">
+                <span class="accordion-name">Pass-throughs</span>
+                <span class="accordion-count">3 Topics | 3 Quizzes</span>
+              </div>
+              <svg class="chevron-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+            <div class="accordion-content" id="bodyPassThroughs" style="display: none;">
+              <div class="nav-subitem" data-route="passthrough-tutorial" data-title="Pass-throughs">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8fa0b5" stroke-width="2">
+                  <circle cx="12" cy="12" r="8" />
+                </svg>
+                <span class="subitem-text">Pass-throughs Overview</span>
+              </div>
+              <div class="nav-subitem" data-route="passthrough-quiz-1" data-title="Pass-throughs Quiz 1">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  <polyline points="9 10 11 12 15 8" />
+                </svg>
+                <span class="subitem-text">Pass-through Quiz 1</span>
+                <span class="nav-badge-quiz">QUIZ</span>
+              </div>
+              <div class="nav-subitem" data-route="passthrough-quiz-2" data-title="Pass-throughs Quiz 2">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  <polyline points="9 10 11 12 15 8" />
+                </svg>
+                <span class="subitem-text">Pass-through Quiz 2</span>
+                <span class="nav-badge-quiz">QUIZ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Floating Expand Button (when sidebar is collapsed) -->
+      <button id="btnExpandSidebar" class="btn-floating-expand" type="button" title="Expand Course Navigation"
+        style="display: none;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+
+      <!-- Main Workspace Area -->
+      <div id="mainWorkspaceArea" class="main-workspace-area">
+        <!-- View 1: Keeping Left Interactive Quiz Container -->
+        <div id="app">
+          <nav id="breadcrumb" aria-label="Breadcrumb">
+            <span>TfL Topographical Course Package</span><span class="sep">&gt;</span>
+            <span>Basics</span><span class="sep">&gt;</span>
+            <span>Keeping Left</span><span class="sep">&gt;</span>
+            <span class="current">Keeping Left</span>
+          </nav>
+
+          <aside id="sidebar">
+            <div class="instruction-content">
+              <div class="site domain-label">Smart Taxi Solutions Ltd</div>
+              <span class="instruction-divider">•</span>
+              <h1 style="display:none">Keeping Left Exam Simulator</h1>
+              <h2>Practice keeping left.</h2>
+              <span class="instruction-divider">—</span>
+              <p>Draw a route from the green marker to the red marker.</p>
+            </div>
+            <div class="qno-wrap">
+              <div class="qno" id="qno"></div>
+            </div>
+          </aside>
+
+          <main id="main">
+            <div id="controls">
+              <button id="btnDraw" type="button">DRAW</button>
+              <button id="btnBack" type="button">BACK</button>
+              <button id="btnDelete" type="button">DELETE</button>
+              <button id="btnBright" type="button">BRIGHT</button>
+              <button id="btnHome" type="button">HOME</button>
+            </div>
+            <div id="map"></div>
+            <div id="cursorFollower" class="cursor-follower"></div>
+            <div id="cursorTooltip" class="cursor-tooltip">Click to start drawing line</div>
+          </main>
+
+          <footer id="bottom">
+            <a id="answerLink">Click here to view answer in a new tab.</a>
+            <button id="next" type="button">Next</button>
+          </footer>
+        </div>
+
+        <!-- View 2: Placeholder Container for Other Topics -->
+        <div id="placeholderContainer" class="placeholder-container" style="display: none;">
+          <div class="placeholder-card">
+            <div class="placeholder-badge">COURSE MODULE</div>
+            <div class="placeholder-icon-circle">
+              <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#1f6fd0" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+              </svg>
+            </div>
+            <h2 id="placeholderTitle" class="placeholder-title">[Topic Name] – Coming Soon</h2>
+            <p class="placeholder-text">This learning topic and exam practice route is currently being prepared. You can
+              continue practicing with the interactive Keeping Left simulation.</p>
+            <button id="btnReturnToKeepingLeft" class="btn-return-quiz" type="button">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              <span>Back to Keeping Left (QUIZ)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="overlay" role="dialog" aria-modal="true">
@@ -510,6 +1706,14 @@
         zoomSnap: 1,
         zoomControl: true
       });
+
+      window.refreshMapSize = function () {
+        if (map) {
+          map.invalidateSize();
+          setTimeout(function () { map.invalidateSize(); }, 60);
+          setTimeout(function () { map.invalidateSize(); }, 250);
+        }
+      };
 
       var GCS = 'https://storage.googleapis.com/map-serpractice-photos/tile_{z}_{x}-{y}.png';
       var BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -788,6 +1992,317 @@
       } else {
         loadQuestion(0);
       }
+
+      /* ---------- Authentication & Course Navigation Setup ---------- */
+      function setupAuthAndNavigation() {
+        var authGate = $('authGate');
+        var coursePortal = $('coursePortal');
+        var tabLogin = $('tabLogin');
+        var tabSignup = $('tabSignup');
+        var formLogin = $('formLogin');
+        var formSignup = $('formSignup');
+        var authAlert = $('authAlert');
+        var linkGoToSignup = $('linkGoToSignup');
+        var linkGoToLogin = $('linkGoToLogin');
+        var btnLogout = $('btnLogout');
+        var courseSidebar = $('courseSidebar');
+        var btnCollapseSidebar = $('btnCollapseSidebar');
+        var btnExpandSidebar = $('btnExpandSidebar');
+        var accordionBasics = $('accordionBasics');
+        var headBasics = $('headBasics');
+        var bodyBasics = $('bodyBasics');
+        var accordionPassThroughs = $('accordionPassThroughs');
+        var headPassThroughs = $('headPassThroughs');
+        var bodyPassThroughs = $('bodyPassThroughs');
+        var btnReturnToKeepingLeft = $('btnReturnToKeepingLeft');
+        var itemKeepingLeftQuiz = $('itemKeepingLeftQuiz');
+
+        // Helper: Alert Message
+        function showAuthAlert(msg, type) {
+          if (!authAlert) return;
+          if (!msg) {
+            authAlert.style.display = 'none';
+            authAlert.textContent = '';
+            authAlert.className = 'auth-alert';
+            return;
+          }
+          authAlert.textContent = msg;
+          authAlert.className = 'auth-alert ' + (type || 'info');
+          authAlert.style.display = 'block';
+        }
+
+        // Helper: Switch Auth Tabs
+        function switchAuthTab(mode) {
+          showAuthAlert('', '');
+          if (mode === 'signup') {
+            tabSignup.classList.add('active');
+            tabLogin.classList.remove('active');
+            formSignup.style.display = 'block';
+            formLogin.style.display = 'none';
+            var nameField = $('signupName');
+            if (nameField) nameField.focus();
+          } else {
+            tabLogin.classList.add('active');
+            tabSignup.classList.remove('active');
+            formLogin.style.display = 'block';
+            formSignup.style.display = 'none';
+            var identField = $('loginIdentifier');
+            if (identField) identField.focus();
+          }
+        }
+
+        if (tabLogin) tabLogin.addEventListener('click', function () { switchAuthTab('login'); });
+        if (tabSignup) tabSignup.addEventListener('click', function () { switchAuthTab('signup'); });
+        if (linkGoToSignup) linkGoToSignup.addEventListener('click', function (e) { e.preventDefault(); switchAuthTab('signup'); });
+        if (linkGoToLogin) linkGoToLogin.addEventListener('click', function (e) { e.preventDefault(); switchAuthTab('login'); });
+
+        // Password Eye Toggle Helper
+        function setupPasswordToggle(inputId, toggleBtnId) {
+          var input = $(inputId);
+          var btn = $(toggleBtnId);
+          if (!input || !btn) return;
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var isOpen = input.type === 'text';
+            input.type = isOpen ? 'password' : 'text';
+            var eyeOpen = btn.querySelector('.eye-open');
+            var eyeClosed = btn.querySelector('.eye-closed');
+            if (eyeOpen && eyeClosed) {
+              eyeOpen.style.display = isOpen ? 'block' : 'none';
+              eyeClosed.style.display = isOpen ? 'none' : 'block';
+            }
+          });
+        }
+
+        setupPasswordToggle('loginPassword', 'toggleLoginPassword');
+        setupPasswordToggle('signupPassword', 'toggleSignupPassword');
+
+        // Show/Hide Course vs Auth
+        function showCourseLayout(userName) {
+          if (authGate) authGate.style.display = 'none';
+          if (coursePortal) coursePortal.style.display = 'flex';
+          if (userName) {
+            var nameEl = $('headerUserName');
+            if (nameEl) nameEl.textContent = userName;
+            var avatarEl = $('headerAvatar');
+            if (avatarEl) {
+              var initials = userName.split(' ').filter(Boolean).map(function (w) { return w[0]; }).join('').substring(0, 2).toUpperCase() || 'TC';
+              avatarEl.textContent = initials;
+            }
+          }
+          // Default to Keeping Left QUIZ
+          if (itemKeepingLeftQuiz) {
+            selectRoute('keeping-left-quiz', 'Keeping Left', itemKeepingLeftQuiz);
+          }
+          window.refreshMapSize();
+        }
+
+        function showAuthGate() {
+          if (authGate) authGate.style.display = 'flex';
+          if (coursePortal) coursePortal.style.display = 'none';
+        }
+
+        // Signup Submission
+        if (formSignup) {
+          formSignup.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var name = $('signupName').value.trim();
+            var phone = $('signupPhone').value.trim();
+            var email = $('signupEmail').value.trim().toLowerCase();
+            var password = $('signupPassword').value;
+
+            if (!name || !phone || !email || !password) {
+              showAuthAlert('Please fill in all required fields.', 'error');
+              return;
+            }
+
+            var users = [];
+            try {
+              users = JSON.parse(localStorage.getItem('topographical_users')) || [];
+            } catch (err) {
+              users = [];
+            }
+
+            var existing = users.find(function (u) {
+              return u.email === email || (phone && u.phone === phone);
+            });
+
+            if (existing) {
+              showAuthAlert('An account with this email or phone already exists. Please log in.', 'error');
+              return;
+            }
+
+            users.push({ name: name, phone: phone, email: email, password: password });
+            localStorage.setItem('topographical_users', JSON.stringify(users));
+
+            formSignup.reset();
+            switchAuthTab('login');
+            showAuthAlert('Account created successfully! Please sign in with your credentials.', 'success');
+            var loginIdField = $('loginIdentifier');
+            if (loginIdField) loginIdField.value = email;
+            var loginPassField = $('loginPassword');
+            if (loginPassField) loginPassField.focus();
+          });
+        }
+
+        // Login Submission
+        if (formLogin) {
+          formLogin.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var identifier = $('loginIdentifier').value.trim().toLowerCase();
+            var password = $('loginPassword').value;
+
+            if (!identifier || !password) {
+              showAuthAlert('Please enter your email/phone and password.', 'error');
+              return;
+            }
+
+            var users = [];
+            try {
+              users = JSON.parse(localStorage.getItem('topographical_users')) || [];
+            } catch (err) {
+              users = [];
+            }
+
+            var matchedUser = users.find(function (u) {
+              return (u.email.toLowerCase() === identifier || u.phone === identifier) && u.password === password;
+            });
+
+            // Demo fallback
+            if (!matchedUser && (identifier === 'candidate@smarttaxi.co.uk' || identifier === 'candidate') && password === 'password123') {
+              matchedUser = { name: 'TfL Candidate', email: 'candidate@smarttaxi.co.uk', phone: '07700900077' };
+            }
+
+            if (matchedUser) {
+              localStorage.setItem('topographical_session', JSON.stringify({
+                name: matchedUser.name,
+                email: matchedUser.email,
+                phone: matchedUser.phone || '',
+                loginAt: Date.now()
+              }));
+              formLogin.reset();
+              showAuthAlert('', '');
+              showCourseLayout(matchedUser.name);
+            } else {
+              showAuthAlert('Invalid email/phone or password. Please try again.', 'error');
+            }
+          });
+        }
+
+        // Logout
+        if (btnLogout) {
+          btnLogout.addEventListener('click', function () {
+            localStorage.removeItem('topographical_session');
+            showAuthGate();
+            switchAuthTab('login');
+            showAuthAlert('You have been logged out successfully.', 'info');
+          });
+        }
+
+        // Sidebar Navigation Routing
+        function selectRoute(routeId, routeTitle, navElement) {
+          document.querySelectorAll('.nav-item, .nav-subitem').forEach(function (el) {
+            el.classList.remove('active');
+          });
+          if (navElement) {
+            navElement.classList.add('active');
+          }
+
+          var quizContainer = $('app');
+          var placeholderContainer = $('placeholderContainer');
+          var placeholderTitle = $('placeholderTitle');
+
+          if (routeId === 'keeping-left-quiz') {
+            if (placeholderContainer) placeholderContainer.style.display = 'none';
+            if (quizContainer) quizContainer.style.display = 'grid';
+            window.refreshMapSize();
+          } else {
+            if (quizContainer) quizContainer.style.display = 'none';
+            if (placeholderContainer) {
+              placeholderContainer.style.display = 'flex';
+              if (placeholderTitle) {
+                placeholderTitle.textContent = (routeTitle || 'Topic') + ' – Coming Soon';
+              }
+            }
+          }
+        }
+
+        // Wire up all sidebar nav items
+        document.querySelectorAll('.nav-item, .nav-subitem').forEach(function (el) {
+          el.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var route = el.getAttribute('data-route');
+            var title = el.getAttribute('data-title') || el.textContent.trim();
+            selectRoute(route, title, el);
+          });
+        });
+
+        // Placeholder button to return to Keeping Left QUIZ
+        if (btnReturnToKeepingLeft) {
+          btnReturnToKeepingLeft.addEventListener('click', function () {
+            if (itemKeepingLeftQuiz) {
+              selectRoute('keeping-left-quiz', 'Keeping Left', itemKeepingLeftQuiz);
+            }
+          });
+        }
+
+        // Sidebar Collapse / Expand
+        if (btnCollapseSidebar && courseSidebar) {
+          btnCollapseSidebar.addEventListener('click', function (e) {
+            e.stopPropagation();
+            courseSidebar.classList.add('collapsed');
+            if (btnExpandSidebar) btnExpandSidebar.style.display = 'flex';
+            window.refreshMapSize();
+          });
+        }
+
+        if (btnExpandSidebar && courseSidebar) {
+          btnExpandSidebar.addEventListener('click', function (e) {
+            e.stopPropagation();
+            courseSidebar.classList.remove('collapsed');
+            btnExpandSidebar.style.display = 'none';
+            window.refreshMapSize();
+          });
+        }
+
+        // Accordion: Basics
+        if (headBasics && accordionBasics && bodyBasics) {
+          headBasics.addEventListener('click', function () {
+            var isCollapsed = accordionBasics.classList.toggle('collapsed');
+            bodyBasics.style.display = isCollapsed ? 'none' : 'block';
+          });
+        }
+
+        // Accordion: Pass-throughs
+        if (headPassThroughs && accordionPassThroughs && bodyPassThroughs) {
+          headPassThroughs.addEventListener('click', function () {
+            var isCollapsed = accordionPassThroughs.classList.toggle('collapsed');
+            bodyPassThroughs.style.display = isCollapsed ? 'none' : 'block';
+          });
+        }
+
+        // Window resize hook
+        window.addEventListener('resize', function () {
+          window.refreshMapSize();
+        });
+
+        // Initial Session Check
+        var activeSession = null;
+        try {
+          activeSession = JSON.parse(localStorage.getItem('topographical_session'));
+        } catch (err) {
+          activeSession = null;
+        }
+
+        if (answerMode || activeSession) {
+          showCourseLayout(activeSession ? activeSession.name : 'TfL Candidate');
+        } else {
+          showAuthGate();
+        }
+      }
+
+      /* Initialize Auth & Course Navigation */
+      setupAuthAndNavigation();
     })();
   </script>
 </body>

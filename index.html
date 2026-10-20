@@ -35,18 +35,18 @@
       display: grid;
       height: 100%;
       width: 100%;
-      grid-template-rows: 38px auto 1fr 52px;
-      grid-template-columns: 1fr;
+      grid-template-rows: 40px 1fr 56px;
+      grid-template-columns: 250px 1fr;
     }
 
     #breadcrumb {
-      grid-column: 1;
+      grid-column: 1 / 3;
       display: flex;
       align-items: center;
       padding: 0 16px;
       background: #fff;
       border-bottom: 1px solid var(--line);
-      font-size: 13.5px;
+      font-size: 14px;
       color: #4a5565;
       gap: 8px;
     }
@@ -61,85 +61,44 @@
     }
 
     #sidebar {
-      grid-column: 1;
-      background: #ffffff;
-      border-bottom: 1px solid var(--line);
-      padding: 9px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    }
-
-    #sidebar .instruction-content {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      min-width: 0;
+      background: #fff;
+      border-right: 1px solid var(--line);
+      padding: 18px 16px;
+      overflow: auto;
     }
 
     #sidebar .site,
     #sidebar .domain-label {
       font-weight: 700;
       color: var(--blue);
-      font-size: 14px;
-      margin: 0;
-      display: inline-flex;
-      align-items: center;
-      white-space: nowrap;
-    }
-
-    #sidebar .instruction-divider {
-      color: #cbd5e1;
-      font-size: 13px;
-      user-select: none;
+      font-size: 15px;
+      margin-bottom: 18px;
+      display: block;
     }
 
     #sidebar h2 {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: #1e293b;
-      margin: 0;
-      white-space: nowrap;
+      font-size: 18px;
+      margin: 0 0 10px;
     }
 
     #sidebar p {
-      margin: 0;
-      font-size: 13.5px;
-      color: #475569;
-      line-height: 1.4;
-    }
-
-    #sidebar .qno-wrap {
-      display: flex;
-      align-items: center;
-      flex-shrink: 0;
-      margin-left: auto;
+      margin: 0 0 10px;
+      font-size: 14.5px;
+      line-height: 1.45;
     }
 
     #sidebar .qno {
-      margin: 0;
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #164f96;
-      background: #e9f2fd;
-      border: 1px solid #bfdbfe;
-      padding: 4px 12px;
-      border-radius: 12px;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #7a8594;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      white-space: nowrap;
+      letter-spacing: .08em;
     }
 
     #main {
-      grid-column: 1;
       position: relative;
       min-width: 0;
       min-height: 0;
-      width: 100%;
-      height: 100%;
     }
 
     #controls {
@@ -290,7 +249,7 @@
     }
 
     #bottom {
-      grid-column: 1;
+      grid-column: 1 / 3;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -607,25 +566,6 @@
 
     .btn-auth-submit:active {
       transform: translateY(1px);
-    }
-
-    .auth-demo-hint {
-      margin-top: 14px;
-      padding: 8px 12px;
-      background: #f8fafc;
-      border: 1px dashed #cbd5e1;
-      border-radius: 6px;
-      font-size: 12px;
-      color: #64748b;
-      text-align: center;
-    }
-
-    .auth-demo-hint code {
-      color: #1e293b;
-      font-weight: 600;
-      background: #edf2f7;
-      padding: 1px 4px;
-      border-radius: 3px;
     }
 
     .auth-switch-prompt {
@@ -1166,7 +1106,7 @@
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
-            <input type="text" id="loginIdentifier" placeholder="e.g. candidate@smarttaxi.co.uk" required
+            <input type="text" id="loginIdentifier" placeholder="Enter your registered email or phone" required
               autocomplete="username">
           </div>
         </div>
@@ -1201,10 +1141,6 @@
         <button type="submit" class="btn-auth-submit" id="btnSubmitLogin">
           Sign In to Simulator
         </button>
-
-        <div class="auth-demo-hint">
-          <span>Demo: <code>candidate@smarttaxi.co.uk</code> / <code>password123</code></span>
-        </div>
 
         <div class="auth-switch-prompt">
           Don't have an account? <a href="#" id="linkGoToSignup">Create an account</a>
@@ -1257,7 +1193,7 @@
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            <input type="password" id="signupPassword" placeholder="Create a secure password" required
+            <input type="password" id="signupPassword" placeholder="Create a password (min 6 characters)" required minlength="6"
               autocomplete="new-password">
             <button type="button" class="btn-toggle-password" id="toggleSignupPassword" title="Show/hide password"
               aria-label="Toggle password visibility">
@@ -1516,17 +1452,11 @@
           </nav>
 
           <aside id="sidebar">
-            <div class="instruction-content">
-              <div class="site domain-label">Smart Taxi Solutions Ltd</div>
-              <span class="instruction-divider">•</span>
-              <h1 style="display:none">Keeping Left Exam Simulator</h1>
-              <h2>Practice keeping left.</h2>
-              <span class="instruction-divider">—</span>
-              <p>Draw a route from the green marker to the red marker.</p>
-            </div>
-            <div class="qno-wrap">
-              <div class="qno" id="qno"></div>
-            </div>
+            <div class="site domain-label">Smart Taxi Solutions Ltd</div>
+            <h1 style="display:none">Keeping Left Exam Simulator</h1>
+            <h2>Practice keeping left.</h2>
+            <p>Draw a route from the green marker to the red marker.</p>
+            <div class="qno" id="qno"></div>
           </aside>
 
           <main id="main">
@@ -2111,8 +2041,21 @@
             var email = $('signupEmail').value.trim().toLowerCase();
             var password = $('signupPassword').value;
 
-            if (!name || !phone || !email || !password) {
-              showAuthAlert('Please fill in all required fields.', 'error');
+            if (!name) {
+              showAuthAlert('Please enter your full name.', 'error');
+              return;
+            }
+            if (!phone) {
+              showAuthAlert('Please enter your phone number.', 'error');
+              return;
+            }
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email || !emailPattern.test(email)) {
+              showAuthAlert('Please enter a valid email address.', 'error');
+              return;
+            }
+            if (!password || password.length < 6) {
+              showAuthAlert('Password must be at least 6 characters long.', 'error');
               return;
             }
 
@@ -2123,25 +2066,43 @@
               users = [];
             }
 
-            var existing = users.find(function (u) {
-              return u.email === email || (phone && u.phone === phone);
+            var cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+            var emailExists = users.some(function (u) {
+              return (u.email || '').toLowerCase() === email;
             });
-
-            if (existing) {
-              showAuthAlert('An account with this email or phone already exists. Please log in.', 'error');
+            if (emailExists) {
+              showAuthAlert('An account with this email address is already registered. Please log in.', 'error');
               return;
             }
 
-            users.push({ name: name, phone: phone, email: email, password: password });
+            var phoneExists = users.some(function (u) {
+              var uPhone = (u.phone || '').replace(/[\s\-\(\)]/g, '');
+              return uPhone && (uPhone === cleanPhone || u.phone === phone);
+            });
+            if (phoneExists) {
+              showAuthAlert('An account with this phone number is already registered. Please log in.', 'error');
+              return;
+            }
+
+            users.push({
+              name: name,
+              phone: phone,
+              email: email,
+              password: password,
+              registeredAt: Date.now()
+            });
             localStorage.setItem('topographical_users', JSON.stringify(users));
 
             formSignup.reset();
             switchAuthTab('login');
-            showAuthAlert('Account created successfully! Please sign in with your credentials.', 'success');
             var loginIdField = $('loginIdentifier');
             if (loginIdField) loginIdField.value = email;
             var loginPassField = $('loginPassword');
-            if (loginPassField) loginPassField.focus();
+            if (loginPassField) {
+              loginPassField.value = '';
+              loginPassField.focus();
+            }
+            showAuthAlert('Registration successful! Please log in to continue.', 'success');
           });
         }
 
@@ -2149,11 +2110,12 @@
         if (formLogin) {
           formLogin.addEventListener('submit', function (e) {
             e.preventDefault();
-            var identifier = $('loginIdentifier').value.trim().toLowerCase();
+            var rawIdentifier = $('loginIdentifier').value.trim();
+            var identifier = rawIdentifier.toLowerCase();
             var password = $('loginPassword').value;
 
-            if (!identifier || !password) {
-              showAuthAlert('Please enter your email/phone and password.', 'error');
+            if (!rawIdentifier || !password) {
+              showAuthAlert('Please enter your email or phone number and password.', 'error');
               return;
             }
 
@@ -2164,28 +2126,33 @@
               users = [];
             }
 
-            var matchedUser = users.find(function (u) {
-              return (u.email.toLowerCase() === identifier || u.phone === identifier) && u.password === password;
+            var normPhone = rawIdentifier.replace(/[\s\-\(\)]/g, '');
+            var userRecord = users.find(function (u) {
+              var uEmail = (u.email || '').toLowerCase();
+              var uPhone = (u.phone || '').replace(/[\s\-\(\)]/g, '');
+              return uEmail === identifier || (uPhone && (u.phone === rawIdentifier || uPhone === normPhone));
             });
 
-            // Demo fallback
-            if (!matchedUser && (identifier === 'candidate@smarttaxi.co.uk' || identifier === 'candidate') && password === 'password123') {
-              matchedUser = { name: 'TfL Candidate', email: 'candidate@smarttaxi.co.uk', phone: '07700900077' };
+            if (!userRecord) {
+              showAuthAlert('No account found with this email or phone number. Please sign up.', 'error');
+              return;
             }
 
-            if (matchedUser) {
-              localStorage.setItem('topographical_session', JSON.stringify({
-                name: matchedUser.name,
-                email: matchedUser.email,
-                phone: matchedUser.phone || '',
-                loginAt: Date.now()
-              }));
-              formLogin.reset();
-              showAuthAlert('', '');
-              showCourseLayout(matchedUser.name);
-            } else {
-              showAuthAlert('Invalid email/phone or password. Please try again.', 'error');
+            if (userRecord.password !== password) {
+              showAuthAlert('Incorrect password. Please try again.', 'error');
+              return;
             }
+
+            localStorage.setItem('topographical_session', JSON.stringify({
+              name: userRecord.name,
+              email: userRecord.email,
+              phone: userRecord.phone || '',
+              loginAt: Date.now()
+            }));
+
+            formLogin.reset();
+            showAuthAlert('', '');
+            showCourseLayout(userRecord.name);
           });
         }
 
@@ -2193,6 +2160,8 @@
         if (btnLogout) {
           btnLogout.addEventListener('click', function () {
             localStorage.removeItem('topographical_session');
+            formLogin.reset();
+            formSignup.reset();
             showAuthGate();
             switchAuthTab('login');
             showAuthAlert('You have been logged out successfully.', 'info');
@@ -2294,8 +2263,8 @@
           activeSession = null;
         }
 
-        if (answerMode || activeSession) {
-          showCourseLayout(activeSession ? activeSession.name : 'TfL Candidate');
+        if (activeSession && activeSession.name) {
+          showCourseLayout(activeSession.name);
         } else {
           showAuthGate();
         }

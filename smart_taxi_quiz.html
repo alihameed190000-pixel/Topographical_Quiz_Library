@@ -1,0 +1,2955 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Taxi Solutions Ltd — TfL Topographical Skills Practice Quiz</title>
+  <meta name="description"
+    content="Official TfL Topographical exam simulator for Smart Taxi Solutions Ltd training candidates. Pixel-accurate route drawing, multi-zoom continuous scaling, and keeping-left practice.">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --primary-navy: #1e3a78;
+      --navy-dark: #122550;
+      --navy-light: #2c4d9e;
+      --text-dark: #1f2937;
+      --text-muted: #5a687c;
+      --border-color: #dcdcdc;
+      --bg-light: #f5f5f5;
+      --map-bg: #e5e3df;
+      --green-bar: #4caf50;
+      --green-text: #2e7d32;
+      --amber-bar: #f5b82e;
+      --amber-text: #b78103;
+      --blue-bar: #29b6f6;
+      --blue-text: #0288d1;
+      --red-bar: #ef5350;
+      --red-text: #d32f2f;
+      --grey-bar: #9e9e9e;
+      --grey-text: #616161;
+      --route-color: #0088cc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-dark);
+      background: #ffffff;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Main Application Shell */
+    #appContainer {
+      display: grid;
+      height: 100vh;
+      width: 100vw;
+      grid-template-rows: 40px 1fr 54px;
+      grid-template-columns: 220px 1fr;
+    }
+
+    /* -------------------------------------------------------------
+       1. TOP BREADCRUMB & EXERCISE SELECTOR BAR
+       ------------------------------------------------------------- */
+    #topBar {
+      grid-column: 1 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: #ffffff;
+      border-bottom: 1px solid #d0d7de;
+      font-size: 13.5px;
+      z-index: 100;
+    }
+
+    .breadcrumb-trail {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #4b5563;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .breadcrumb-brand {
+      font-weight: 700;
+      color: var(--primary-navy);
+      letter-spacing: -0.01em;
+    }
+
+    .breadcrumb-sep {
+      color: #9ca3af;
+      font-size: 12px;
+    }
+
+    .breadcrumb-topic {
+      color: #4b5563;
+      font-weight: 500;
+    }
+
+    .breadcrumb-current {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .exercise-select-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .exercise-select-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    #exerciseSelector {
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-navy);
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      max-width: 320px;
+    }
+
+    #exerciseSelector:hover,
+    #exerciseSelector:focus {
+      background-color: #ffffff;
+      border-color: var(--primary-navy);
+      box-shadow: 0 0 0 2px rgba(30, 58, 120, 0.15);
+    }
+
+    /* -------------------------------------------------------------
+       2. LEFT SIDEBAR (220px)
+       ------------------------------------------------------------- */
+    #sidebar {
+      grid-column: 1 / 2;
+      background: #ffffff;
+      border-right: 1px solid #d0d7de;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 90;
+    }
+
+    .sidebar-header-link {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--primary-navy);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #edf2f7;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-header-link:hover {
+      text-decoration: underline;
+    }
+
+    .sidebar-exercise-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.3;
+      margin-bottom: 10px;
+    }
+
+    .sidebar-instructions {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #374151;
+      margin-bottom: 16px;
+    }
+
+    .sidebar-instructions strong {
+      color: #111827;
+    }
+
+    .sidebar-meta-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #4b5563;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .meta-label {
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .meta-value {
+      font-weight: 700;
+      color: var(--primary-navy);
+    }
+
+    .keep-left-rule-box {
+      background: #eff6ff;
+      border-left: 3px solid #3b82f6;
+      padding: 10px 12px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 16px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #1e40af;
+    }
+
+    .keep-left-rule-box strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 12.5px;
+      color: #1d4ed8;
+    }
+
+    .sidebar-tips {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px dashed #cbd5e1;
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+    .sidebar-tips strong {
+      color: #334155;
+    }
+
+    /* -------------------------------------------------------------
+       3. RIGHT MAP VIEWPORT & EXAM CONTROL BAR
+       ------------------------------------------------------------- */
+    #mapViewport {
+      grid-column: 2 / 3;
+      position: relative;
+      background: var(--map-bg);
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      background: var(--map-bg) !important;
+    }
+
+    .leaflet-container {
+      background: var(--map-bg) !important;
+      cursor: grab;
+    }
+
+    .leaflet-container:active {
+      cursor: grabbing;
+    }
+
+    /* Drawing Mode Map Cursor */
+    #map.drawing-mode,
+    #map.drawing-mode .leaflet-container {
+      cursor: crosshair !important;
+    }
+
+    /* Top 5-Button Exam Control Bar */
+    #examControlBar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      display: flex;
+      gap: 5px;
+      background: #ffffff;
+      padding: 4px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+
+    .exam-btn {
+      width: 78px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-light);
+      border: 1px solid var(--border-color);
+      border-bottom: 3px solid var(--grey-bar);
+      border-radius: 2px;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--grey-text);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      user-select: none;
+    }
+
+    .exam-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* 1. DRAW / STOP Button */
+    #btnDraw {
+      border-bottom-color: var(--green-bar);
+      color: var(--green-text);
+    }
+
+    #btnDraw:hover {
+      background: #eef9ee;
+    }
+
+    #btnDraw.stop-mode {
+      border-bottom-color: var(--amber-bar) !important;
+      color: var(--amber-text) !important;
+      background: #fffdf5 !important;
+      box-shadow: 0 0 5px rgba(245, 184, 46, 0.4);
+    }
+
+    /* 2. BACK Button */
+    #btnBack {
+      border-bottom-color: var(--blue-bar);
+      color: var(--blue-text);
+    }
+
+    #btnBack:hover {
+      background: #f0f9ff;
+    }
+
+    /* 3. DELETE Button */
+    #btnDelete {
+      border-bottom-color: var(--red-bar);
+      color: var(--red-text);
+    }
+
+    #btnDelete:hover {
+      background: #fef2f2;
+    }
+
+    /* 4. BRIGHT Button */
+    #btnBright {
+      border-bottom-color: var(--grey-bar);
+      color: var(--grey-text);
+    }
+
+    #btnBright:hover {
+      background: #f1f5f9;
+    }
+
+    #btnBright.dimmed {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+
+    /* 5. HOME Button */
+    #btnHome {
+      border-bottom-color: var(--grey-bar);
+      color: var(--grey-text);
+      background: #ebebeb;
+    }
+
+    #btnHome:hover {
+      background: #dedede;
+    }
+
+    /* Square Zoom Controls */
+    .leaflet-top.leaflet-left {
+      margin-top: 54px;
+      margin-left: 10px;
+    }
+
+    .leaflet-control-zoom {
+      border: 1px solid var(--border-color) !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14) !important;
+      border-radius: 3px !important;
+      overflow: hidden !important;
+    }
+
+    .leaflet-control-zoom a {
+      background: #ffffff !important;
+      color: #374151 !important;
+      border-bottom: 1px solid #e5e7eb !important;
+      width: 28px !important;
+      height: 28px !important;
+      line-height: 28px !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      text-align: center !important;
+      transition: background 0.15s ease !important;
+    }
+
+    .leaflet-control-zoom a:last-child {
+      border-bottom: none !important;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background: #f3f4f6 !important;
+      color: #111827 !important;
+    }
+
+    /* Markers */
+    .teardrop-marker {
+      background: transparent;
+      border: none;
+      pointer-events: none;
+    }
+
+    /* 8x8px Cursor Follower */
+    .cursor-follower {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #ffffff;
+      border: 1.5px solid var(--route-color);
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 2500;
+      display: none;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Floating Cursor Tooltip */
+    .cursor-tooltip {
+      position: absolute;
+      z-index: 2500;
+      pointer-events: none;
+      background: rgba(17, 24, 39, 0.85);
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      display: none;
+      transform: translate(14px, -50%);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+    }
+
+    /* "Keeping Left" 7x7px Blue Indicator Box */
+    .keep-left-box {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      background-color: #0088cc;
+      border: 1px solid #005580;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 2400;
+      display: none;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 1px 3px rgba(0, 136, 204, 0.4);
+    }
+
+    /* -------------------------------------------------------------
+       4. BOTTOM FOOTER
+       ------------------------------------------------------------- */
+    #bottomFooter {
+      grid-column: 1 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #f1f3f6;
+      border-top: 1px solid #cfd5de;
+      padding: 0 20px;
+      z-index: 100;
+    }
+
+    #answerLink {
+      color: var(--primary-navy);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: color 0.15s ease;
+    }
+
+    #answerLink:hover {
+      color: #0c1a36;
+    }
+
+    #btnNext {
+      position: absolute;
+      right: 18px;
+      top: 9px;
+      height: 36px;
+      padding: 0 26px;
+      border: 0;
+      border-radius: 18px;
+      background: var(--primary-navy);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(30, 58, 120, 0.25);
+      transition: all 0.15s ease;
+    }
+
+    #btnNext:hover {
+      background: var(--navy-dark);
+      box-shadow: 0 3px 6px rgba(18, 37, 80, 0.35);
+    }
+
+    #btnNext:active {
+      transform: translateY(1px);
+    }
+
+    /* -------------------------------------------------------------
+       5. IN-BROWSER PIN CALIBRATOR TOOLBAR (Alt + C)
+       ------------------------------------------------------------- */
+    #calibratorToolbar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 3000;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      padding: 14px 18px;
+      width: 320px;
+      display: none;
+      animation: calFadeIn 0.2s ease-out;
+    }
+
+    @keyframes calFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 8px;
+    }
+
+    .cal-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary-navy);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cal-close {
+      background: none;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      color: #94a3b8;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .cal-close:hover {
+      color: #334155;
+    }
+
+    .cal-status-text {
+      font-size: 12px;
+      color: #475569;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .cal-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .cal-btn {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .cal-btn:hover {
+      background: #edf2f7;
+    }
+
+    .cal-btn.active {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .cal-coords-box {
+      background: #f1f5f9;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #334155;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .cal-action-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .cal-action-btn {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-cal-save {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .btn-cal-save:hover {
+      background: #059669;
+    }
+
+    .btn-cal-reset {
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .btn-cal-reset:hover {
+      background: #cbd5e1;
+    }
+
+    /* Calibrator Small Floating Launcher Trigger */
+    #calibratorLauncher {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(2px);
+      transition: all 0.15s ease;
+    }
+
+    #calibratorLauncher:hover {
+      background: #ffffff;
+      color: var(--primary-navy);
+      border-color: var(--primary-navy);
+    }
+
+    /* -------------------------------------------------------------
+       6. QUIZ FINISH OVERLAY MODAL
+       ------------------------------------------------------------- */
+    #quizOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(18, 37, 80, 0.65);
+      backdrop-filter: blur(3px);
+    }
+
+    #quizOverlay.show {
+      display: flex;
+    }
+
+    .quiz-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 34px 40px;
+      width: 440px;
+      text-align: center;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+      animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .quiz-card h2 {
+      color: #111827;
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .quiz-card p {
+      color: #4b5563;
+      font-size: 14px;
+      margin-bottom: 22px;
+    }
+
+    .progress-bar-bg {
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .progress-bar-fill {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #1e3a78, #10b981);
+      transition: width 2.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #btnContinueQuiz {
+      padding: 10px 32px;
+      border: 0;
+      border-radius: 20px;
+      background: var(--primary-navy);
+      color: #ffffff;
+      font-size: 14.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 2px 6px rgba(30, 58, 120, 0.3);
+      transition: all 0.15s ease;
+    }
+
+    #btnContinueQuiz:hover {
+      background: var(--navy-dark);
+    }
+
+    /* Standalone Answer Mode Styling */
+    body.answer-mode #btnNext,
+    body.answer-mode #examControlBar {
+      display: none !important;
+    }
+
+    /* =============================================================
+       7. CUSTOMER AUTHENTICATION GATE & USER BADGE
+       ============================================================= */
+    .sts-user-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding-left: 10px;
+      border-left: 1px solid #e2e8f0;
+    }
+
+    .sts-user-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--primary-navy);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(30, 58, 120, 0.25);
+    }
+
+    .sts-user-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+
+    .sts-user-greeting {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .sts-user-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e293b;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sts-btn-logout {
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #dc2626;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-left: 4px;
+    }
+
+    .sts-btn-logout:hover {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+    }
+
+    /* Auth Overlay */
+    #sts-auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: linear-gradient(135deg, #091528 0%, #10264d 50%, #0d1e3a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(6px);
+      user-select: text;
+    }
+
+    .sts-auth-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 440px;
+      border-radius: 12px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      animation: authCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes authCardIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .sts-auth-header {
+      background: #0d1e3a;
+      color: #ffffff;
+      padding: 22px 26px 18px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sts-auth-brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #93c5fd;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .sts-auth-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+
+    .sts-auth-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .sts-auth-body {
+      padding: 24px 26px;
+      background: #ffffff;
+    }
+
+    .sts-auth-alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      line-height: 1.4;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .sts-auth-alert.error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      display: block;
+    }
+
+    .sts-auth-alert.success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+      display: block;
+    }
+
+    .sts-auth-alert.info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      display: block;
+    }
+
+    .sts-code-banner {
+      background: #eff6ff;
+      border: 1px dashed #3b82f6;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: left;
+    }
+
+    .sts-code-banner-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #1e40af;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .sts-code-banner-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .sts-code-display {
+      font-family: monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: #1e3a78;
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .sts-btn-autofill {
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .sts-btn-autofill:hover {
+      background: #1d4ed8;
+    }
+
+    .sts-input-group {
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .sts-input-label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 5px;
+    }
+
+    .sts-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .sts-input-wrap input {
+      width: 100%;
+      height: 40px;
+      padding: 0 40px 0 12px;
+      font-size: 13.5px;
+      color: #0f172a;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      outline: none;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .sts-input-wrap input:focus {
+      background: #ffffff;
+      border-color: #1e3a78;
+      box-shadow: 0 0 0 3px rgba(30, 58, 120, 0.15);
+    }
+
+    .sts-eye-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .sts-eye-btn:hover {
+      color: #1e3a78;
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .sts-form-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      font-size: 12.5px;
+    }
+
+    .sts-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    .sts-link {
+      color: #1e3a78;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .sts-link:hover {
+      text-decoration: underline;
+      color: #0d1e3a;
+    }
+
+    .sts-submit-btn {
+      width: 100%;
+      height: 42px;
+      background: var(--primary-navy);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(30, 58, 120, 0.25);
+      transition: all 0.15s ease;
+      margin-bottom: 14px;
+    }
+
+    .sts-submit-btn:hover {
+      background: var(--navy-dark);
+      box-shadow: 0 4px 8px rgba(18, 37, 80, 0.35);
+    }
+
+    .sts-submit-btn:active {
+      transform: translateY(1px);
+    }
+
+    .sts-auth-footer {
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .sts-email-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e3a78;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Customer Authentication Gate (Smart Taxi Solutions Ltd) -->
+  <div id="sts-auth-overlay" role="dialog" aria-modal="true">
+    <div class="sts-auth-card">
+      <div class="sts-auth-header">
+        <div class="sts-auth-brand-badge">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Smart Taxi Solutions Ltd
+        </div>
+        <h2 class="sts-auth-title" id="stsAuthTitle">Candidate Practice Portal</h2>
+        <p class="sts-auth-subtitle" id="stsAuthSubtitle">Sign in to access your TfL Topographical Skills simulator.</p>
+      </div>
+
+      <div class="sts-auth-body">
+        <!-- Global Feedback Alert -->
+        <div id="stsAuthAlert" class="sts-auth-alert"></div>
+
+        <!-- Notification Banner (For Password Reset) -->
+        <div id="stsCodeNotification" class="sts-code-banner" style="display: none;">
+          <div class="sts-code-banner-title">Email Verification Code Sent</div>
+          <div class="sts-code-banner-content">
+            <div>Code: <span id="stsCodeDisplay" class="sts-code-display">123456</span></div>
+            <button id="stsBtnAutofill" class="sts-btn-autofill" type="button">Auto-fill Code</button>
+          </div>
+        </div>
+
+        <!-- VIEW 1: LOGIN -->
+        <form id="stsFormLogin" novalidate>
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="loginEmail">Customer Email Address</label>
+            <div class="sts-input-wrap">
+              <input type="email" id="loginEmail" placeholder="e.g. candidate@smarttaxisolutions.co.uk" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="loginPassword">Password</label>
+            <div class="sts-input-wrap">
+              <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+              <button type="button" class="sts-eye-btn" data-target="loginPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="sts-form-options">
+            <label class="sts-checkbox-label">
+              <input type="checkbox" id="loginRemember" checked>
+              <span>Remember me</span>
+            </label>
+            <a href="javascript:void(0)" id="linkToForgot" class="sts-link">Forgot Password?</a>
+          </div>
+
+          <button type="submit" class="sts-submit-btn" id="btnSubmitLogin">Login to Practice Portal</button>
+
+          <div class="sts-auth-footer">
+            Don't have an account? <a href="javascript:void(0)" id="linkToSignup" class="sts-link">Sign Up</a>
+          </div>
+        </form>
+
+        <!-- VIEW 2: SIGN UP -->
+        <form id="stsFormSignup" style="display: none;" novalidate>
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="signupName">Full Name</label>
+            <div class="sts-input-wrap">
+              <input type="text" id="signupName" placeholder="e.g. John Doe" required autocomplete="name">
+            </div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="signupEmail">Customer Email Address</label>
+            <div class="sts-input-wrap">
+              <input type="email" id="signupEmail" placeholder="e.g. john@example.co.uk" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="signupPassword">Password</label>
+            <div class="sts-input-wrap">
+              <input type="password" id="signupPassword" placeholder="Minimum 6 characters" required autocomplete="new-password">
+              <button type="button" class="sts-eye-btn" data-target="signupPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="signupConfirmPassword">Confirm Password</label>
+            <div class="sts-input-wrap">
+              <input type="password" id="signupConfirmPassword" placeholder="Re-enter password" required autocomplete="new-password">
+              <button type="button" class="sts-eye-btn" data-target="signupConfirmPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="sts-submit-btn" id="btnSubmitSignup">Create Account & Start Practice</button>
+
+          <div class="sts-auth-footer">
+            Already have an account? <a href="javascript:void(0)" id="linkToLoginFromSignup" class="sts-link">Log In</a>
+          </div>
+        </form>
+
+        <!-- VIEW 3: FORGOT PASSWORD -->
+        <form id="stsFormForgot" style="display: none;" novalidate>
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="forgotEmail">Customer Email Address</label>
+            <div class="sts-input-wrap">
+              <input type="email" id="forgotEmail" placeholder="Enter your registered email" required autocomplete="email">
+            </div>
+          </div>
+
+          <button type="submit" class="sts-submit-btn" id="btnSubmitForgot">Send Password Reset Code</button>
+
+          <div class="sts-auth-footer">
+            Remembered your password? <a href="javascript:void(0)" id="linkToLoginFromForgot" class="sts-link">Back to Login</a>
+          </div>
+        </form>
+
+        <!-- VIEW 4: RESET PASSWORD -->
+        <form id="stsFormReset" style="display: none;" novalidate>
+          <div style="text-align: center;">
+            <div id="stsResetEmailBadge" class="sts-email-badge">Resetting: user@example.com</div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="resetCode">6-Digit Verification Code</label>
+            <div class="sts-input-wrap">
+              <input type="text" id="resetCode" placeholder="Enter 6-digit code" maxlength="6" required autocomplete="one-time-code">
+            </div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="resetNewPassword">New Password</label>
+            <div class="sts-input-wrap">
+              <input type="password" id="resetNewPassword" placeholder="Minimum 6 characters" required autocomplete="new-password">
+              <button type="button" class="sts-eye-btn" data-target="resetNewPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="resetConfirmPassword">Confirm New Password</label>
+            <div class="sts-input-wrap">
+              <input type="password" id="resetConfirmPassword" placeholder="Re-enter new password" required autocomplete="new-password">
+              <button type="button" class="sts-eye-btn" data-target="resetConfirmPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="sts-submit-btn" id="btnSubmitReset">Save New Password & Login</button>
+
+          <div class="sts-auth-footer">
+            Cancel and return to <a href="javascript:void(0)" id="linkToLoginFromReset" class="sts-link">Log In</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="appContainer">
+
+    <!-- 1. Top Breadcrumb & Exercise Selector Bar -->
+    <header id="topBar">
+      <div class="breadcrumb-trail" id="breadcrumbTrail">
+        <span class="breadcrumb-brand">Smart Taxi Solutions Ltd</span>
+        <span class="breadcrumb-sep">&gt;</span>
+        <span>TfL Topographical Course Package</span>
+        <span class="breadcrumb-sep">&gt;</span>
+        <span class="breadcrumb-topic" id="bcTopic">Basics</span>
+        <span class="breadcrumb-sep">&gt;</span>
+        <span class="breadcrumb-current" id="bcExercise">Keeping Left</span>
+      </div>
+
+      <div class="top-actions">
+        <div class="exercise-select-wrapper">
+          <label for="exerciseSelector" class="exercise-select-label">Select Exercise:</label>
+          <select id="exerciseSelector" aria-label="Select Topographical Exercise"></select>
+        </div>
+        <div id="stsUserBadge" class="sts-user-badge">
+          <div class="sts-user-avatar" id="stsUserAvatar">ST</div>
+          <div class="sts-user-info">
+            <span class="sts-user-greeting">Candidate:</span>
+            <span class="sts-user-name" id="stsUserName">Candidate</span>
+          </div>
+          <button id="stsBtnLogout" class="sts-btn-logout" type="button" title="Log Out">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. Left Sidebar (220px wide) -->
+    <aside id="sidebar">
+      <a href="https://www.smarttaxisolutions.co.uk" target="_blank" rel="noopener noreferrer"
+        class="sidebar-header-link">www.smarttaxisolutions.co.uk</a>
+
+      <h1 class="sidebar-exercise-title" id="exerciseTitle">Practice keeping left.</h1>
+      <p class="sidebar-instructions" id="exerciseInstructions">
+        Draw a route from the <strong>green marker</strong> to the <strong>red marker</strong>.
+      </p>
+
+      <div class="keep-left-rule-box" id="keepLeftTipBox">
+        <strong>TfL Regulation Reminder:</strong>
+        Always keep to the left side of the road. On dual carriageways, do not cross central reservations.
+      </div>
+
+      <div class="sidebar-meta-box">
+        <div class="meta-row">
+          <span class="meta-label">Exercise Progress:</span>
+          <span class="meta-value" id="metaProgress">1 of 18</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Tile Zoom Scale:</span>
+          <span class="meta-value" id="metaZoom">Zoom 8</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Drawing Status:</span>
+          <span class="meta-value" id="metaDrawStatus" style="color:#2e7d32">Pan Mode</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Points Placed:</span>
+          <span class="meta-value" id="metaPoints">0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-tips">
+        <strong>How to Draw:</strong><br>
+        1. Click <strong>DRAW</strong> to enter STOP mode.<br>
+        2. Click to place route vertices.<br>
+        3. Drag (>5px) still pans the map.<br>
+        4. Right-click or <strong>BACK</strong> undoes last point.<br>
+        5. Press <strong>Alt + C</strong> to calibrate pins.
+      </div>
+    </aside>
+
+    <!-- 3. Right Interactive Map Area -->
+    <main id="mapViewport">
+      <!-- Top 5-Button Exam Control Bar -->
+      <nav id="examControlBar" aria-label="Exam Controls">
+        <button id="btnDraw" class="exam-btn" type="button" title="Toggle Drawing Mode">DRAW</button>
+        <button id="btnBack" class="exam-btn" type="button" title="Remove Last Point">BACK</button>
+        <button id="btnDelete" class="exam-btn" type="button" title="Clear All Route Points">DELETE</button>
+        <button id="btnBright" class="exam-btn" type="button" title="Toggle Map Brightness">BRIGHT</button>
+        <button id="btnHome" class="exam-btn" type="button" title="Reset View to Starting Home">HOME</button>
+      </nav>
+
+      <!-- Leaflet Map Canvas -->
+      <div id="map"></div>
+
+      <!-- Mouse Cursor Follower & Tooltip -->
+      <div id="cursorFollower" class="cursor-follower"></div>
+      <div id="cursorTooltip" class="cursor-tooltip">Click to start drawing line</div>
+
+      <!-- "Keeping Left" 7x7px Solid Blue Indicator Box -->
+      <div id="keepLeftBox" class="keep-left-box"></div>
+
+      <!-- Pin Calibrator Floating Launcher -->
+      <button id="calibratorLauncher" type="button" title="Open Pin Calibrator (Alt + C)">
+        <span>📍 Pin Calibrator (Alt+C)</span>
+      </button>
+
+      <!-- In-Browser Pin Calibrator Floating Toolbar -->
+      <div id="calibratorToolbar" role="dialog" aria-label="Pin Calibrator Toolbar">
+        <div class="cal-header">
+          <span class="cal-title">📍 Pin Calibrator</span>
+          <button class="cal-close" id="btnCalClose" type="button">&times;</button>
+        </div>
+        <p class="cal-status-text" id="calStatusText">
+          Select a tool below, then click on the map to set the exact street position. Overrides save to localStorage without modifying files on disk.
+        </p>
+        <div class="cal-buttons">
+          <button class="cal-btn" id="btnCalSetStart" type="button">🟢 Set Start Pin</button>
+          <button class="cal-btn" id="btnCalSetEnd" type="button">🔴 Set End Pin</button>
+          <button class="cal-btn" id="btnCalSetHome" type="button">🎯 Set Home View</button>
+          <button class="cal-btn" id="btnCalCopy" type="button">📋 Copy JSON</button>
+        </div>
+        <div class="cal-coords-box">
+          <div>Start: <strong id="calStartCoords">[0, 0]</strong></div>
+          <div>End: <strong id="calEndCoords">[0, 0]</strong></div>
+          <div>Home: <strong id="calHomeCoords">[0, 0] @ z8</strong></div>
+        </div>
+        <div class="cal-action-row">
+          <button class="cal-action-btn btn-cal-save" id="btnCalSave" type="button">Save Overrides</button>
+          <button class="cal-action-btn btn-cal-reset" id="btnCalReset" type="button">Reset Defaults</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 4. Bottom Footer -->
+    <footer id="bottomFooter">
+      <a id="answerLink" href="javascript:void(0)" title="Open Answer Tab">Click here to view answer in a new tab</a>
+      <button id="btnNext" type="button">Next</button>
+    </footer>
+
+  </div>
+
+  <!-- 5. Quiz Completion Modal -->
+  <div id="quizOverlay" role="dialog" aria-modal="true">
+    <div class="quiz-card">
+      <h2>Exercise Completed!</h2>
+      <p>Congratulations, you have completed this route practice scenario for Smart Taxi Solutions Ltd training.</p>
+      <div class="progress-bar-bg">
+        <i id="progressBarFill" class="progress-bar-fill"></i>
+      </div>
+      <button id="btnContinueQuiz" type="button">Continue to Next Topic</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =========================================================================
+         1. EXERCISE REGISTRY & TOPOGRAPHICAL METADATA
+         ========================================================================= */
+      var EXERCISES = [
+        {
+          id: 'KeepingLeft16Oct4_q1',
+          folder: 'KeepingLeft16Oct4',
+          topic: 'Basics',
+          topicTitle: 'Keeping Left',
+          name: 'Bellevue Rd to Bolingbroke Grove',
+          instructions: 'Practice keeping left. Draw a route from the green marker on Bellevue Road to the red marker on Bolingbroke Grove.',
+          defaultHomeCenter: [98.42, 113.65],
+          defaultHomeZoom: 8,
+          defaultStart: [98.768, 113.521],
+          defaultEnd: [97.047, 113.992],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: [
+            [98.768, 113.521], [98.620, 113.545], [98.475, 113.575], [98.355, 113.625],
+            [98.300, 113.675], [98.245, 113.725], [98.130, 113.795], [97.980, 113.880],
+            [97.830, 113.955], [97.680, 114.030], [97.580, 114.020], [97.460, 113.980],
+            [97.350, 113.955], [97.230, 113.930], [97.120, 113.960], [97.047, 113.992]
+          ]
+        },
+        {
+          id: 'KeepingLeft16Oct4_q2',
+          folder: 'KeepingLeft16Oct4',
+          topic: 'Basics',
+          topicTitle: 'Keeping Left',
+          name: 'Nightingale Lane East to West',
+          instructions: 'Practice keeping left. Draw a route from the green marker to the red marker along Nightingale Lane.',
+          defaultHomeCenter: [97.04, 115.18],
+          defaultHomeZoom: 8,
+          defaultStart: [96.420, 116.320],
+          defaultEnd: [97.660, 114.050],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: [
+            [96.420, 116.320], [96.480, 116.080], [96.580, 115.780], [96.720, 115.400],
+            [96.900, 115.000], [97.100, 114.650], [97.300, 114.350], [97.500, 114.150],
+            [97.660, 114.050]
+          ]
+        },
+        {
+          id: 'KeepingLeft16Oct4_q3',
+          folder: 'KeepingLeft16Oct4',
+          topic: 'Basics',
+          topicTitle: 'Keeping Left',
+          name: 'Rowfant Rd to Bellevue Rd',
+          instructions: 'Practice keeping left. Draw a route from Rowfant Road to Bellevue Road.',
+          defaultHomeCenter: [98.53, 114.31],
+          defaultHomeZoom: 8,
+          defaultStart: [98.700, 115.000],
+          defaultEnd: [98.475, 113.575],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: [
+            [98.700, 115.000], [98.620, 114.780], [98.500, 114.500], [98.380, 114.150],
+            [98.245, 113.725], [98.300, 113.675], [98.475, 113.575]
+          ]
+        },
+        {
+          id: 'KeepingLeft330',
+          folder: 'KeepingLeft330',
+          topic: 'Basics',
+          topicTitle: 'Keeping Left (Zoom 9 High Detail)',
+          name: 'Keeping Left — High Detail Simulation',
+          instructions: 'High-detail exam simulation with full continuous scaling up to Zoom 9. Practice keeping left between the markers.',
+          defaultHomeCenter: [97.00, 115.50],
+          defaultHomeZoom: 8,
+          defaultStart: [97.450, 115.200],
+          defaultEnd: [96.650, 115.800],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'CityRoute',
+          folder: 'CityRoute',
+          topic: 'Route Planning',
+          topicTitle: 'City Route',
+          name: 'City Route Navigation',
+          instructions: 'Draw a direct, legal route through the City of London from the green marker to the red marker.',
+          defaultHomeCenter: [80.00, 124.00],
+          defaultHomeZoom: 5,
+          defaultStart: [78.50, 120.00],
+          defaultEnd: [81.50, 128.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          id: 'ClosedRoadsRoutes',
+          folder: 'ClosedRoadsRoutes',
+          topic: 'Special Regulations',
+          topicTitle: 'Closed Roads',
+          name: 'Navigating Around Closed Roads',
+          instructions: 'Plan an alternative route avoiding road closures and barrier gates. Follow all turning restrictions.',
+          defaultHomeCenter: [70.00, 136.00],
+          defaultHomeZoom: 6,
+          defaultStart: [68.50, 134.00],
+          defaultEnd: [71.50, 138.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          id: 'NavigatingCentralReservations',
+          folder: 'NavigatingCentralReservations',
+          topic: 'Divided Highways',
+          topicTitle: 'Central Reservations',
+          name: 'Navigating Central Reservations',
+          instructions: 'Dual carriageway practice. Do not cross solid central reservations or unbroken physical barriers.',
+          defaultHomeCenter: [88.00, 80.00],
+          defaultHomeZoom: 6,
+          defaultStart: [86.00, 78.50],
+          defaultEnd: [90.00, 81.50],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          id: 'NavigatingRoadsOnTop',
+          folder: 'NavigatingRoadsOnTop',
+          topic: 'Multi-Level Roads',
+          topicTitle: 'Roads On Top',
+          name: 'Navigating Roads on Top (Overpasses)',
+          instructions: 'Distinguish elevated flyovers from surface roads below. Only join or exit via designated slip roads.',
+          defaultHomeCenter: [62.00, 102.00],
+          defaultHomeZoom: 6,
+          defaultStart: [60.00, 99.00],
+          defaultEnd: [64.00, 105.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          id: 'PassingFootbridge',
+          folder: 'PassingFootbridge',
+          topic: 'Infrastructure',
+          topicTitle: 'Footbridges',
+          name: 'Passing Footbridges',
+          instructions: 'Vehicles cannot cross pedestrian footbridges. Remain on designated public vehicular roadways.',
+          defaultHomeCenter: [64.00, 100.00],
+          defaultHomeZoom: 6,
+          defaultStart: [62.50, 98.50],
+          defaultEnd: [65.50, 101.50],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          id: 'PlotADirectRoute',
+          folder: 'PlotADirectRoute',
+          topic: 'Route Planning',
+          topicTitle: 'Direct Route',
+          name: 'Plot a Direct Route',
+          instructions: 'Draw the most direct, practical route from start to finish without unnecessary deviations.',
+          defaultHomeCenter: [82.00, 134.00],
+          defaultHomeZoom: 6,
+          defaultStart: [80.00, 131.00],
+          defaultEnd: [84.00, 137.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          id: 'Tunnel',
+          folder: 'Tunnel',
+          topic: 'Underground Infrastructure',
+          topicTitle: 'Tunnel Route',
+          name: 'Tunnel Approaches & Transit',
+          instructions: 'Navigate tunnel entrances and egress points correctly according to one-way bore directions.',
+          defaultHomeCenter: [82.00, 134.00],
+          defaultHomeZoom: 6,
+          defaultStart: [80.50, 132.50],
+          defaultEnd: [83.50, 135.50],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          id: 'UnmarkedOneWays',
+          folder: 'UnmarkedOneWays',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'Unmarked One-Ways',
+          name: 'Navigating Unmarked One-Ways',
+          instructions: 'Observe directional flow arrows on street cartography to avoid driving contraflow.',
+          defaultHomeCenter: [84.25, 135.00],
+          defaultHomeZoom: 8,
+          defaultStart: [84.00, 134.80],
+          defaultEnd: [84.60, 135.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'AvoidingDeadEnds',
+          folder: 'AvoidingDeadEnds',
+          topic: 'Route Planning',
+          topicTitle: 'Avoiding Dead Ends',
+          name: 'Avoiding Dead Ends (Cul-de-sacs)',
+          instructions: 'Avoid entering dead-end streets and residential cul-de-sacs when plotting through-routes.',
+          defaultHomeCenter: [73.00, 98.50],
+          defaultHomeZoom: 8,
+          defaultStart: [72.50, 98.00],
+          defaultEnd: [73.80, 99.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'AvoidingRestrictedZone',
+          folder: 'AvoidingRestrictedZone',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'Restricted Zones',
+          name: 'Avoiding Restricted Access Zones',
+          instructions: 'Plot around restricted zones, camera-enforced permit streets, and pedestrianized segments.',
+          defaultHomeCenter: [84.00, 107.00],
+          defaultHomeZoom: 8,
+          defaultStart: [83.20, 106.50],
+          defaultEnd: [84.80, 107.50],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'NavigatingFlyoverRoundabouts',
+          folder: 'NavigatingFlyoverRoundabouts',
+          topic: 'Junctions',
+          topicTitle: 'Flyover Roundabouts',
+          name: 'Navigating Flyover Roundabouts',
+          instructions: 'Navigate grade-separated junctions and multi-lane roundabout slip approaches.',
+          defaultHomeCenter: [85.00, 104.00],
+          defaultHomeZoom: 8,
+          defaultStart: [84.20, 103.50],
+          defaultEnd: [85.80, 104.50],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'PassingFootpath',
+          folder: 'PassingFootpath',
+          topic: 'Infrastructure',
+          topicTitle: 'Passing Footpath',
+          name: 'Passing Footpaths (Pedestrian Only)',
+          instructions: 'Public footpaths are pedestrian-only thoroughfares. Do not route vehicles across them.',
+          defaultHomeCenter: [79.00, 115.00],
+          defaultHomeZoom: 8,
+          defaultStart: [78.20, 114.50],
+          defaultEnd: [79.80, 115.50],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'AvoidingPedestrianZones',
+          folder: 'AvoidingPedestrianZones',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'Pedestrian Zones',
+          name: 'Avoiding Pedestrian Zones',
+          instructions: 'Identify and route cleanly around pedestrian shopping precincts and pedestrian malls.',
+          defaultHomeCenter: [76.00, 129.00],
+          defaultHomeZoom: 9,
+          defaultStart: [75.60, 128.80],
+          defaultEnd: [76.40, 129.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'OneWayRoadsV1',
+          folder: 'OneWayRoadsV1',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'One-Way Roads',
+          name: 'One-Way Roads Navigation',
+          instructions: 'Strictly follow the flow of traffic indicated by one-way directional indicators.',
+          defaultHomeCenter: [70.25, 135.50],
+          defaultHomeZoom: 9,
+          defaultStart: [70.00, 135.20],
+          defaultEnd: [70.60, 135.80],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'PassingRailwayLines',
+          folder: 'PassingRailwayLines',
+          topic: 'Infrastructure',
+          topicTitle: 'Railway Crossings',
+          name: 'Passing Railway Lines',
+          instructions: 'Cross railway lines only via certified road bridges, road tunnels, or public level crossings.',
+          defaultHomeCenter: [79.00, 132.75],
+          defaultHomeZoom: 9,
+          defaultStart: [78.60, 132.30],
+          defaultEnd: [79.40, 133.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          id: 'RoundaboutsV1',
+          folder: 'RoundaboutsV1',
+          topic: 'Junctions',
+          topicTitle: 'Roundabouts',
+          name: 'Roundabouts Navigation V1',
+          instructions: 'Circulate clockwise around roundabouts and maintain lane discipline to your designated exit.',
+          defaultHomeCenter: [74.00, 84.50],
+          defaultHomeZoom: 9,
+          defaultStart: [73.60, 84.20],
+          defaultEnd: [74.40, 84.80],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        }
+      ];
+
+      // Attach runtime state
+      EXERCISES.forEach(function (ex) {
+        ex.route = [];
+        ex.start = ex.defaultStart.slice();
+        ex.end = ex.defaultEnd.slice();
+        ex.homeCenter = ex.defaultHomeCenter.slice();
+        ex.homeZoom = ex.defaultHomeZoom;
+      });
+
+      /* Load LocalStorage Pin Overrides (Non-Destructive) */
+      function loadSavedPinOverrides() {
+        try {
+          var saved = localStorage.getItem('smart_taxi_pin_overrides');
+          if (saved) {
+            var overrides = JSON.parse(saved);
+            EXERCISES.forEach(function (ex) {
+              if (overrides[ex.id]) {
+                var o = overrides[ex.id];
+                if (o.start) ex.start = o.start;
+                if (o.end) ex.end = o.end;
+                if (o.homeCenter) ex.homeCenter = o.homeCenter;
+                if (o.homeZoom) ex.homeZoom = o.homeZoom;
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Could not load pin overrides from localStorage', e);
+        }
+      }
+      loadSavedPinOverrides();
+
+      /* =========================================================================
+         2. COORDINATE SYSTEM & CRS LOCK (Zoom 4 to 9)
+         ========================================================================= */
+      var CRS = L.extend({}, L.CRS.Simple, {
+        transformation: new L.Transformation(1, 0, 1, 0),
+        scale: function (z) { return Math.pow(2, z); },
+        zoom: function (s) { return Math.log(s) / Math.LN2; },
+        infinite: true
+      });
+
+      /* =========================================================================
+         3. EXACT TEARDROP PIN GENERATOR
+         ========================================================================= */
+      function makeTeardropPin(type) {
+        var isGreen = (type === 'start' || type === 'green');
+        var fill = isGreen ? '#2ecc71' : '#e74c3c';
+        var stroke = isGreen ? '#1f5a32' : '#781e16';
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="34" viewBox="0 0 24 36">' +
+          '<path d="M 12 35.5 C 11 31.5 2 19.5 2 11 A 10 10 0 1 1 22 11 C 22 19.5 13 31.5 12 35.5 Z" ' +
+          'fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+          '<circle cx="12" cy="11" r="3.5" fill="#111111"/>' +
+          '</svg>';
+        return L.divIcon({
+          className: 'teardrop-marker',
+          html: '<div style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); width: 22px; height: 34px; line-height: 0;">' + svg + '</div>',
+          iconSize: [22, 34],
+          iconAnchor: [11, 34]
+        });
+      }
+
+      /* =========================================================================
+         4. MULTI-SOURCE TILE LOADER WITH FALLBACK
+         ========================================================================= */
+      var BLANK_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      var GCS_TEMPLATE = 'https://storage.googleapis.com/map-serpractice-photos/tile_{z}_{x}-{y}.png';
+
+      var MultiSourceTileLayer = L.TileLayer.extend({
+        createTile: function (coords, done) {
+          var tile = document.createElement('img');
+          tile.alt = '';
+          tile.setAttribute('role', 'presentation');
+
+          var folder = this.options.folder || 'KeepingLeft16Oct4';
+          var z = coords.z, x = coords.x, y = coords.y;
+
+          // Priority fallback chain:
+          // 1. Current exercise folder
+          // 2. all_tiles folder
+          // 3. KeepingLeft16Oct4 folder
+          // 4. Remote GCS photo storage fallback
+          // 5. Blank 1x1 GIF (renders clean #e5e3df background)
+          var candidates = [
+            'exercises/' + folder + '/tiles/' + z + '/' + x + '/' + y + '.png',
+            'exercises/all_tiles/tiles/' + z + '/' + x + '/' + y + '.png',
+            'exercises/KeepingLeft16Oct4/tiles/' + z + '/' + x + '/' + y + '.png',
+            GCS_TEMPLATE.replace('{z}', z).replace('{x}', x).replace('{y}', y)
+          ];
+
+          // Deduplicate
+          var sources = [];
+          candidates.forEach(function (s) {
+            if (sources.indexOf(s) === -1) sources.push(s);
+          });
+
+          var index = 0;
+          function tryNext() {
+            if (index >= sources.length) {
+              tile.src = BLANK_GIF;
+              done(null, tile);
+              return;
+            }
+            var nextSrc = sources[index++];
+            tile.src = nextSrc;
+          }
+
+          tile.onload = function () {
+            done(null, tile);
+          };
+
+          tile.onerror = function () {
+            tryNext();
+          };
+
+          tryNext();
+          return tile;
+        }
+      });
+
+      /* =========================================================================
+         5. MAP INITIALIZATION
+         ========================================================================= */
+      var urlParams = new URLSearchParams(window.location.search);
+      var paramExercise = urlParams.get('exercise');
+      var paramAnswer = urlParams.get('answer');
+
+      var currentExerciseIndex = 0;
+      if (paramExercise) {
+        for (var idx = 0; idx < EXERCISES.length; idx++) {
+          if (EXERCISES[idx].id === paramExercise || EXERCISES[idx].folder === paramExercise) {
+            currentExerciseIndex = idx;
+            break;
+          }
+        }
+      }
+
+      var currentEx = EXERCISES[currentExerciseIndex];
+
+      var map = L.map('map', {
+        crs: CRS,
+        minZoom: 4,
+        maxZoom: 9,
+        zoom: currentEx.homeZoom,
+        center: currentEx.homeCenter,
+        attributionControl: false,
+        zoomSnap: 1,
+        zoomControl: true
+      });
+
+      var tileLayer = new MultiSourceTileLayer('', {
+        folder: currentEx.folder,
+        tileSize: 256,
+        minZoom: 4,
+        maxZoom: 9,
+        noWrap: true,
+        opacity: 1
+      }).addTo(map);
+
+      // Route Polyline (#0088cc, 3.5px)
+      var routePolyline = L.polyline([], {
+        color: '#0088cc',
+        weight: 3.5,
+        opacity: 0.88,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(map);
+
+      // Answer Polyline (Green #2ecc71, 4px)
+      var answerPolyline = L.polyline([], {
+        color: '#2ecc71',
+        weight: 4,
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(map);
+
+      var startMarker = null;
+      var endMarker = null;
+
+      /* =========================================================================
+         6. UI ELEMENTS & DOM REFERENCES
+         ========================================================================= */
+      var $ = function (id) { return document.getElementById(id); };
+
+      var exerciseSelector = $('exerciseSelector');
+      var bcTopic = $('bcTopic');
+      var bcExercise = $('bcExercise');
+      var exerciseTitle = $('exerciseTitle');
+      var exerciseInstructions = $('exerciseInstructions');
+      var keepLeftTipBox = $('keepLeftTipBox');
+      var metaProgress = $('metaProgress');
+      var metaZoom = $('metaZoom');
+      var metaDrawStatus = $('metaDrawStatus');
+      var metaPoints = $('metaPoints');
+
+      var btnDraw = $('btnDraw');
+      var btnBack = $('btnBack');
+      var btnDelete = $('btnDelete');
+      var btnBright = $('btnBright');
+      var btnHome = $('btnHome');
+      var btnNext = $('btnNext');
+      var answerLink = $('answerLink');
+
+      var mapContainer = $('map');
+      var mapViewport = $('mapViewport');
+      var cursorFollower = $('cursorFollower');
+      var cursorTooltip = $('cursorTooltip');
+      var keepLeftBox = $('keepLeftBox');
+
+      // Calibrator elements
+      var calibratorToolbar = $('calibratorToolbar');
+      var calibratorLauncher = $('calibratorLauncher');
+      var btnCalClose = $('btnCalClose');
+      var btnCalSetStart = $('btnCalSetStart');
+      var btnCalSetEnd = $('btnCalSetEnd');
+      var btnCalSetHome = $('btnCalSetHome');
+      var btnCalCopy = $('btnCalCopy');
+      var btnCalSave = $('btnCalSave');
+      var btnCalReset = $('btnCalReset');
+      var calStartCoords = $('calStartCoords');
+      var calEndCoords = $('calEndCoords');
+      var calHomeCoords = $('calHomeCoords');
+      var calStatusText = $('calStatusText');
+
+      // Modal elements
+      var quizOverlay = $('quizOverlay');
+      var progressBarFill = $('progressBarFill');
+      var btnContinueQuiz = $('btnContinueQuiz');
+
+      /* =========================================================================
+         7. POPULATE EXERCISE DROPDOWN
+         ========================================================================= */
+      function populateDropdown() {
+        exerciseSelector.innerHTML = '';
+
+        // Group by topic
+        var groups = {};
+        EXERCISES.forEach(function (ex, i) {
+          if (!groups[ex.topic]) groups[ex.topic] = [];
+          groups[ex.topic].push({ ex: ex, index: i });
+        });
+
+        for (var topic in groups) {
+          var optGroup = document.createElement('optgroup');
+          optGroup.label = topic;
+          groups[topic].forEach(function (item) {
+            var opt = document.createElement('option');
+            opt.value = item.index;
+            opt.textContent = item.ex.name;
+            if (item.index === currentExerciseIndex) opt.selected = true;
+            optGroup.appendChild(opt);
+          });
+          exerciseSelector.appendChild(optGroup);
+        }
+      }
+      populateDropdown();
+
+      exerciseSelector.addEventListener('change', function () {
+        loadExercise(parseInt(this.value, 10));
+      });
+
+      /* =========================================================================
+         8. LOAD & SWITCH EXERCISE
+         ========================================================================= */
+      var isDrawing = false;
+      var isBright = true;
+      var isHoveringLastVertex = false;
+
+      function loadExercise(index) {
+        currentExerciseIndex = index;
+        currentEx = EXERCISES[index];
+        exerciseSelector.value = index;
+
+        // Reset drawing state
+        setDrawing(false);
+
+        // Update Breadcrumb & Sidebar
+        bcTopic.textContent = currentEx.topic;
+        bcExercise.textContent = currentEx.name;
+        exerciseTitle.textContent = currentEx.name;
+        exerciseInstructions.innerHTML = currentEx.instructions;
+        metaProgress.textContent = (index + 1) + ' of ' + EXERCISES.length;
+        metaZoom.textContent = 'Zoom ' + map.getZoom();
+        metaPoints.textContent = currentEx.route.length;
+
+        // Toggle Keep-Left Box Tip
+        if (currentEx.folder.indexOf('KeepingLeft') !== -1) {
+          keepLeftTipBox.style.display = 'block';
+        } else {
+          keepLeftTipBox.style.display = 'none';
+        }
+
+        // Update Tiles
+        tileLayer.options.folder = currentEx.folder;
+        tileLayer.redraw();
+
+        // Update Markers
+        if (startMarker) map.removeLayer(startMarker);
+        if (endMarker) map.removeLayer(endMarker);
+
+        startMarker = L.marker(currentEx.start, {
+          icon: makeTeardropPin('start'),
+          interactive: false,
+          keyboard: false
+        }).addTo(map);
+
+        endMarker = L.marker(currentEx.end, {
+          icon: makeTeardropPin('end'),
+          interactive: false,
+          keyboard: false
+        }).addTo(map);
+
+        // Update Polyline
+        routePolyline.setLatLngs(currentEx.route);
+
+        // Update Answer Layer if in answer mode
+        if (paramAnswer) {
+          if (currentEx.answer) {
+            answerPolyline.setLatLngs(currentEx.answer);
+          } else {
+            answerPolyline.setLatLngs([]);
+          }
+        }
+
+        // Pan & Zoom to Home
+        map.setView(currentEx.homeCenter, currentEx.homeZoom, { animate: false });
+
+        // Update Calibrator Live Display
+        updateCalibratorUI();
+        updateKeepLeftIndicator();
+      }
+
+      /* =========================================================================
+         9. EXACT DRAWING MECHANICS & "KEEPING LEFT" INDICATOR
+         ========================================================================= */
+      function setDrawing(active) {
+        isDrawing = active;
+        isHoveringLastVertex = false;
+
+        btnDraw.textContent = active ? 'STOP' : 'DRAW';
+        btnDraw.classList.toggle('stop-mode', active);
+        mapContainer.classList.toggle('drawing-mode', active);
+
+        metaDrawStatus.textContent = active ? 'Drawing Mode' : 'Pan Mode';
+        metaDrawStatus.style.color = active ? '#b78103' : '#2e7d32';
+
+        if (!active) {
+          cursorFollower.style.display = 'none';
+          cursorTooltip.style.display = 'none';
+        } else {
+          cursorFollower.style.display = 'block';
+          cursorTooltip.style.display = 'block';
+          updateTooltipText();
+        }
+      }
+
+      function updateTooltipText() {
+        if (!isDrawing) return;
+        var pts = currentEx.route;
+        if (isHoveringLastVertex) {
+          cursorTooltip.textContent = 'Click last point to finish line';
+        } else if (pts.length === 0) {
+          cursorTooltip.textContent = 'Click to start drawing line';
+        } else {
+          cursorTooltip.textContent = 'Click to continue drawing line';
+        }
+      }
+
+      /* "Keeping Left" Blue Indicator Box Calculation:
+         Offset 10px to the LEFT side of the line direction vector at the tip. */
+      function updateKeepLeftIndicator() {
+        var pts = currentEx.route;
+        if (pts.length < 2) {
+          keepLeftBox.style.display = 'none';
+          return;
+        }
+
+        var pPrev = map.latLngToContainerPoint(pts[pts.length - 2]);
+        var pTip = map.latLngToContainerPoint(pts[pts.length - 1]);
+
+        var dx = pTip.x - pPrev.x;
+        var dy = pTip.y - pPrev.y;
+        var len = Math.hypot(dx, dy);
+
+        if (len === 0) {
+          keepLeftBox.style.display = 'none';
+          return;
+        }
+
+        // Unit vector pointing forward
+        var ux = dx / len;
+        var uy = dy / len;
+
+        // Normal vector pointing 90 degrees LEFT of the forward direction
+        // Screen coords: x right, y down -> left normal is (uy, -ux)
+        var nx = uy;
+        var ny = -ux;
+
+        // Offset 10px to the left of the tip
+        var boxDist = 10;
+        var bx = pTip.x + (nx * boxDist);
+        var by = pTip.y + (ny * boxDist);
+
+        keepLeftBox.style.left = bx + 'px';
+        keepLeftBox.style.top = by + 'px';
+        keepLeftBox.style.display = 'block';
+      }
+
+      function checkHoverLastVertex(clientX, clientY) {
+        var pts = currentEx.route;
+        if (!isDrawing || pts.length === 0) {
+          isHoveringLastVertex = false;
+          return;
+        }
+        var pLast = map.latLngToContainerPoint(pts[pts.length - 1]);
+        var rect = mapViewport.getBoundingClientRect();
+        var mx = clientX - rect.left;
+        var my = clientY - rect.top;
+        isHoveringLastVertex = (Math.hypot(pLast.x - mx, pLast.y - my) <= 12);
+      }
+
+      function updateFollowerPosition(clientX, clientY) {
+        if (!isDrawing) return;
+        var rect = mapViewport.getBoundingClientRect();
+        var mx = clientX - rect.left;
+        var my = clientY - rect.top;
+
+        cursorFollower.style.left = mx + 'px';
+        cursorFollower.style.top = my + 'px';
+        cursorTooltip.style.left = mx + 'px';
+        cursorTooltip.style.top = my + 'px';
+      }
+
+      mapViewport.addEventListener('mousemove', function (e) {
+        if (isDrawing) {
+          checkHoverLastVertex(e.clientX, e.clientY);
+          updateFollowerPosition(e.clientX, e.clientY);
+          updateTooltipText();
+        }
+      });
+
+      mapViewport.addEventListener('mouseleave', function () {
+        cursorFollower.style.display = 'none';
+        cursorTooltip.style.display = 'none';
+        isHoveringLastVertex = false;
+      });
+
+      mapViewport.addEventListener('mouseenter', function (e) {
+        if (isDrawing) {
+          cursorFollower.style.display = 'block';
+          cursorTooltip.style.display = 'block';
+          checkHoverLastVertex(e.clientX, e.clientY);
+          updateFollowerPosition(e.clientX, e.clientY);
+          updateTooltipText();
+        }
+      });
+
+      // Drag vs Click Tracking (>5px threshold)
+      var downPos = null;
+
+      mapViewport.addEventListener('mousedown', function (e) {
+        if (e.button === 0) {
+          downPos = { x: e.clientX, y: e.clientY };
+        }
+      });
+
+      mapViewport.addEventListener('mouseup', function (e) {
+        if (e.button !== 0 || !downPos) return;
+        var dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+        downPos = null;
+
+        // If dragged > 5px, it was a pan: ignore vertex placement
+        if (dist > 5) return;
+
+        // Calibrator intercept mode
+        if (calibratorActiveMode) {
+          handleCalibratorClick(e);
+          return;
+        }
+
+        // If not in drawing mode, do nothing
+        if (!isDrawing) return;
+
+        // Clicking last point finishes drawing
+        if (isHoveringLastVertex) {
+          isHoveringLastVertex = false;
+          setDrawing(false);
+          return;
+        }
+
+        var latlng = map.mouseEventToLatLng(e);
+
+        // Snap to start pin if first point is clicked close to start pin
+        var pStart = map.latLngToContainerPoint(currentEx.start);
+        var rect = mapViewport.getBoundingClientRect();
+        var clickX = e.clientX - rect.left;
+        var clickY = e.clientY - rect.top;
+        var distToStart = Math.hypot(clickX - pStart.x, clickY - pStart.y);
+
+        var pt = (currentEx.route.length === 0 && distToStart <= 30)
+          ? [currentEx.start[0], currentEx.start[1]]
+          : [latlng.lat, latlng.lng];
+
+        currentEx.route.push(pt);
+        routePolyline.setLatLngs(currentEx.route);
+        metaPoints.textContent = currentEx.route.length;
+
+        updateKeepLeftIndicator();
+        updateTooltipText();
+      });
+
+      // Right-click removes last vertex
+      function removeLastVertex() {
+        if (currentEx.route.length > 0) {
+          currentEx.route.pop();
+          routePolyline.setLatLngs(currentEx.route);
+          metaPoints.textContent = currentEx.route.length;
+          isHoveringLastVertex = false;
+          updateKeepLeftIndicator();
+          updateTooltipText();
+        }
+      }
+
+      mapViewport.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        removeLastVertex();
+      });
+
+      // Keep indicator aligned on pan and zoom
+      map.on('move zoom viewreset', function () {
+        updateKeepLeftIndicator();
+        metaZoom.textContent = 'Zoom ' + map.getZoom();
+      });
+
+      /* =========================================================================
+         10. EXAM CONTROL BAR BUTTONS
+         ========================================================================= */
+      btnDraw.addEventListener('click', function () {
+        setDrawing(!isDrawing);
+      });
+
+      btnBack.addEventListener('click', function () {
+        removeLastVertex();
+      });
+
+      btnDelete.addEventListener('click', function () {
+        if (confirm('Clear the current route?')) {
+          currentEx.route = [];
+          routePolyline.setLatLngs([]);
+          metaPoints.textContent = '0';
+          updateKeepLeftIndicator();
+          setDrawing(false);
+        }
+      });
+
+      btnBright.addEventListener('click', function () {
+        isBright = !isBright;
+        tileLayer.setOpacity(isBright ? 1.0 : 0.35);
+        btnBright.classList.toggle('dimmed', !isBright);
+      });
+
+      btnHome.addEventListener('click', function () {
+        map.setView(currentEx.homeCenter, currentEx.homeZoom);
+      });
+
+      /* =========================================================================
+         11. FOOTER: ANSWER & NEXT BUTTONS
+         ========================================================================= */
+      answerLink.addEventListener('click', function () {
+        var base = window.location.href.split('?')[0].split('#')[0];
+        var url = base + '?exercise=' + encodeURIComponent(currentEx.id) + '&answer=1';
+        window.open(url, '_blank');
+      });
+
+      btnNext.addEventListener('click', function () {
+        if (currentExerciseIndex < EXERCISES.length - 1) {
+          loadExercise(currentExerciseIndex + 1);
+        } else {
+          finishQuiz();
+        }
+      });
+
+      function finishQuiz() {
+        quizOverlay.classList.add('show');
+        progressBarFill.style.width = '0%';
+        btnContinueQuiz.style.display = 'none';
+
+        setTimeout(function () {
+          progressBarFill.style.width = '100%';
+        }, 60);
+
+        setTimeout(function () {
+          btnContinueQuiz.style.display = 'inline-block';
+        }, 2400);
+      }
+
+      btnContinueQuiz.addEventListener('click', function () {
+        quizOverlay.classList.remove('show');
+        loadExercise(0);
+      });
+
+      /* =========================================================================
+         12. IN-BROWSER PIN CALIBRATOR (Alt + C)
+         ========================================================================= */
+      var calibratorActiveMode = null; // 'start', 'end', or null
+
+      function toggleCalibrator(open) {
+        var shouldOpen = (open !== undefined) ? open : (calibratorToolbar.style.display !== 'block');
+        calibratorToolbar.style.display = shouldOpen ? 'block' : 'none';
+        if (!shouldOpen) {
+          setCalibratorMode(null);
+        } else {
+          updateCalibratorUI();
+        }
+      }
+
+      function setCalibratorMode(mode) {
+        calibratorActiveMode = mode;
+        btnCalSetStart.classList.toggle('active', mode === 'start');
+        btnCalSetEnd.classList.toggle('active', mode === 'end');
+
+        if (mode === 'start') {
+          calStatusText.innerHTML = '🟢 <strong>Start Pin Mode:</strong> Click anywhere on the map to place the Green Start Pin.';
+        } else if (mode === 'end') {
+          calStatusText.innerHTML = '🔴 <strong>End Pin Mode:</strong> Click anywhere on the map to place the Red End Pin.';
+        } else {
+          calStatusText.innerHTML = 'Select a pin mode above, then click on the map to reposition pins non-destructively.';
+        }
+      }
+
+      function updateCalibratorUI() {
+        calStartCoords.textContent = '[' + currentEx.start[0].toFixed(3) + ', ' + currentEx.start[1].toFixed(3) + ']';
+        calEndCoords.textContent = '[' + currentEx.end[0].toFixed(3) + ', ' + currentEx.end[1].toFixed(3) + ']';
+        calHomeCoords.textContent = '[' + currentEx.homeCenter[0].toFixed(2) + ', ' + currentEx.homeCenter[1].toFixed(2) + '] @ z' + currentEx.homeZoom;
+      }
+
+      function handleCalibratorClick(e) {
+        var latlng = map.mouseEventToLatLng(e);
+        var coords = [Number(latlng.lat.toFixed(3)), Number(latlng.lng.toFixed(3))];
+
+        if (calibratorActiveMode === 'start') {
+          currentEx.start = coords;
+          if (startMarker) startMarker.setLatLng(coords);
+          setCalibratorMode(null);
+          updateCalibratorUI();
+        } else if (calibratorActiveMode === 'end') {
+          currentEx.end = coords;
+          if (endMarker) endMarker.setLatLng(coords);
+          setCalibratorMode(null);
+          updateCalibratorUI();
+        }
+      }
+
+      calibratorLauncher.addEventListener('click', function () {
+        toggleCalibrator();
+      });
+
+      btnCalClose.addEventListener('click', function () {
+        toggleCalibrator(false);
+      });
+
+      btnCalSetStart.addEventListener('click', function () {
+        setCalibratorMode(calibratorActiveMode === 'start' ? null : 'start');
+      });
+
+      btnCalSetEnd.addEventListener('click', function () {
+        setCalibratorMode(calibratorActiveMode === 'end' ? null : 'end');
+      });
+
+      btnCalSetHome.addEventListener('click', function () {
+        var center = map.getCenter();
+        currentEx.homeCenter = [Number(center.lat.toFixed(2)), Number(center.lng.toFixed(2))];
+        currentEx.homeZoom = map.getZoom();
+        updateCalibratorUI();
+        alert('Home view set to current center & zoom level!');
+      });
+
+      btnCalSave.addEventListener('click', function () {
+        try {
+          var allOverrides = {};
+          try {
+            allOverrides = JSON.parse(localStorage.getItem('smart_taxi_pin_overrides')) || {};
+          } catch (e) {
+            allOverrides = {};
+          }
+          allOverrides[currentEx.id] = {
+            start: currentEx.start,
+            end: currentEx.end,
+            homeCenter: currentEx.homeCenter,
+            homeZoom: currentEx.homeZoom
+          };
+          localStorage.setItem('smart_taxi_pin_overrides', JSON.stringify(allOverrides));
+          alert('Pin coordinates saved in localStorage for ' + currentEx.name + '!');
+        } catch (err) {
+          alert('Error saving to localStorage: ' + err.message);
+        }
+      });
+
+      btnCalReset.addEventListener('click', function () {
+        if (confirm('Reset coordinates for this exercise back to defaults?')) {
+          currentEx.start = currentEx.defaultStart.slice();
+          currentEx.end = currentEx.defaultEnd.slice();
+          currentEx.homeCenter = currentEx.defaultHomeCenter.slice();
+          currentEx.homeZoom = currentEx.defaultHomeZoom;
+
+          if (startMarker) startMarker.setLatLng(currentEx.start);
+          if (endMarker) endMarker.setLatLng(currentEx.end);
+
+          try {
+            var allOverrides = JSON.parse(localStorage.getItem('smart_taxi_pin_overrides')) || {};
+            delete allOverrides[currentEx.id];
+            localStorage.setItem('smart_taxi_pin_overrides', JSON.stringify(allOverrides));
+          } catch (e) {}
+
+          updateCalibratorUI();
+          map.setView(currentEx.homeCenter, currentEx.homeZoom);
+        }
+      });
+
+      btnCalCopy.addEventListener('click', function () {
+        var exportObj = {
+          id: currentEx.id,
+          name: currentEx.name,
+          start: currentEx.start,
+          end: currentEx.end,
+          homeCenter: currentEx.homeCenter,
+          homeZoom: currentEx.homeZoom
+        };
+        var str = JSON.stringify(exportObj, null, 2);
+        navigator.clipboard.writeText(str).then(function () {
+          alert('Coordinates copied to clipboard:\n' + str);
+        }).catch(function () {
+          prompt('Copy coordinates manually:', str);
+        });
+      });
+
+      // Keyboard Shortcuts (Alt+C, D for Draw/Stop, B for Back, H for Home)
+      window.addEventListener('keydown', function (e) {
+        var activeTag = (document.activeElement && document.activeElement.tagName) || '';
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+          return;
+        }
+
+        if (e.altKey && (e.key === 'c' || e.key === 'C')) {
+          e.preventDefault();
+          toggleCalibrator();
+        } else if (e.key === 'Escape') {
+          if (isDrawing) {
+            setDrawing(false);
+          }
+          if (calibratorToolbar.style.display === 'block') {
+            toggleCalibrator(false);
+          }
+        } else if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          setDrawing(!isDrawing);
+        } else if (e.key === 'b' || e.key === 'B' || (e.ctrlKey && (e.key === 'z' || e.key === 'Z'))) {
+          e.preventDefault();
+          removeLastVertex();
+        } else if (e.key === 'h' || e.key === 'H') {
+          e.preventDefault();
+          map.setView(currentEx.homeCenter, currentEx.homeZoom);
+        }
+      });
+
+      /* =========================================================================
+         13. ANSWER MODE INITIALIZATION (?answer=1)
+         ========================================================================= */
+      if (paramAnswer) {
+        document.body.classList.add('answer-mode');
+        answerLink.textContent = 'Displaying Official Answer Route – ' + currentEx.name;
+        answerLink.style.textDecoration = 'none';
+        answerLink.style.cursor = 'default';
+        answerLink.onclick = null;
+      }
+
+      // Initial load
+      loadExercise(currentExerciseIndex);
+
+      /* =========================================================================
+         14. CUSTOMER AUTHENTICATION GATE & SESSION CONTROLLER
+         ========================================================================= */
+      var authOverlay = $('sts-auth-overlay');
+      var authTitle = $('stsAuthTitle');
+      var authSubtitle = $('stsAuthSubtitle');
+      var authAlert = $('stsAuthAlert');
+      var codeNotification = $('stsCodeNotification');
+      var codeDisplay = $('stsCodeDisplay');
+      var btnAutofill = $('stsBtnAutofill');
+
+      var formLogin = $('stsFormLogin');
+      var formSignup = $('stsFormSignup');
+      var formForgot = $('stsFormForgot');
+      var formReset = $('stsFormReset');
+
+      var userBadge = $('stsUserBadge');
+      var userNameEl = $('stsUserName');
+      var userAvatarEl = $('stsUserAvatar');
+      var btnLogout = $('stsBtnLogout');
+
+      var activeResetEmail = '';
+      var activeResetCode = '';
+
+      // Initialize default customer in localStorage if empty
+      function getCustomersDb() {
+        try {
+          var db = JSON.parse(localStorage.getItem('sts_customers_db'));
+          if (Array.isArray(db) && db.length > 0) return db;
+        } catch (e) {}
+
+        // Default seed candidate
+        var initial = [
+          {
+            name: 'TfL Practice Candidate',
+            email: 'candidate@smarttaxisolutions.co.uk',
+            password: 'password123',
+            createdAt: Date.now()
+          }
+        ];
+        localStorage.setItem('sts_customers_db', JSON.stringify(initial));
+        return initial;
+      }
+
+      function saveCustomersDb(db) {
+        localStorage.setItem('sts_customers_db', JSON.stringify(db));
+      }
+
+      function showAuthAlert(message, type) {
+        if (!message) {
+          authAlert.style.display = 'none';
+          authAlert.textContent = '';
+          authAlert.className = 'sts-auth-alert';
+          return;
+        }
+        authAlert.textContent = message;
+        authAlert.className = 'sts-auth-alert ' + (type || 'info');
+        authAlert.style.display = 'block';
+      }
+
+      // Switch Authentication Views
+      function switchAuthView(viewName) {
+        showAuthAlert('', '');
+        codeNotification.style.display = 'none';
+
+        formLogin.style.display = (viewName === 'login') ? 'block' : 'none';
+        formSignup.style.display = (viewName === 'signup') ? 'block' : 'none';
+        formForgot.style.display = (viewName === 'forgot') ? 'block' : 'none';
+        formReset.style.display = (viewName === 'reset') ? 'block' : 'none';
+
+        if (viewName === 'login') {
+          authTitle.textContent = 'Candidate Practice Portal';
+          authSubtitle.textContent = 'Sign in to access your TfL Topographical Skills simulator.';
+          setTimeout(function () { $('loginEmail').focus(); }, 50);
+        } else if (viewName === 'signup') {
+          authTitle.textContent = 'Create Student Account';
+          authSubtitle.textContent = 'Register to practice all 18 TfL Topographical exam scenarios.';
+          setTimeout(function () { $('signupName').focus(); }, 50);
+        } else if (viewName === 'forgot') {
+          authTitle.textContent = 'Reset Your Password';
+          authSubtitle.textContent = 'Enter your registered email address to receive a 6-digit verification code.';
+          setTimeout(function () { $('forgotEmail').focus(); }, 50);
+        } else if (viewName === 'reset') {
+          authTitle.textContent = 'Set New Password';
+          authSubtitle.textContent = 'Enter the 6-digit code sent to your email and choose a new password.';
+          $('stsResetEmailBadge').textContent = 'Resetting: ' + activeResetEmail;
+          setTimeout(function () { $('resetCode').focus(); }, 50);
+        }
+      }
+
+      // Eye / Eye-Slash Password Visibility Toggle
+      document.querySelectorAll('.sts-eye-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          var targetId = this.getAttribute('data-target');
+          var input = $(targetId);
+          if (!input) return;
+
+          var isPassword = (input.type === 'password');
+          input.type = isPassword ? 'text' : 'password';
+
+          var openIcon = this.querySelector('.sts-eye-open');
+          var closedIcon = this.querySelector('.sts-eye-closed');
+          if (openIcon && closedIcon) {
+            openIcon.style.display = isPassword ? 'none' : 'block';
+            closedIcon.style.display = isPassword ? 'block' : 'none';
+          }
+        });
+      });
+
+      // View Switching Links
+      $('linkToSignup').addEventListener('click', function () { switchAuthView('signup'); });
+      $('linkToForgot').addEventListener('click', function () { switchAuthView('forgot'); });
+      $('linkToLoginFromSignup').addEventListener('click', function () { switchAuthView('login'); });
+      $('linkToLoginFromForgot').addEventListener('click', function () { switchAuthView('login'); });
+      $('linkToLoginFromReset').addEventListener('click', function () { switchAuthView('login'); });
+
+      // Handle Login
+      formLogin.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('loginEmail').value.trim().toLowerCase();
+        var password = $('loginPassword').value;
+
+        if (!email || !password) {
+          showAuthAlert('Please enter both your email and password.', 'error');
+          return;
+        }
+
+        var db = getCustomersDb();
+        var user = db.find(function (u) {
+          return u.email.toLowerCase() === email && u.password === password;
+        });
+
+        if (!user) {
+          showAuthAlert('Invalid email or password. Please check your details and try again.', 'error');
+          return;
+        }
+
+        completeAuthentication({
+          name: user.name || user.email.split('@')[0],
+          email: user.email
+        });
+      });
+
+      // Handle Sign Up
+      formSignup.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var name = $('signupName').value.trim();
+        var email = $('signupEmail').value.trim().toLowerCase();
+        var password = $('signupPassword').value;
+        var confirmPassword = $('signupConfirmPassword').value;
+
+        if (!name || !email || !password || !confirmPassword) {
+          showAuthAlert('All registration fields are required.', 'error');
+          return;
+        }
+
+        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email)) {
+          showAuthAlert('Please enter a valid email address.', 'error');
+          return;
+        }
+
+        if (password.length < 6) {
+          showAuthAlert('Password must be at least 6 characters long.', 'error');
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          showAuthAlert('Passwords do not match. Please re-enter matching passwords.', 'error');
+          return;
+        }
+
+        var db = getCustomersDb();
+        var exists = db.some(function (u) { return u.email.toLowerCase() === email; });
+        if (exists) {
+          showAuthAlert('An account with this email address already exists. Please log in.', 'error');
+          return;
+        }
+
+        var newUser = {
+          name: name,
+          email: email,
+          password: password,
+          createdAt: Date.now()
+        };
+        db.push(newUser);
+        saveCustomersDb(db);
+
+        completeAuthentication({
+          name: newUser.name,
+          email: newUser.email
+        });
+      });
+
+      // Handle Forgot Password
+      formForgot.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('forgotEmail').value.trim().toLowerCase();
+        if (!email) {
+          showAuthAlert('Please enter your email address.', 'error');
+          return;
+        }
+
+        var db = getCustomersDb();
+        var user = db.find(function (u) { return u.email.toLowerCase() === email; });
+        if (!user) {
+          showAuthAlert('No account found with this email address.', 'error');
+          return;
+        }
+
+        activeResetEmail = email;
+        activeResetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        switchAuthView('reset');
+        codeDisplay.textContent = activeResetCode;
+        codeNotification.style.display = 'flex';
+        showAuthAlert('Verification code generated and dispatched to ' + email + '.', 'info');
+      });
+
+      // Auto-fill Verification Code
+      btnAutofill.addEventListener('click', function () {
+        $('resetCode').value = activeResetCode;
+        $('resetNewPassword').focus();
+      });
+
+      // Handle Password Reset
+      formReset.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var code = $('resetCode').value.trim();
+        var newPass = $('resetNewPassword').value;
+        var confirmPass = $('resetConfirmPassword').value;
+
+        if (!code || !newPass || !confirmPass) {
+          showAuthAlert('Please fill in all verification and password fields.', 'error');
+          return;
+        }
+
+        if (code !== activeResetCode) {
+          showAuthAlert('Invalid verification code. Please check the 6-digit code.', 'error');
+          return;
+        }
+
+        if (newPass.length < 6) {
+          showAuthAlert('New password must be at least 6 characters long.', 'error');
+          return;
+        }
+
+        if (newPass !== confirmPass) {
+          showAuthAlert('New passwords do not match.', 'error');
+          return;
+        }
+
+        var db = getCustomersDb();
+        var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === activeResetEmail; });
+        if (userIdx === -1) {
+          showAuthAlert('Account could not be found to update password.', 'error');
+          return;
+        }
+
+        db[userIdx].password = newPass;
+        saveCustomersDb(db);
+
+        showAuthAlert('Password reset successful! Logging you in...', 'success');
+        setTimeout(function () {
+          completeAuthentication({
+            name: db[userIdx].name || db[userIdx].email.split('@')[0],
+            email: db[userIdx].email
+          });
+        }, 800);
+      });
+
+      // Complete Authentication & Direct Redirect to Quiz
+      function completeAuthentication(sessionUser) {
+        try {
+          localStorage.setItem('sts_active_session', JSON.stringify(sessionUser));
+        } catch (e) {}
+
+        // Populate User Status Badge in Header
+        userNameEl.textContent = sessionUser.name || sessionUser.email;
+        var initials = (sessionUser.name || sessionUser.email)
+          .split(' ')
+          .filter(Boolean)
+          .map(function (w) { return w[0]; })
+          .join('')
+          .substring(0, 2)
+          .toUpperCase() || 'ST';
+        userAvatarEl.textContent = initials;
+        userBadge.style.display = 'flex';
+
+        // Smoothly hide authentication overlay
+        authOverlay.style.display = 'none';
+
+        // Invalidate Map Size so tiles render without grey gaps
+        window.dispatchEvent(new Event('resize'));
+        if (typeof map !== 'undefined' && map && map.invalidateSize) {
+          map.invalidateSize();
+          setTimeout(function () { map.invalidateSize(); }, 60);
+          setTimeout(function () { map.invalidateSize(); }, 250);
+        }
+      }
+
+      // Logout Flow
+      btnLogout.addEventListener('click', function () {
+        try {
+          localStorage.removeItem('sts_active_session');
+        } catch (e) {}
+        userBadge.style.display = 'none';
+        showAuthAlert('You have been logged out successfully.', 'info');
+        switchAuthView('login');
+        authOverlay.style.display = 'flex';
+      });
+
+      // Check Active Session on Page Load
+      function checkActiveSession() {
+        var savedSession = null;
+        try {
+          savedSession = JSON.parse(localStorage.getItem('sts_active_session'));
+        } catch (e) {}
+
+        if (savedSession && savedSession.email) {
+          completeAuthentication(savedSession);
+        } else {
+          switchAuthView('login');
+          authOverlay.style.display = 'flex';
+        }
+      }
+
+      checkActiveSession();
+
+    })();
+  </script>
+</body>
+
+</html>

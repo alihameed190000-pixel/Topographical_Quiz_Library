@@ -49,13 +49,13 @@
       user-select: none;
     }
 
-    /* Main Application Shell */
+    /* Main Application Shell (2-Column Layout: Left Sidebar + Right Map Viewport) */
     #appContainer {
       display: grid;
       height: 100vh;
       width: 100vw;
       grid-template-rows: 40px 1fr 54px;
-      grid-template-columns: 220px 1fr;
+      grid-template-columns: 280px 1fr;
     }
 
     /* -------------------------------------------------------------
@@ -147,52 +147,434 @@
     }
 
     /* -------------------------------------------------------------
-       2. LEFT SIDEBAR (220px)
+       1b. COLUMN 1: LEFT QUIZ SIDEBAR (280px)
        ------------------------------------------------------------- */
-    #sidebar {
+    #quizSectionsPanel {
       grid-column: 1 / 2;
-      background: #ffffff;
-      border-right: 1px solid #d0d7de;
-      padding: 16px 14px;
+      width: 280px;
+      background: #f8fafc;
+      border-right: 1px solid #dce3ed;
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
-      overflow-x: hidden;
-      z-index: 90;
+      overflow: hidden;
+      z-index: 95;
+      user-select: none;
     }
 
-    .sidebar-header-link {
-      font-size: 13.5px;
+    /* Top 1–20 Quiz Dropdown Selector */
+    .sidebar-dropdown-wrapper {
+      padding: 9px 12px 10px;
+      background: #091528;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
+    }
+
+    .sidebar-dropdown-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-dropdown-label {
+      font-size: 10px;
       font-weight: 700;
-      color: var(--primary-navy);
-      text-decoration: none;
-      display: block;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #edf2f7;
-      letter-spacing: -0.02em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #93c5fd;
+    }
+
+    .sidebar-view-all-btn {
+      font-size: 10px;
+      font-weight: 700;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .sidebar-view-all-btn:hover {
+      background: rgba(56, 189, 248, 0.28);
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+
+    .sidebar-quiz-dropdown {
+      width: 100%;
+      padding: 6px 9px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #0f172a;
+      background-color: #f8fafc;
+      border: 1px solid #94a3b8;
+      border-radius: 5px;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .sidebar-quiz-dropdown:hover,
+    .sidebar-quiz-dropdown:focus {
+      background-color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+    }
+
+    /* Mode Header / Progress */
+    .sections-panel-header {
+      background: #0d1e3a;
+      color: #ffffff;
+      padding: 9px 12px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+    }
+
+    .sections-panel-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .sections-panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+    }
+
+    .sections-completed-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+      padding: 2px 7px;
+      border-radius: 12px;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .sections-panel-sub {
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    /* Scrollable Container */
+    .sections-list-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 6px 8px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sections-list-container::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .sections-list-container::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    /* Isolated Quiz Focus Card */
+    .isolated-quiz-card {
+      background: #ffffff;
+      border: 1px solid #dbeafe;
+      border-radius: 7px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .isolated-quiz-header {
+      background: linear-gradient(135deg, #1e3a78, #122550);
+      color: #ffffff;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .isolated-header-badge {
+      background: #3b82f6;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .isolated-header-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .isolated-header-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.25;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .sidebar-header-link:hover {
-      text-decoration: underline;
+    .isolated-header-desc {
+      font-size: 10px;
+      color: #cbd5e1;
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .isolated-header-status {
+      font-size: 11px;
+      font-weight: 700;
+      color: #34d399;
+      flex-shrink: 0;
+    }
+
+    .isolated-parts-list {
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+
+    /* Quiz Part Container */
+    .quiz-part-container {
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.15s ease;
+    }
+
+    .quiz-part-container:last-child {
+      border-bottom: none;
+    }
+
+    .quiz-part-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      cursor: pointer;
+      user-select: none;
+      background: #f8fafc;
+      transition: all 0.12s ease;
+    }
+
+    .quiz-part-header:hover {
+      background: #eff6ff;
+    }
+
+    .quiz-part-container.active .quiz-part-header {
+      background: #dbeafe;
+      border-left: 3px solid var(--primary-navy);
+      padding-left: 9px;
+    }
+
+    .part-badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #475569;
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .quiz-part-container.active .part-badge {
+      background: var(--primary-navy);
+      color: #ffffff;
+    }
+
+    .part-name {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #1e293b;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+    }
+
+    .quiz-part-container.active .part-name {
+      color: var(--primary-navy);
+      font-weight: 700;
+    }
+
+    .part-status {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      flex-shrink: 0;
+    }
+
+    .part-status.done {
+      color: #10b981;
+      font-size: 11px;
+    }
+
+    .part-status.active {
+      color: #2563eb;
+      background: rgba(37, 99, 235, 0.1);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    /* Active Card Slot where White Box is Dynamically Nested */
+    .active-card-slot {
+      display: none;
+      background: #ffffff;
+    }
+
+    .quiz-part-container.active .active-card-slot {
+      display: block;
+    }
+
+    /* All Quizzes Mode List Items */
+    .all-quiz-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .all-quiz-item:hover {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(30, 58, 120, 0.08);
+    }
+
+    .all-quiz-item.completed {
+      opacity: 0.65;
+      background: #f8fafc;
+    }
+
+    .all-quiz-item-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .all-quiz-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .all-quiz-item:hover .all-quiz-badge {
+      background: var(--primary-navy);
+      color: #ffffff;
+    }
+
+    .all-quiz-item.completed .all-quiz-badge {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .all-quiz-title-box {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .all-quiz-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.25;
+    }
+
+    .all-quiz-sub {
+      font-size: 9.5px;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .all-quiz-status {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+
+    .all-quiz-status.done {
+      color: #10b981;
+    }
+
+    /* White Exercise Instruction & Details Box (Nested Directly Under Active Part) */
+    .sidebar-exercise-card {
+      background: #ffffff;
+      border-top: 1px solid #bfdbfe;
+      padding: 12px 10px 14px;
+      display: flex;
+      flex-direction: column;
+      animation: cardFadeIn 0.18s ease-out;
+    }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .sidebar-header-link {
+      display: none !important;
     }
 
     .sidebar-exercise-title {
-      font-size: 17px;
+      font-size: 14px;
       font-weight: 700;
       color: #111827;
       line-height: 1.3;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .sidebar-instructions {
-      font-size: 13.5px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.45;
       color: #374151;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
 
     .sidebar-instructions strong {
@@ -200,16 +582,16 @@
     }
 
     .sidebar-meta-box {
+      display: none !important;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 16px;
-      font-size: 12px;
+      border-radius: 5px;
+      padding: 9px 10px;
+      margin-bottom: 10px;
+      font-size: 11px;
       color: #4b5563;
-      display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
 
     .meta-row {
@@ -231,36 +613,27 @@
     .keep-left-rule-box {
       background: #eff6ff;
       border-left: 3px solid #3b82f6;
-      padding: 10px 12px;
-      border-radius: 0 6px 6px 0;
-      margin-bottom: 16px;
-      font-size: 12px;
-      line-height: 1.45;
+      padding: 8px 10px;
+      border-radius: 0 5px 5px 0;
+      margin-bottom: 10px;
+      font-size: 11px;
+      line-height: 1.4;
       color: #1e40af;
     }
 
     .keep-left-rule-box strong {
       display: block;
-      margin-bottom: 3px;
-      font-size: 12.5px;
+      margin-bottom: 2px;
+      font-size: 11.5px;
       color: #1d4ed8;
     }
 
     .sidebar-tips {
-      margin-top: auto;
-      padding-top: 14px;
-      border-top: 1px dashed #cbd5e1;
-      font-size: 11.5px;
-      color: #64748b;
-      line-height: 1.45;
-    }
-
-    .sidebar-tips strong {
-      color: #334155;
+      display: none !important;
     }
 
     /* -------------------------------------------------------------
-       3. RIGHT MAP VIEWPORT & EXAM CONTROL BAR
+       3. RIGHT MAP VIEWPORT & EXAM CONTROL BAR (Column 2)
        ------------------------------------------------------------- */
     #mapViewport {
       grid-column: 2 / 3;
@@ -484,7 +857,7 @@
     }
 
     /* -------------------------------------------------------------
-       4. BOTTOM FOOTER
+       4. BOTTOM FOOTER (Spans columns 1 to 2)
        ------------------------------------------------------------- */
     #bottomFooter {
       grid-column: 1 / 3;
@@ -511,7 +884,8 @@
       color: #0c1a36;
     }
 
-    #btnNext {
+    #btnNext,
+    #btnBackToQuiz {
       position: absolute;
       right: 18px;
       top: 9px;
@@ -527,15 +901,25 @@
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(30, 58, 120, 0.25);
       transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
-    #btnNext:hover {
+    #btnNext:hover,
+    #btnBackToQuiz:hover {
       background: var(--navy-dark);
       box-shadow: 0 3px 6px rgba(18, 37, 80, 0.35);
     }
 
-    #btnNext:active {
+    #btnNext:active,
+    #btnBackToQuiz:active {
       transform: translateY(1px);
+    }
+
+    #btnBackToQuiz {
+      display: none;
     }
 
     /* -------------------------------------------------------------
@@ -802,6 +1186,10 @@
     body.answer-mode #btnNext,
     body.answer-mode #examControlBar {
       display: none !important;
+    }
+
+    body.answer-mode #btnBackToQuiz {
+      display: inline-flex !important;
     }
 
     /* =============================================================
@@ -1398,47 +1786,67 @@
       </div>
     </header>
 
-    <!-- 2. Left Sidebar (220px wide) -->
-    <aside id="sidebar">
-      <a href="https://www.smarttaxisolutions.co.uk" target="_blank" rel="noopener noreferrer"
-        class="sidebar-header-link">www.smarttaxisolutions.co.uk</a>
-
-      <h1 class="sidebar-exercise-title" id="exerciseTitle">Practice keeping left.</h1>
-      <p class="sidebar-instructions" id="exerciseInstructions">
-        Draw a route from the <strong>green marker</strong> to the <strong>red marker</strong>.
-      </p>
-
-      <div class="keep-left-rule-box" id="keepLeftTipBox">
-        <strong>TfL Regulation Reminder:</strong>
-        Always keep to the left side of the road. On dual carriageways, do not cross central reservations.
+    <!-- Consolidated Column 1: Left Quiz Sidebar (280px wide) -->
+    <aside id="quizSectionsPanel" aria-label="1 to 20 Topographical Quiz Sidebar">
+      <div class="sidebar-dropdown-wrapper">
+        <div class="sidebar-dropdown-top">
+          <span class="sidebar-dropdown-label">1–20 Quiz Menu</span>
+          <button id="btnViewAllQuizzes" class="sidebar-view-all-btn" type="button" title="View all quizzes">View All (1–20)</button>
+        </div>
+        <select id="sidebarExerciseSelector" class="sidebar-quiz-dropdown" aria-label="Select Topographical Quiz 1 to 20"></select>
       </div>
 
-      <div class="sidebar-meta-box">
-        <div class="meta-row">
-          <span class="meta-label">Exercise Progress:</span>
-          <span class="meta-value" id="metaProgress">1 of 18</span>
+      <div class="sections-panel-header">
+        <div class="sections-panel-title-row">
+          <span class="sections-panel-title" id="panelModeTitle">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Active Quiz Focus
+          </span>
+          <span id="sectionsCompletedBadge" class="sections-completed-badge">0 / 20 Done</span>
         </div>
-        <div class="meta-row">
-          <span class="meta-label">Tile Zoom Scale:</span>
-          <span class="meta-value" id="metaZoom">Zoom 8</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Drawing Status:</span>
-          <span class="meta-value" id="metaDrawStatus" style="color:#2e7d32">Pan Mode</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-label">Points Placed:</span>
-          <span class="meta-value" id="metaPoints">0</span>
-        </div>
+        <div class="sections-panel-sub" id="panelModeSub">Step-by-step isolated practice</div>
       </div>
 
-      <div class="sidebar-tips">
-        <strong>How to Draw:</strong><br>
-        1. Click <strong>DRAW</strong> to enter STOP mode.<br>
-        2. Click to place route vertices.<br>
-        3. Drag (>5px) still pans the map.<br>
-        4. Right-click or <strong>BACK</strong> undoes last point.<br>
-        5. Press <strong>Alt + C</strong> to calibrate pins.
+      <div id="sectionsListContainer" class="sections-list-container">
+        <!-- Rendered dynamically by renderSidebarView() -->
+      </div>
+
+      <!-- Portable White Exercise Details Card (attached dynamically inside the active part row) -->
+      <div id="sidebarExerciseCard" class="sidebar-exercise-card">
+        <h1 class="sidebar-exercise-title" id="exerciseTitle">Practice keeping left.</h1>
+        <p class="sidebar-instructions" id="exerciseInstructions">
+          Draw a route from the <strong>green marker</strong> to the <strong>red marker</strong>.
+        </p>
+
+        <div class="keep-left-rule-box" id="keepLeftTipBox">
+          <strong>TfL Regulation Reminder:</strong>
+          Always keep to the left side of the road. On dual carriageways, do not cross central reservations.
+        </div>
+
+        <div class="sidebar-meta-box">
+          <div class="meta-row">
+            <span class="meta-label">Exercise Progress:</span>
+            <span class="meta-value" id="metaProgress">1 of 20</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Tile Zoom Scale:</span>
+            <span class="meta-value" id="metaZoom">Zoom 8</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Drawing Status:</span>
+            <span class="meta-value" id="metaDrawStatus" style="color:#2e7d32">Pan Mode</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Points Placed:</span>
+            <span class="meta-value" id="metaPoints">0</span>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -1499,6 +1907,7 @@
     <footer id="bottomFooter">
       <a id="answerLink" href="javascript:void(0)" title="Open Answer Tab">Click here to view answer in a new tab</a>
       <button id="btnNext" type="button">Next</button>
+      <button id="btnBackToQuiz" type="button">← Back to Quiz</button>
     </footer>
 
   </div>
@@ -1524,6 +1933,7 @@
          ========================================================================= */
       var EXERCISES = [
         {
+          sectionTitle: 'Keep Left',
           id: 'KeepingLeft16Oct4_q1',
           folder: 'KeepingLeft16Oct4',
           topic: 'Basics',
@@ -1544,6 +1954,279 @@
           ]
         },
         {
+          sectionTitle: 'Avoid Dead Ends',
+          id: 'AvoidingDeadEnds',
+          folder: 'AvoidingDeadEnds',
+          topic: 'Route Planning',
+          topicTitle: 'Avoiding Dead Ends',
+          name: 'Avoiding Dead Ends (Cul-de-sacs)',
+          instructions: 'Avoid entering dead-end streets and residential cul-de-sacs when plotting through-routes.',
+          defaultHomeCenter: [73.00, 98.50],
+          defaultHomeZoom: 8,
+          defaultStart: [72.50, 98.00],
+          defaultEnd: [73.80, 99.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Avoid Pedestrian Zone',
+          id: 'AvoidingPedestrianZones',
+          folder: 'AvoidingPedestrianZones',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'Pedestrian Zones',
+          name: 'Avoiding Pedestrian Zones',
+          instructions: 'Identify and route cleanly around pedestrian shopping precincts and pedestrian malls.',
+          defaultHomeCenter: [76.00, 129.00],
+          defaultHomeZoom: 9,
+          defaultStart: [75.60, 128.80],
+          defaultEnd: [76.40, 129.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Avoid Restricted Zone',
+          id: 'AvoidingRestrictedZone',
+          folder: 'AvoidingRestrictedZone',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'Restricted Zones',
+          name: 'Avoiding Restricted Access Zones',
+          instructions: 'Plot around restricted zones, camera-enforced permit streets, and pedestrianized segments.',
+          defaultHomeCenter: [84.00, 107.00],
+          defaultHomeZoom: 8,
+          defaultStart: [83.20, 106.50],
+          defaultEnd: [84.80, 107.50],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'City Route',
+          id: 'CityRoute',
+          folder: 'CityRoute',
+          topic: 'Route Planning',
+          topicTitle: 'City Route',
+          name: 'City Route Navigation',
+          instructions: 'Draw a direct, legal route through the City of London from the green marker to the red marker.',
+          defaultHomeCenter: [80.00, 124.00],
+          defaultHomeZoom: 5,
+          defaultStart: [78.50, 120.00],
+          defaultEnd: [81.50, 128.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          sectionTitle: 'Closed Roads',
+          id: 'ClosedRoadsRoutes',
+          folder: 'ClosedRoadsRoutes',
+          topic: 'Special Regulations',
+          topicTitle: 'Closed Roads',
+          name: 'Navigating Around Closed Roads',
+          instructions: 'Plan an alternative route avoiding road closures and barrier gates. Follow all turning restrictions.',
+          defaultHomeCenter: [70.00, 136.00],
+          defaultHomeZoom: 6,
+          defaultStart: [68.50, 134.00],
+          defaultEnd: [71.50, 138.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          sectionTitle: 'Central Reservations',
+          id: 'NavigatingCentralReservations',
+          folder: 'NavigatingCentralReservations',
+          topic: 'Divided Highways',
+          topicTitle: 'Central Reservations',
+          name: 'Navigating Central Reservations',
+          instructions: 'Dual carriageway practice. Do not cross solid central reservations or unbroken physical barriers.',
+          defaultHomeCenter: [88.00, 80.00],
+          defaultHomeZoom: 6,
+          defaultStart: [86.00, 78.50],
+          defaultEnd: [90.00, 81.50],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          sectionTitle: 'Flyover Roundabouts',
+          id: 'NavigatingFlyoverRoundabouts',
+          folder: 'NavigatingFlyoverRoundabouts',
+          topic: 'Junctions',
+          topicTitle: 'Flyover Roundabouts',
+          name: 'Navigating Flyover Roundabouts',
+          instructions: 'Navigate grade-separated junctions and multi-lane roundabout slip approaches.',
+          defaultHomeCenter: [85.00, 104.00],
+          defaultHomeZoom: 8,
+          defaultStart: [84.20, 103.50],
+          defaultEnd: [85.80, 104.50],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Roads On Top',
+          id: 'NavigatingRoadsOnTop',
+          folder: 'NavigatingRoadsOnTop',
+          topic: 'Multi-Level Roads',
+          topicTitle: 'Roads On Top',
+          name: 'Navigating Roads on Top (Overpasses)',
+          instructions: 'Distinguish elevated flyovers from surface roads below. Only join or exit via designated slip roads.',
+          defaultHomeCenter: [62.00, 102.00],
+          defaultHomeZoom: 6,
+          defaultStart: [60.00, 99.00],
+          defaultEnd: [64.00, 105.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          sectionTitle: 'One-Way Roads',
+          id: 'OneWayRoadsV1',
+          folder: 'OneWayRoadsV1',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'One-Way Roads',
+          name: 'One-Way Roads Navigation',
+          instructions: 'Strictly follow the flow of traffic indicated by one-way directional indicators.',
+          defaultHomeCenter: [70.25, 135.50],
+          defaultHomeZoom: 9,
+          defaultStart: [70.00, 135.20],
+          defaultEnd: [70.60, 135.80],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Footbridge',
+          id: 'PassingFootbridge',
+          folder: 'PassingFootbridge',
+          topic: 'Infrastructure',
+          topicTitle: 'Footbridges',
+          name: 'Passing Footbridges',
+          instructions: 'Vehicles cannot cross pedestrian footbridges. Remain on designated public vehicular roadways.',
+          defaultHomeCenter: [64.00, 100.00],
+          defaultHomeZoom: 6,
+          defaultStart: [62.50, 98.50],
+          defaultEnd: [65.50, 101.50],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          sectionTitle: 'Footpath',
+          id: 'PassingFootpath',
+          folder: 'PassingFootpath',
+          topic: 'Infrastructure',
+          topicTitle: 'Passing Footpath',
+          name: 'Passing Footpaths (Pedestrian Only)',
+          instructions: 'Public footpaths are pedestrian-only thoroughfares. Do not route vehicles across them.',
+          defaultHomeCenter: [79.00, 115.00],
+          defaultHomeZoom: 8,
+          defaultStart: [78.20, 114.50],
+          defaultEnd: [79.80, 115.50],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Railway Lines',
+          id: 'PassingRailwayLines',
+          folder: 'PassingRailwayLines',
+          topic: 'Infrastructure',
+          topicTitle: 'Railway Crossings',
+          name: 'Passing Railway Lines',
+          instructions: 'Cross railway lines only via certified road bridges, road tunnels, or public level crossings.',
+          defaultHomeCenter: [79.00, 132.75],
+          defaultHomeZoom: 9,
+          defaultStart: [78.60, 132.30],
+          defaultEnd: [79.40, 133.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Direct Route',
+          id: 'PlotADirectRoute',
+          folder: 'PlotADirectRoute',
+          topic: 'Route Planning',
+          topicTitle: 'Direct Route',
+          name: 'Plot a Direct Route',
+          instructions: 'Draw the most direct, practical route from start to finish without unnecessary deviations.',
+          defaultHomeCenter: [82.00, 134.00],
+          defaultHomeZoom: 6,
+          defaultStart: [80.00, 131.00],
+          defaultEnd: [84.00, 137.00],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          sectionTitle: 'Roundabouts',
+          id: 'RoundaboutsV1',
+          folder: 'RoundaboutsV1',
+          topic: 'Junctions',
+          topicTitle: 'Roundabouts',
+          name: 'Roundabouts Navigation V1',
+          instructions: 'Circulate clockwise around roundabouts and maintain lane discipline to your designated exit.',
+          defaultHomeCenter: [74.00, 84.50],
+          defaultHomeZoom: 9,
+          defaultStart: [73.60, 84.20],
+          defaultEnd: [74.40, 84.80],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Tunnel',
+          id: 'Tunnel',
+          folder: 'Tunnel',
+          topic: 'Underground Infrastructure',
+          topicTitle: 'Tunnel Route',
+          name: 'Tunnel Approaches & Transit',
+          instructions: 'Navigate tunnel entrances and egress points correctly according to one-way bore directions.',
+          defaultHomeCenter: [82.00, 134.00],
+          defaultHomeZoom: 6,
+          defaultStart: [80.50, 132.50],
+          defaultEnd: [83.50, 135.50],
+          minZoom: 4,
+          maxZoom: 8,
+          answer: null
+        },
+        {
+          sectionTitle: 'Unmarked One-Ways',
+          id: 'UnmarkedOneWays',
+          folder: 'UnmarkedOneWays',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'Unmarked One-Ways',
+          name: 'Navigating Unmarked One-Ways',
+          instructions: 'Observe directional flow arrows on street cartography to avoid driving contraflow.',
+          defaultHomeCenter: [84.25, 135.00],
+          defaultHomeZoom: 8,
+          defaultStart: [84.00, 134.80],
+          defaultEnd: [84.60, 135.20],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'High-Detail Keep Left',
+          id: 'KeepingLeft330',
+          folder: 'KeepingLeft330',
+          topic: 'Basics',
+          topicTitle: 'Keeping Left (Zoom 9 High Detail)',
+          name: 'Keeping Left — High Detail Simulation',
+          instructions: 'High-detail exam simulation with full continuous scaling up to Zoom 9. Practice keeping left between the markers.',
+          defaultHomeCenter: [97.00, 115.50],
+          defaultHomeZoom: 8,
+          defaultStart: [97.450, 115.200],
+          defaultEnd: [96.650, 115.800],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'Keep Left (Part 2)',
           id: 'KeepingLeft16Oct4_q2',
           folder: 'KeepingLeft16Oct4',
           topic: 'Basics',
@@ -1563,6 +2246,7 @@
           ]
         },
         {
+          sectionTitle: 'Keep Left (Part 3)',
           id: 'KeepingLeft16Oct4_q3',
           folder: 'KeepingLeft16Oct4',
           topic: 'Basics',
@@ -1579,261 +2263,6 @@
             [98.700, 115.000], [98.620, 114.780], [98.500, 114.500], [98.380, 114.150],
             [98.245, 113.725], [98.300, 113.675], [98.475, 113.575]
           ]
-        },
-        {
-          id: 'KeepingLeft330',
-          folder: 'KeepingLeft330',
-          topic: 'Basics',
-          topicTitle: 'Keeping Left (Zoom 9 High Detail)',
-          name: 'Keeping Left — High Detail Simulation',
-          instructions: 'High-detail exam simulation with full continuous scaling up to Zoom 9. Practice keeping left between the markers.',
-          defaultHomeCenter: [97.00, 115.50],
-          defaultHomeZoom: 8,
-          defaultStart: [97.450, 115.200],
-          defaultEnd: [96.650, 115.800],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'CityRoute',
-          folder: 'CityRoute',
-          topic: 'Route Planning',
-          topicTitle: 'City Route',
-          name: 'City Route Navigation',
-          instructions: 'Draw a direct, legal route through the City of London from the green marker to the red marker.',
-          defaultHomeCenter: [80.00, 124.00],
-          defaultHomeZoom: 5,
-          defaultStart: [78.50, 120.00],
-          defaultEnd: [81.50, 128.00],
-          minZoom: 4,
-          maxZoom: 8,
-          answer: null
-        },
-        {
-          id: 'ClosedRoadsRoutes',
-          folder: 'ClosedRoadsRoutes',
-          topic: 'Special Regulations',
-          topicTitle: 'Closed Roads',
-          name: 'Navigating Around Closed Roads',
-          instructions: 'Plan an alternative route avoiding road closures and barrier gates. Follow all turning restrictions.',
-          defaultHomeCenter: [70.00, 136.00],
-          defaultHomeZoom: 6,
-          defaultStart: [68.50, 134.00],
-          defaultEnd: [71.50, 138.00],
-          minZoom: 4,
-          maxZoom: 8,
-          answer: null
-        },
-        {
-          id: 'NavigatingCentralReservations',
-          folder: 'NavigatingCentralReservations',
-          topic: 'Divided Highways',
-          topicTitle: 'Central Reservations',
-          name: 'Navigating Central Reservations',
-          instructions: 'Dual carriageway practice. Do not cross solid central reservations or unbroken physical barriers.',
-          defaultHomeCenter: [88.00, 80.00],
-          defaultHomeZoom: 6,
-          defaultStart: [86.00, 78.50],
-          defaultEnd: [90.00, 81.50],
-          minZoom: 4,
-          maxZoom: 8,
-          answer: null
-        },
-        {
-          id: 'NavigatingRoadsOnTop',
-          folder: 'NavigatingRoadsOnTop',
-          topic: 'Multi-Level Roads',
-          topicTitle: 'Roads On Top',
-          name: 'Navigating Roads on Top (Overpasses)',
-          instructions: 'Distinguish elevated flyovers from surface roads below. Only join or exit via designated slip roads.',
-          defaultHomeCenter: [62.00, 102.00],
-          defaultHomeZoom: 6,
-          defaultStart: [60.00, 99.00],
-          defaultEnd: [64.00, 105.00],
-          minZoom: 4,
-          maxZoom: 8,
-          answer: null
-        },
-        {
-          id: 'PassingFootbridge',
-          folder: 'PassingFootbridge',
-          topic: 'Infrastructure',
-          topicTitle: 'Footbridges',
-          name: 'Passing Footbridges',
-          instructions: 'Vehicles cannot cross pedestrian footbridges. Remain on designated public vehicular roadways.',
-          defaultHomeCenter: [64.00, 100.00],
-          defaultHomeZoom: 6,
-          defaultStart: [62.50, 98.50],
-          defaultEnd: [65.50, 101.50],
-          minZoom: 4,
-          maxZoom: 8,
-          answer: null
-        },
-        {
-          id: 'PlotADirectRoute',
-          folder: 'PlotADirectRoute',
-          topic: 'Route Planning',
-          topicTitle: 'Direct Route',
-          name: 'Plot a Direct Route',
-          instructions: 'Draw the most direct, practical route from start to finish without unnecessary deviations.',
-          defaultHomeCenter: [82.00, 134.00],
-          defaultHomeZoom: 6,
-          defaultStart: [80.00, 131.00],
-          defaultEnd: [84.00, 137.00],
-          minZoom: 4,
-          maxZoom: 8,
-          answer: null
-        },
-        {
-          id: 'Tunnel',
-          folder: 'Tunnel',
-          topic: 'Underground Infrastructure',
-          topicTitle: 'Tunnel Route',
-          name: 'Tunnel Approaches & Transit',
-          instructions: 'Navigate tunnel entrances and egress points correctly according to one-way bore directions.',
-          defaultHomeCenter: [82.00, 134.00],
-          defaultHomeZoom: 6,
-          defaultStart: [80.50, 132.50],
-          defaultEnd: [83.50, 135.50],
-          minZoom: 4,
-          maxZoom: 8,
-          answer: null
-        },
-        {
-          id: 'UnmarkedOneWays',
-          folder: 'UnmarkedOneWays',
-          topic: 'Traffic Restrictions',
-          topicTitle: 'Unmarked One-Ways',
-          name: 'Navigating Unmarked One-Ways',
-          instructions: 'Observe directional flow arrows on street cartography to avoid driving contraflow.',
-          defaultHomeCenter: [84.25, 135.00],
-          defaultHomeZoom: 8,
-          defaultStart: [84.00, 134.80],
-          defaultEnd: [84.60, 135.20],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'AvoidingDeadEnds',
-          folder: 'AvoidingDeadEnds',
-          topic: 'Route Planning',
-          topicTitle: 'Avoiding Dead Ends',
-          name: 'Avoiding Dead Ends (Cul-de-sacs)',
-          instructions: 'Avoid entering dead-end streets and residential cul-de-sacs when plotting through-routes.',
-          defaultHomeCenter: [73.00, 98.50],
-          defaultHomeZoom: 8,
-          defaultStart: [72.50, 98.00],
-          defaultEnd: [73.80, 99.20],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'AvoidingRestrictedZone',
-          folder: 'AvoidingRestrictedZone',
-          topic: 'Traffic Restrictions',
-          topicTitle: 'Restricted Zones',
-          name: 'Avoiding Restricted Access Zones',
-          instructions: 'Plot around restricted zones, camera-enforced permit streets, and pedestrianized segments.',
-          defaultHomeCenter: [84.00, 107.00],
-          defaultHomeZoom: 8,
-          defaultStart: [83.20, 106.50],
-          defaultEnd: [84.80, 107.50],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'NavigatingFlyoverRoundabouts',
-          folder: 'NavigatingFlyoverRoundabouts',
-          topic: 'Junctions',
-          topicTitle: 'Flyover Roundabouts',
-          name: 'Navigating Flyover Roundabouts',
-          instructions: 'Navigate grade-separated junctions and multi-lane roundabout slip approaches.',
-          defaultHomeCenter: [85.00, 104.00],
-          defaultHomeZoom: 8,
-          defaultStart: [84.20, 103.50],
-          defaultEnd: [85.80, 104.50],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'PassingFootpath',
-          folder: 'PassingFootpath',
-          topic: 'Infrastructure',
-          topicTitle: 'Passing Footpath',
-          name: 'Passing Footpaths (Pedestrian Only)',
-          instructions: 'Public footpaths are pedestrian-only thoroughfares. Do not route vehicles across them.',
-          defaultHomeCenter: [79.00, 115.00],
-          defaultHomeZoom: 8,
-          defaultStart: [78.20, 114.50],
-          defaultEnd: [79.80, 115.50],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'AvoidingPedestrianZones',
-          folder: 'AvoidingPedestrianZones',
-          topic: 'Traffic Restrictions',
-          topicTitle: 'Pedestrian Zones',
-          name: 'Avoiding Pedestrian Zones',
-          instructions: 'Identify and route cleanly around pedestrian shopping precincts and pedestrian malls.',
-          defaultHomeCenter: [76.00, 129.00],
-          defaultHomeZoom: 9,
-          defaultStart: [75.60, 128.80],
-          defaultEnd: [76.40, 129.20],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'OneWayRoadsV1',
-          folder: 'OneWayRoadsV1',
-          topic: 'Traffic Restrictions',
-          topicTitle: 'One-Way Roads',
-          name: 'One-Way Roads Navigation',
-          instructions: 'Strictly follow the flow of traffic indicated by one-way directional indicators.',
-          defaultHomeCenter: [70.25, 135.50],
-          defaultHomeZoom: 9,
-          defaultStart: [70.00, 135.20],
-          defaultEnd: [70.60, 135.80],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'PassingRailwayLines',
-          folder: 'PassingRailwayLines',
-          topic: 'Infrastructure',
-          topicTitle: 'Railway Crossings',
-          name: 'Passing Railway Lines',
-          instructions: 'Cross railway lines only via certified road bridges, road tunnels, or public level crossings.',
-          defaultHomeCenter: [79.00, 132.75],
-          defaultHomeZoom: 9,
-          defaultStart: [78.60, 132.30],
-          defaultEnd: [79.40, 133.20],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
-        },
-        {
-          id: 'RoundaboutsV1',
-          folder: 'RoundaboutsV1',
-          topic: 'Junctions',
-          topicTitle: 'Roundabouts',
-          name: 'Roundabouts Navigation V1',
-          instructions: 'Circulate clockwise around roundabouts and maintain lane discipline to your designated exit.',
-          defaultHomeCenter: [74.00, 84.50],
-          defaultHomeZoom: 9,
-          defaultStart: [73.60, 84.20],
-          defaultEnd: [74.40, 84.80],
-          minZoom: 4,
-          maxZoom: 9,
-          answer: null
         }
       ];
 
@@ -2040,7 +2469,9 @@
       var btnBright = $('btnBright');
       var btnHome = $('btnHome');
       var btnNext = $('btnNext');
+      var btnBackToQuiz = $('btnBackToQuiz');
       var answerLink = $('answerLink');
+      var examControlBar = $('examControlBar');
 
       var mapContainer = $('map');
       var mapViewport = $('mapViewport');
@@ -2069,36 +2500,445 @@
       var btnContinueQuiz = $('btnContinueQuiz');
 
       /* =========================================================================
-         7. POPULATE EXERCISE DROPDOWN
+         7. 1 TO 20 QUIZ REGISTRY, METADATA & SIDEBAR CONTROLLER
          ========================================================================= */
-      function populateDropdown() {
-        exerciseSelector.innerHTML = '';
+      var sectionsListContainer = $('sectionsListContainer');
+      var sectionsCompletedBadge = $('sectionsCompletedBadge');
+      var sidebarExerciseSelector = $('sidebarExerciseSelector');
+      var btnViewAllQuizzes = $('btnViewAllQuizzes');
+      var panelModeTitle = $('panelModeTitle');
+      var panelModeSub = $('panelModeSub');
+      var sidebarExerciseCard = $('sidebarExerciseCard');
 
-        // Group by topic
-        var groups = {};
-        EXERCISES.forEach(function (ex, i) {
-          if (!groups[ex.topic]) groups[ex.topic] = [];
-          groups[ex.topic].push({ ex: ex, index: i });
-        });
+      // State tracking
+      var completedExercises = {};
+      var completedQuizzes = {};
+      var currentViewMode = 'isolated'; // 'isolated' or 'all'
+      var activeQuizNum = 1;
 
-        for (var topic in groups) {
-          var optGroup = document.createElement('optgroup');
-          optGroup.label = topic;
-          groups[topic].forEach(function (item) {
+      // 1 to 20 Quiz Definitions
+      var QUIZ_DATA_20 = [
+        {
+          quizNum: 1,
+          title: 'Keep Left',
+          subtitle: 'TfL Keeping Left Practice (3 Parts)',
+          parts: [
+            { partNum: 1, label: 'Part 1: Bellevue Rd to Bolingbroke Grove', exIndex: 0 },
+            { partNum: 2, label: 'Part 2: Nightingale Lane East to West', exIndex: 18 },
+            { partNum: 3, label: 'Part 3: Rowfant Rd to Bellevue Rd', exIndex: 19 }
+          ]
+        },
+        {
+          quizNum: 2,
+          title: 'Avoid Dead Ends',
+          subtitle: 'Avoiding Dead Ends (Cul-de-sacs)',
+          parts: [
+            { partNum: 1, label: 'Avoiding Dead Ends (Cul-de-sacs)', exIndex: 1 }
+          ]
+        },
+        {
+          quizNum: 3,
+          title: 'Avoid Pedestrian Zone',
+          subtitle: 'Avoiding Pedestrian Zones',
+          parts: [
+            { partNum: 1, label: 'Avoiding Pedestrian Zones', exIndex: 2 }
+          ]
+        },
+        {
+          quizNum: 4,
+          title: 'Avoid Restricted Zone',
+          subtitle: 'Avoiding Restricted Access Zones',
+          parts: [
+            { partNum: 1, label: 'Avoiding Restricted Access Zones', exIndex: 3 }
+          ]
+        },
+        {
+          quizNum: 5,
+          title: 'City Route',
+          subtitle: 'City Route Navigation',
+          parts: [
+            { partNum: 1, label: 'City Route Navigation', exIndex: 4 }
+          ]
+        },
+        {
+          quizNum: 6,
+          title: 'Closed Roads',
+          subtitle: 'Navigating Around Closed Roads',
+          parts: [
+            { partNum: 1, label: 'Navigating Around Closed Roads', exIndex: 5 }
+          ]
+        },
+        {
+          quizNum: 7,
+          title: 'Central Reservations',
+          subtitle: 'Navigating Central Reservations',
+          parts: [
+            { partNum: 1, label: 'Navigating Central Reservations', exIndex: 6 }
+          ]
+        },
+        {
+          quizNum: 8,
+          title: 'Flyover Roundabouts',
+          subtitle: 'Navigating Flyover Roundabouts',
+          parts: [
+            { partNum: 1, label: 'Navigating Flyover Roundabouts', exIndex: 7 }
+          ]
+        },
+        {
+          quizNum: 9,
+          title: 'Roads On Top',
+          subtitle: 'Navigating Roads on Top (Overpasses)',
+          parts: [
+            { partNum: 1, label: 'Navigating Roads on Top (Overpasses)', exIndex: 8 }
+          ]
+        },
+        {
+          quizNum: 10,
+          title: 'One-Way Roads',
+          subtitle: 'One-Way Roads Navigation',
+          parts: [
+            { partNum: 1, label: 'One-Way Roads Navigation', exIndex: 9 }
+          ]
+        },
+        {
+          quizNum: 11,
+          title: 'Footbridge',
+          subtitle: 'Passing Footbridges',
+          parts: [
+            { partNum: 1, label: 'Passing Footbridges', exIndex: 10 }
+          ]
+        },
+        {
+          quizNum: 12,
+          title: 'Footpath',
+          subtitle: 'Passing Footpaths (Pedestrian Only)',
+          parts: [
+            { partNum: 1, label: 'Passing Footpaths (Pedestrian Only)', exIndex: 11 }
+          ]
+        },
+        {
+          quizNum: 13,
+          title: 'Railway Lines',
+          subtitle: 'Passing Railway Lines',
+          parts: [
+            { partNum: 1, label: 'Passing Railway Lines', exIndex: 12 }
+          ]
+        },
+        {
+          quizNum: 14,
+          title: 'Direct Route',
+          subtitle: 'Plot a Direct Route',
+          parts: [
+            { partNum: 1, label: 'Plot a Direct Route', exIndex: 13 }
+          ]
+        },
+        {
+          quizNum: 15,
+          title: 'Roundabouts',
+          subtitle: 'Roundabouts Navigation V1',
+          parts: [
+            { partNum: 1, label: 'Roundabouts Navigation V1', exIndex: 14 }
+          ]
+        },
+        {
+          quizNum: 16,
+          title: 'Tunnel',
+          subtitle: 'Tunnel Approaches & Transit',
+          parts: [
+            { partNum: 1, label: 'Tunnel Approaches & Transit', exIndex: 15 }
+          ]
+        },
+        {
+          quizNum: 17,
+          title: 'Unmarked One-Ways',
+          subtitle: 'Navigating Unmarked One-Ways',
+          parts: [
+            { partNum: 1, label: 'Navigating Unmarked One-Ways', exIndex: 16 }
+          ]
+        },
+        {
+          quizNum: 18,
+          title: 'Keep Left (Part 2)',
+          subtitle: 'Nightingale Lane East to West',
+          parts: [
+            { partNum: 1, label: 'Part 2: Nightingale Lane East to West', exIndex: 18 }
+          ]
+        },
+        {
+          quizNum: 19,
+          title: 'Keep Left (Part 3)',
+          subtitle: 'Rowfant Rd to Bellevue Rd',
+          parts: [
+            { partNum: 1, label: 'Part 3: Rowfant Rd to Bellevue Rd', exIndex: 19 }
+          ]
+        },
+        {
+          quizNum: 20,
+          title: 'High-Detail Keep Left',
+          subtitle: 'Keeping Left — High Detail Simulation',
+          parts: [
+            { partNum: 1, label: 'Keeping Left — High Detail Simulation', exIndex: 17 }
+          ]
+        }
+      ];
+
+      // 1 to 20 Dropdown Menu Options with Full Respective Titles
+      var DROPDOWN_ITEMS_20 = [
+        { label: '1. Keep Left — Part 1: Bellevue Rd to Bolingbroke Grove', exIndex: 0, quizNum: 1 },
+        { label: '2. Avoid Dead Ends — Avoiding Dead Ends (Cul-de-sacs)', exIndex: 1, quizNum: 2 },
+        { label: '3. Avoid Pedestrian Zone — Avoiding Pedestrian Zones', exIndex: 2, quizNum: 3 },
+        { label: '4. Avoid Restricted Zone — Avoiding Restricted Access Zones', exIndex: 3, quizNum: 4 },
+        { label: '5. City Route — City Route Navigation', exIndex: 4, quizNum: 5 },
+        { label: '6. Closed Roads — Navigating Around Closed Roads', exIndex: 5, quizNum: 6 },
+        { label: '7. Central Reservations — Navigating Central Reservations', exIndex: 6, quizNum: 7 },
+        { label: '8. Flyover Roundabouts — Navigating Flyover Roundabouts', exIndex: 7, quizNum: 8 },
+        { label: '9. Roads On Top — Navigating Roads on Top (Overpasses)', exIndex: 8, quizNum: 9 },
+        { label: '10. One-Way Roads — One-Way Roads Navigation', exIndex: 9, quizNum: 10 },
+        { label: '11. Footbridge — Passing Footbridges', exIndex: 10, quizNum: 11 },
+        { label: '12. Footpath — Passing Footpaths (Pedestrian Only)', exIndex: 11, quizNum: 12 },
+        { label: '13. Railway Lines — Passing Railway Lines', exIndex: 12, quizNum: 13 },
+        { label: '14. Direct Route — Plot a Direct Route', exIndex: 13, quizNum: 14 },
+        { label: '15. Roundabouts — Roundabouts Navigation V1', exIndex: 14, quizNum: 15 },
+        { label: '16. Tunnel — Tunnel Approaches & Transit', exIndex: 15, quizNum: 16 },
+        { label: '17. Unmarked One-Ways — Navigating Unmarked One-Ways', exIndex: 16, quizNum: 17 },
+        { label: '18. Keep Left — Part 2: Nightingale Lane East to West', exIndex: 18, quizNum: 1 },
+        { label: '19. Keep Left — Part 3: Rowfant Rd to Bellevue Rd', exIndex: 19, quizNum: 1 },
+        { label: '20. High-Detail Keep Left — Keeping Left — High Detail Simulation', exIndex: 17, quizNum: 20 }
+      ];
+
+      function populateDropdowns() {
+        // 1. Sidebar Dropdown (includes View All option)
+        if (sidebarExerciseSelector) {
+          sidebarExerciseSelector.innerHTML = '';
+          var optViewAll = document.createElement('option');
+          optViewAll.value = 'all';
+          optViewAll.textContent = '☰ View All Quizzes (1–20)';
+          sidebarExerciseSelector.appendChild(optViewAll);
+
+          DROPDOWN_ITEMS_20.forEach(function (item) {
             var opt = document.createElement('option');
-            opt.value = item.index;
-            opt.textContent = item.ex.name;
-            if (item.index === currentExerciseIndex) opt.selected = true;
-            optGroup.appendChild(opt);
+            opt.value = item.exIndex;
+            opt.textContent = item.label;
+            sidebarExerciseSelector.appendChild(opt);
           });
-          exerciseSelector.appendChild(optGroup);
+        }
+
+        // 2. Top Bar Dropdown
+        if (exerciseSelector) {
+          exerciseSelector.innerHTML = '';
+          DROPDOWN_ITEMS_20.forEach(function (item) {
+            var opt = document.createElement('option');
+            opt.value = item.exIndex;
+            opt.textContent = item.label;
+            exerciseSelector.appendChild(opt);
+          });
         }
       }
-      populateDropdown();
+      populateDropdowns();
 
+      // Top Bar dropdown change
       exerciseSelector.addEventListener('change', function () {
-        loadExercise(parseInt(this.value, 10));
+        var targetExIdx = parseInt(this.value, 10);
+        currentViewMode = 'isolated';
+        var item = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === targetExIdx; });
+        if (item) {
+          activeQuizNum = item.quizNum;
+        }
+        loadExercise(targetExIdx);
       });
+
+      // Sidebar Dropdown change
+      if (sidebarExerciseSelector) {
+        sidebarExerciseSelector.addEventListener('change', function () {
+          if (this.value === 'all') {
+            currentViewMode = 'all';
+            renderSidebarView();
+          } else {
+            var targetExIdx = parseInt(this.value, 10);
+            currentViewMode = 'isolated';
+            var item = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === targetExIdx; });
+            if (item) {
+              activeQuizNum = item.quizNum;
+            }
+            loadExercise(targetExIdx);
+          }
+        });
+      }
+
+      // "View All (1–20)" button
+      if (btnViewAllQuizzes) {
+        btnViewAllQuizzes.addEventListener('click', function () {
+          currentViewMode = 'all';
+          if (sidebarExerciseSelector) {
+            sidebarExerciseSelector.value = 'all';
+          }
+          renderSidebarView();
+        });
+      }
+
+      function updateSectionsCompletedCount() {
+        var count = 0;
+        for (var i = 1; i <= 20; i++) {
+          if (completedQuizzes[i]) count++;
+        }
+        if (sectionsCompletedBadge) {
+          sectionsCompletedBadge.textContent = count + ' / 20 Done';
+        }
+      }
+
+      /* -------------------------------------------------------------
+         RENDER SIDEBAR VIEW: ISOLATED FOCUS MODE vs ALL QUIZZES MODE
+         ------------------------------------------------------------- */
+      function renderSidebarView() {
+        if (!sectionsListContainer) return;
+        sectionsListContainer.innerHTML = '';
+
+        if (currentViewMode === 'isolated') {
+          // Mode Header
+          if (panelModeTitle) {
+            panelModeTitle.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Active Quiz Focus';
+          }
+          if (panelModeSub) {
+            panelModeSub.textContent = 'Quiz ' + activeQuizNum + ' of 20 (Isolated Focus)';
+          }
+
+          var quizObj = QUIZ_DATA_20.find(function (q) { return q.quizNum === activeQuizNum; });
+          if (!quizObj) {
+            quizObj = QUIZ_DATA_20[0];
+            activeQuizNum = 1;
+          }
+
+          var card = document.createElement('div');
+          card.className = 'isolated-quiz-card';
+
+          var isQuizDone = completedQuizzes[quizObj.quizNum];
+          var headerHtml = '<div class="isolated-quiz-header">' +
+            '<div class="isolated-header-badge">Quiz ' + quizObj.quizNum + '</div>' +
+            '<div class="isolated-header-info">' +
+              '<div class="isolated-header-title">' + quizObj.title + '</div>' +
+              '<div class="isolated-header-desc">' + quizObj.subtitle + '</div>' +
+            '</div>' +
+            '<span class="isolated-header-status">' + (isQuizDone ? '✓ Completed' : '● In Progress') + '</span>' +
+          '</div>';
+
+          var partsList = document.createElement('div');
+          partsList.className = 'isolated-parts-list';
+
+          quizObj.parts.forEach(function (part) {
+            var isPartActive = (part.exIndex === currentExerciseIndex);
+            var isPartDone = completedExercises[part.exIndex];
+
+            var partContainer = document.createElement('div');
+            partContainer.className = 'quiz-part-container' + (isPartActive ? ' active' : '');
+            partContainer.id = 'partContainer-' + part.exIndex;
+
+            var partHeader = document.createElement('div');
+            partHeader.className = 'quiz-part-header';
+            partHeader.setAttribute('data-ex-idx', part.exIndex);
+
+            var badgeText = (quizObj.parts.length > 1) ? ('Part ' + part.partNum) : 'Route';
+            var statusHtml = '';
+            if (isPartDone) {
+              statusHtml = '<span class="part-status done">✓ Done</span>';
+            } else if (isPartActive) {
+              statusHtml = '<span class="part-status active">Active</span>';
+            } else {
+              statusHtml = '<span class="part-status">○ Start</span>';
+            }
+
+            partHeader.innerHTML = '<span class="part-badge">' + badgeText + '</span>' +
+              '<span class="part-name" title="' + part.label + '">' + part.label + '</span>' +
+              statusHtml;
+
+            partHeader.addEventListener('click', function () {
+              loadExercise(part.exIndex);
+            });
+
+            var activeSlot = document.createElement('div');
+            activeSlot.className = 'active-card-slot';
+            activeSlot.id = 'activePartSlot-' + part.exIndex;
+
+            partContainer.appendChild(partHeader);
+            partContainer.appendChild(activeSlot);
+            partsList.appendChild(partContainer);
+
+            // If this part is active, move sidebarExerciseCard directly inside activeSlot!
+            if (isPartActive && sidebarExerciseCard) {
+              activeSlot.appendChild(sidebarExerciseCard);
+            }
+          });
+
+          card.innerHTML = headerHtml;
+          card.appendChild(partsList);
+          sectionsListContainer.appendChild(card);
+
+        } else {
+          // Mode B: ALL QUIZZES MODE
+          if (panelModeTitle) {
+            panelModeTitle.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>All Quizzes (1–20)';
+          }
+          if (panelModeSub) {
+            panelModeSub.textContent = 'Select any quiz below to practice in isolated view';
+          }
+
+          // Filter uncompleted quizzes (completed quizzes disappear from the list)
+          var uncompletedList = QUIZ_DATA_20.filter(function (q) {
+            return !completedQuizzes[q.quizNum];
+          });
+
+          if (uncompletedList.length === 0) {
+            // All 20 Completed Celebration Card
+            var celeb = document.createElement('div');
+            celeb.style.padding = '18px 12px';
+            celeb.style.textAlign = 'center';
+            celeb.style.background = '#ffffff';
+            celeb.style.border = '1px solid #10b981';
+            celeb.style.borderRadius = '8px';
+            celeb.innerHTML = '<div style="font-size:24px; margin-bottom:6px;">🎉</div>' +
+              '<div style="font-weight:700; color:#065f46; font-size:13px; margin-bottom:4px;">All 20 Quizzes Completed!</div>' +
+              '<div style="font-size:11px; color:#4b5563; line-height:1.4; margin-bottom:12px;">You have mastered all 20 Topographical route scenarios. You can select any quiz from the dropdown menu to practice again.</div>' +
+              '<button type="button" id="btnResetAllQuizzes" style="background:var(--primary-navy); color:#ffffff; border:none; border-radius:5px; padding:6px 14px; font-size:11.5px; font-weight:600; cursor:pointer;">Reset Progress & Practice Again</button>';
+            sectionsListContainer.appendChild(celeb);
+
+            var btnReset = celeb.querySelector('#btnResetAllQuizzes');
+            if (btnReset) {
+              btnReset.addEventListener('click', function () {
+                completedQuizzes = {};
+                completedExercises = {};
+                updateSectionsCompletedCount();
+                currentViewMode = 'isolated';
+                activeQuizNum = 1;
+                loadExercise(0);
+              });
+            }
+          } else {
+            uncompletedList.forEach(function (q) {
+              var item = document.createElement('div');
+              item.className = 'all-quiz-item';
+
+              var partsCountText = (q.parts.length > 1) ? (' • ' + q.parts.length + ' Parts') : '';
+              item.innerHTML = '<div class="all-quiz-item-left">' +
+                '<span class="all-quiz-badge">' + q.quizNum + '</span>' +
+                '<div class="all-quiz-title-box">' +
+                  '<div class="all-quiz-title">' + q.quizNum + '. ' + q.title + '</div>' +
+                  '<div class="all-quiz-sub">' + q.subtitle + partsCountText + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<span class="all-quiz-status">Start ›</span>';
+
+              item.addEventListener('click', function () {
+                activeQuizNum = q.quizNum;
+                currentViewMode = 'isolated';
+                loadExercise(q.parts[0].exIndex);
+              });
+
+              sectionsListContainer.appendChild(item);
+            });
+          }
+        }
+
+        updateSectionsCompletedCount();
+      }
 
       /* =========================================================================
          8. LOAD & SWITCH EXERCISE
@@ -2110,19 +2950,36 @@
       function loadExercise(index) {
         currentExerciseIndex = index;
         currentEx = EXERCISES[index];
-        exerciseSelector.value = index;
+
+        // Determine which Quiz Number this index belongs to
+        if (index === 0 || index === 18 || index === 19) {
+          activeQuizNum = 1;
+        } else {
+          var matchedItem = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === index; });
+          if (matchedItem) {
+            activeQuizNum = matchedItem.quizNum;
+          }
+        }
+
+        // Sync dropdowns
+        if (exerciseSelector) {
+          exerciseSelector.value = index;
+        }
+        if (sidebarExerciseSelector) {
+          sidebarExerciseSelector.value = index;
+        }
 
         // Reset drawing state
         setDrawing(false);
 
-        // Update Breadcrumb & Sidebar
-        bcTopic.textContent = currentEx.topic;
+        // Update Breadcrumb & Sidebar Card details
+        bcTopic.textContent = 'Quiz ' + activeQuizNum + ': ' + (currentEx.sectionTitle || currentEx.topic);
         bcExercise.textContent = currentEx.name;
         exerciseTitle.textContent = currentEx.name;
         exerciseInstructions.innerHTML = currentEx.instructions;
-        metaProgress.textContent = (index + 1) + ' of ' + EXERCISES.length;
-        metaZoom.textContent = 'Zoom ' + map.getZoom();
-        metaPoints.textContent = currentEx.route.length;
+        if (metaProgress) metaProgress.textContent = activeQuizNum + ' of 20 (Quiz ' + activeQuizNum + ')';
+        if (metaZoom) metaZoom.textContent = 'Zoom ' + map.getZoom();
+        if (metaPoints) metaPoints.textContent = currentEx.route.length;
 
         // Toggle Keep-Left Box Tip
         if (currentEx.folder.indexOf('KeepingLeft') !== -1) {
@@ -2161,6 +3018,11 @@
           } else {
             answerPolyline.setLatLngs([]);
           }
+          if (answerLink) {
+            answerLink.textContent = 'Displaying Official Answer Route – ' + currentEx.name;
+            answerLink.style.textDecoration = 'none';
+            answerLink.style.cursor = 'default';
+          }
         }
 
         // Pan & Zoom to Home
@@ -2169,6 +3031,16 @@
         // Update Calibrator Live Display
         updateCalibratorUI();
         updateKeepLeftIndicator();
+
+        // Re-render sidebar view and nest exercise card
+        renderSidebarView();
+
+        // Zero-destruction guarantee: invalidate Leaflet size to fill the wider 2-column map viewport cleanly
+        setTimeout(function () {
+          if (map) {
+            map.invalidateSize();
+          }
+        }, 50);
       }
 
       /* =========================================================================
@@ -2182,8 +3054,10 @@
         btnDraw.classList.toggle('stop-mode', active);
         mapContainer.classList.toggle('drawing-mode', active);
 
-        metaDrawStatus.textContent = active ? 'Drawing Mode' : 'Pan Mode';
-        metaDrawStatus.style.color = active ? '#b78103' : '#2e7d32';
+        if (metaDrawStatus) {
+          metaDrawStatus.textContent = active ? 'Drawing Mode' : 'Pan Mode';
+          metaDrawStatus.style.color = active ? '#b78103' : '#2e7d32';
+        }
 
         if (!active) {
           cursorFollower.style.display = 'none';
@@ -2272,8 +3146,22 @@
         cursorTooltip.style.top = my + 'px';
       }
 
+      function isUIControlEvent(e) {
+        if (!e || !e.target) return false;
+        var el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+        return !!(el && el.closest && el.closest('#examControlBar, .leaflet-control, #calibratorLauncher, #calibratorToolbar'));
+      }
+
       mapViewport.addEventListener('mousemove', function (e) {
         if (isDrawing) {
+          if (isUIControlEvent(e)) {
+            cursorFollower.style.display = 'none';
+            cursorTooltip.style.display = 'none';
+            isHoveringLastVertex = false;
+            return;
+          }
+          cursorFollower.style.display = 'block';
+          cursorTooltip.style.display = 'block';
           checkHoverLastVertex(e.clientX, e.clientY);
           updateFollowerPosition(e.clientX, e.clientY);
           updateTooltipText();
@@ -2288,6 +3176,12 @@
 
       mapViewport.addEventListener('mouseenter', function (e) {
         if (isDrawing) {
+          if (isUIControlEvent(e)) {
+            cursorFollower.style.display = 'none';
+            cursorTooltip.style.display = 'none';
+            isHoveringLastVertex = false;
+            return;
+          }
           cursorFollower.style.display = 'block';
           cursorTooltip.style.display = 'block';
           checkHoverLastVertex(e.clientX, e.clientY);
@@ -2300,12 +3194,20 @@
       var downPos = null;
 
       mapViewport.addEventListener('mousedown', function (e) {
+        if (isUIControlEvent(e)) {
+          downPos = null;
+          return;
+        }
         if (e.button === 0) {
           downPos = { x: e.clientX, y: e.clientY };
         }
       });
 
       mapViewport.addEventListener('mouseup', function (e) {
+        if (isUIControlEvent(e)) {
+          downPos = null;
+          return;
+        }
         if (e.button !== 0 || !downPos) return;
         var dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
         downPos = null;
@@ -2344,10 +3246,11 @@
 
         currentEx.route.push(pt);
         routePolyline.setLatLngs(currentEx.route);
-        metaPoints.textContent = currentEx.route.length;
+        if (metaPoints) metaPoints.textContent = currentEx.route.length;
 
         updateKeepLeftIndicator();
         updateTooltipText();
+        updateSectionsPanelStatus();
       });
 
       // Right-click removes last vertex
@@ -2355,10 +3258,11 @@
         if (currentEx.route.length > 0) {
           currentEx.route.pop();
           routePolyline.setLatLngs(currentEx.route);
-          metaPoints.textContent = currentEx.route.length;
+          if (metaPoints) metaPoints.textContent = currentEx.route.length;
           isHoveringLastVertex = false;
           updateKeepLeftIndicator();
           updateTooltipText();
+          updateSectionsPanelStatus();
         }
       }
 
@@ -2370,12 +3274,23 @@
       // Keep indicator aligned on pan and zoom
       map.on('move zoom viewreset', function () {
         updateKeepLeftIndicator();
-        metaZoom.textContent = 'Zoom ' + map.getZoom();
+        if (metaZoom) metaZoom.textContent = 'Zoom ' + map.getZoom();
       });
 
       /* =========================================================================
-         10. EXAM CONTROL BAR BUTTONS
+         10. EXAM CONTROL BAR BUTTONS & UI PROPAGATION GUARDS
          ========================================================================= */
+      // Stop UI controls from bubbling map-altering clicks or mouseup/mousedown events
+      ['mousedown', 'mouseup', 'click', 'dblclick'].forEach(function (evtName) {
+        [examControlBar, calibratorLauncher, calibratorToolbar].forEach(function (el) {
+          if (el) {
+            el.addEventListener(evtName, function (e) {
+              e.stopPropagation();
+            });
+          }
+        });
+      });
+
       btnDraw.addEventListener('click', function () {
         setDrawing(!isDrawing);
       });
@@ -2388,9 +3303,10 @@
         if (confirm('Clear the current route?')) {
           currentEx.route = [];
           routePolyline.setLatLngs([]);
-          metaPoints.textContent = '0';
+          if (metaPoints) metaPoints.textContent = '0';
           updateKeepLeftIndicator();
           setDrawing(false);
+          updateSectionsPanelStatus();
         }
       });
 
@@ -2413,13 +3329,82 @@
         window.open(url, '_blank');
       });
 
+      if (btnBackToQuiz) {
+        btnBackToQuiz.addEventListener('click', function () {
+          var targetUrl = window.location.href.split('?')[0].split('#')[0] + '?exercise=' + encodeURIComponent(currentEx.id);
+          try {
+            if (window.opener && !window.opener.closed) {
+              window.opener.focus();
+              window.close();
+              setTimeout(function () {
+                window.location.href = targetUrl;
+              }, 300);
+              return;
+            }
+          } catch (e) {
+            // Opener cross-origin or blocked
+          }
+          window.location.href = targetUrl;
+        });
+      }
+
       btnNext.addEventListener('click', function () {
-        if (currentExerciseIndex < EXERCISES.length - 1) {
-          loadExercise(currentExerciseIndex + 1);
+        // Mark current exercise as completed
+        completedExercises[currentExerciseIndex] = true;
+
+        if (activeQuizNum === 1) {
+          // Keep Left multi-part sequence (Parts 1, 2, 3)
+          if (currentExerciseIndex === 0) {
+            // Part 1 completed -> advance to Part 2 (idx 18)
+            loadExercise(18);
+            return;
+          } else if (currentExerciseIndex === 18) {
+            // Part 2 completed -> advance to Part 3 (idx 19)
+            loadExercise(19);
+            return;
+          } else if (currentExerciseIndex === 19) {
+            // All 3 parts of Quiz 1 completed!
+            completedQuizzes[1] = true;
+            updateSectionsCompletedCount();
+            // Quiz 1 and its 3 parts disappear from left sidebar list, Quizzes 2 to 20 appear in left sidebar
+            currentViewMode = 'all';
+            if (sidebarExerciseSelector) sidebarExerciseSelector.value = 'all';
+            renderSidebarView();
+            // Load Quiz 2 on the map
+            loadExercise(1);
+            return;
+          }
+        }
+
+        // For Quizzes 2 to 20:
+        completedQuizzes[activeQuizNum] = true;
+        updateSectionsCompletedCount();
+
+        // Mark completed, hide from uncompleted sidebar list, display remaining uncompleted quizzes
+        currentViewMode = 'all';
+        if (sidebarExerciseSelector) sidebarExerciseSelector.value = 'all';
+        renderSidebarView();
+
+        // Advance to next uncompleted quiz
+        var nextQuiz = null;
+        for (var i = 0; i < QUIZ_DATA_20.length; i++) {
+          var q = QUIZ_DATA_20[i];
+          if (!completedQuizzes[q.quizNum]) {
+            nextQuiz = q;
+            break;
+          }
+        }
+
+        if (nextQuiz) {
+          loadExercise(nextQuiz.parts[0].exIndex);
         } else {
           finishQuiz();
         }
       });
+
+      function updateSectionsPanelStatus() {
+        updateSectionsCompletedCount();
+      }
 
       function finishQuiz() {
         quizOverlay.classList.add('show');
@@ -2437,6 +3422,11 @@
 
       btnContinueQuiz.addEventListener('click', function () {
         quizOverlay.classList.remove('show');
+        completedQuizzes = {};
+        completedExercises = {};
+        updateSectionsCompletedCount();
+        currentViewMode = 'isolated';
+        activeQuizNum = 1;
         loadExercise(0);
       });
 
@@ -2616,6 +3606,7 @@
       }
 
       // Initial load
+      renderSidebarView();
       loadExercise(currentExerciseIndex);
 
       /* =========================================================================
@@ -2642,28 +3633,208 @@
       var activeResetEmail = '';
       var activeResetCode = '';
 
-      // Initialize default customer in localStorage if empty
-      function getCustomersDb() {
-        try {
-          var db = JSON.parse(localStorage.getItem('sts_customers_db'));
-          if (Array.isArray(db) && db.length > 0) return db;
-        } catch (e) {}
+      // Seed candidate account (always available)
+      var SEED_CANDIDATE = {
+        name: 'TfL Practice Candidate',
+        email: 'candidate@smarttaxisolutions.co.uk',
+        password: 'password123',
+        createdAt: 1700000000000
+      };
 
-        // Default seed candidate
-        var initial = [
-          {
-            name: 'TfL Practice Candidate',
-            email: 'candidate@smarttaxisolutions.co.uk',
-            password: 'password123',
-            createdAt: Date.now()
+      // In-memory customer cache for current page lifecycle
+      var _memoryDbCache = null;
+
+      // Multi-storage read helper across localStorage, sessionStorage, window.name & document.cookie
+      function readRawFromAllStorages(key) {
+        var found = [];
+        // 1. localStorage
+        try {
+          var ls = localStorage.getItem(key);
+          if (ls) found.push(ls);
+        } catch (_) {}
+
+        // 2. sessionStorage
+        try {
+          var ss = sessionStorage.getItem(key);
+          if (ss) found.push(ss);
+        } catch (_) {}
+
+        // 3. window.name fallback (preserves state across page reloads on local file:// URLs)
+        try {
+          if (window.name && window.name.indexOf(key + '=') !== -1) {
+            var parts = window.name.split(';');
+            for (var i = 0; i < parts.length; i++) {
+              var part = parts[i].trim();
+              if (part.indexOf(key + '=') === 0) {
+                found.push(decodeURIComponent(part.substring(key.length + 1)));
+              }
+            }
           }
-        ];
-        localStorage.setItem('sts_customers_db', JSON.stringify(initial));
-        return initial;
+        } catch (_) {}
+
+        // 4. document.cookie fallback
+        try {
+          var match = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
+          if (match && match[1]) {
+            found.push(decodeURIComponent(match[1]));
+          }
+        } catch (_) {}
+
+        return found;
+      }
+
+      // Multi-storage write helper across localStorage, sessionStorage, window.name & document.cookie
+      function writeToAllStorages(key, valueStr) {
+        // 1. localStorage
+        try {
+          localStorage.setItem(key, valueStr);
+        } catch (_) {}
+
+        // 2. sessionStorage
+        try {
+          sessionStorage.setItem(key, valueStr);
+        } catch (_) {}
+
+        // 3. window.name fallback
+        try {
+          var currentName = window.name || '';
+          var prefix = key + '=';
+          var encoded = prefix + encodeURIComponent(valueStr);
+          var parts = currentName.split(';').filter(function (p) {
+            return p.trim().indexOf(prefix) !== 0 && p.trim().length > 0;
+          });
+          parts.push(encoded);
+          window.name = parts.join(';');
+        } catch (_) {}
+
+        // 4. document.cookie fallback (1-year persistence)
+        try {
+          var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+          document.cookie = key + '=' + encodeURIComponent(valueStr) + '; expires=' + expires + '; path=/; SameSite=Lax';
+        } catch (_) {}
+      }
+
+      // Bulletproof Multi-Storage Account Database: guarantees accounts are never lost
+      function getCustomersDb() {
+        var rawList = readRawFromAllStorages('sts_customers_db');
+        var userMap = {};
+
+        // 1. Always register the seed candidate first
+        userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
+
+        // 2. Merge from memory cache if populated
+        if (Array.isArray(_memoryDbCache)) {
+          _memoryDbCache.forEach(function (u) {
+            if (u && u.email) {
+              var em = String(u.email).trim().toLowerCase();
+              userMap[em] = {
+                name: String(u.name || '').trim() || em.split('@')[0],
+                email: em,
+                password: String(u.password || '').trim(),
+                createdAt: u.createdAt || Date.now()
+              };
+            }
+          });
+        }
+
+        // 3. Merge from all discovered storage layers (never overwrite registered users with seed user)
+        rawList.forEach(function (raw) {
+          try {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              parsed.forEach(function (u) {
+                if (u && u.email) {
+                  var em = String(u.email).trim().toLowerCase();
+                  var existing = userMap[em];
+                  userMap[em] = {
+                    name: String(u.name || (existing && existing.name) || '').trim() || em.split('@')[0],
+                    email: em,
+                    password: String(u.password || (existing && existing.password) || '').trim(),
+                    createdAt: u.createdAt || (existing && existing.createdAt) || Date.now()
+                  };
+                }
+              });
+            }
+          } catch (_) {}
+        });
+
+        var merged = Object.keys(userMap).map(function (k) { return userMap[k]; });
+        _memoryDbCache = merged;
+        writeToAllStorages('sts_customers_db', JSON.stringify(merged));
+        return merged;
       }
 
       function saveCustomersDb(db) {
-        localStorage.setItem('sts_customers_db', JSON.stringify(db));
+        if (!Array.isArray(db)) return;
+        var userMap = {};
+        // Seed candidate is always included
+        userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
+
+        db.forEach(function (u) {
+          if (u && u.email) {
+            var em = String(u.email).trim().toLowerCase();
+            userMap[em] = {
+              name: String(u.name || '').trim() || em.split('@')[0],
+              email: em,
+              password: String(u.password || '').trim(),
+              createdAt: u.createdAt || Date.now()
+            };
+          }
+        });
+
+        var normalized = Object.keys(userMap).map(function (k) { return userMap[k]; });
+        _memoryDbCache = normalized;
+        writeToAllStorages('sts_customers_db', JSON.stringify(normalized));
+      }
+
+      // Remember Me Credential Helpers
+      function getRememberedCredentials() {
+        var rawList = readRawFromAllStorages('sts_remembered_credentials');
+        for (var i = 0; i < rawList.length; i++) {
+          try {
+            var creds = JSON.parse(rawList[i]);
+            if (creds && typeof creds === 'object') {
+              return {
+                email: String(creds.email || '').trim().toLowerCase(),
+                password: String(creds.password || '').trim(),
+                remember: creds.remember !== false
+              };
+            }
+          } catch (_) {}
+        }
+        return { email: '', password: '', remember: true };
+      }
+
+      function saveRememberedCredentials(email, password, remember) {
+        var creds = {
+          email: String(email || '').trim().toLowerCase(),
+          password: remember ? String(password || '').trim() : '',
+          remember: !!remember
+        };
+        writeToAllStorages('sts_remembered_credentials', JSON.stringify(creds));
+      }
+
+      function applyRememberedCredentialsToLoginForm() {
+        var creds = getRememberedCredentials();
+        var emailInput = $('loginEmail');
+        var passInput = $('loginPassword');
+        var rememberBox = $('loginRemember');
+
+        if (rememberBox) {
+          rememberBox.checked = creds.remember !== false;
+        }
+
+        if (emailInput && creds.email) {
+          emailInput.value = creds.email;
+        }
+
+        if (passInput) {
+          if (creds.remember && creds.password) {
+            passInput.value = creds.password;
+          } else if (!creds.remember) {
+            passInput.value = '';
+          }
+        }
       }
 
       function showAuthAlert(message, type) {
@@ -2691,14 +3862,29 @@
         if (viewName === 'login') {
           authTitle.textContent = 'Candidate Practice Portal';
           authSubtitle.textContent = 'Sign in to access your TfL Topographical Skills simulator.';
-          setTimeout(function () { $('loginEmail').focus(); }, 50);
+          applyRememberedCredentialsToLoginForm();
+          setTimeout(function () {
+            var emailInput = $('loginEmail');
+            var passInput = $('loginPassword');
+            if (emailInput && !emailInput.value) {
+              emailInput.focus();
+            } else if (passInput && !passInput.value) {
+              passInput.focus();
+            } else if (passInput) {
+              passInput.focus();
+            }
+          }, 50);
         } else if (viewName === 'signup') {
           authTitle.textContent = 'Create Student Account';
-          authSubtitle.textContent = 'Register to practice all 18 TfL Topographical exam scenarios.';
+          authSubtitle.textContent = 'Register to practice all 20 TfL Topographical exam scenarios.';
           setTimeout(function () { $('signupName').focus(); }, 50);
         } else if (viewName === 'forgot') {
           authTitle.textContent = 'Reset Your Password';
           authSubtitle.textContent = 'Enter your registered email address to receive a 6-digit verification code.';
+          var creds = getRememberedCredentials();
+          if (creds && creds.email && $('forgotEmail')) {
+            $('forgotEmail').value = creds.email;
+          }
           setTimeout(function () { $('forgotEmail').focus(); }, 50);
         } else if (viewName === 'reset') {
           authTitle.textContent = 'Set New Password';
@@ -2735,11 +3921,12 @@
       $('linkToLoginFromForgot').addEventListener('click', function () { switchAuthView('login'); });
       $('linkToLoginFromReset').addEventListener('click', function () { switchAuthView('login'); });
 
-      // Handle Login
+      // Handle Login with trimmed credentials and Remember Me persistence
       formLogin.addEventListener('submit', function (e) {
         e.preventDefault();
         var email = $('loginEmail').value.trim().toLowerCase();
-        var password = $('loginPassword').value;
+        var password = $('loginPassword').value.trim();
+        var remember = $('loginRemember') ? $('loginRemember').checked : true;
 
         if (!email || !password) {
           showAuthAlert('Please enter both your email and password.', 'error');
@@ -2748,7 +3935,7 @@
 
         var db = getCustomersDb();
         var user = db.find(function (u) {
-          return u.email.toLowerCase() === email && u.password === password;
+          return u.email.toLowerCase() === email && u.password.trim() === password;
         });
 
         if (!user) {
@@ -2756,19 +3943,22 @@
           return;
         }
 
+        // Save or update remembered credentials
+        saveRememberedCredentials(user.email, user.password, remember);
+
         completeAuthentication({
           name: user.name || user.email.split('@')[0],
           email: user.email
         });
       });
 
-      // Handle Sign Up
+      // Handle Sign Up with multi-storage persistence & auto-login
       formSignup.addEventListener('submit', function (e) {
         e.preventDefault();
         var name = $('signupName').value.trim();
         var email = $('signupEmail').value.trim().toLowerCase();
-        var password = $('signupPassword').value;
-        var confirmPassword = $('signupConfirmPassword').value;
+        var password = $('signupPassword').value.trim();
+        var confirmPassword = $('signupConfirmPassword').value.trim();
 
         if (!name || !email || !password || !confirmPassword) {
           showAuthAlert('All registration fields are required.', 'error');
@@ -2792,25 +3982,34 @@
         }
 
         var db = getCustomersDb();
-        var exists = db.some(function (u) { return u.email.toLowerCase() === email; });
-        if (exists) {
-          showAuthAlert('An account with this email address already exists. Please log in.', 'error');
-          return;
+        var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === email; });
+        var user;
+        if (userIdx !== -1) {
+          // If already registered with this email, update name/password smoothly and log in without blocking
+          db[userIdx].name = name || db[userIdx].name;
+          db[userIdx].password = password;
+          user = db[userIdx];
+        } else {
+          user = {
+            name: name,
+            email: email,
+            password: password,
+            createdAt: Date.now()
+          };
+          db.push(user);
         }
-
-        var newUser = {
-          name: name,
-          email: email,
-          password: password,
-          createdAt: Date.now()
-        };
-        db.push(newUser);
         saveCustomersDb(db);
 
-        completeAuthentication({
-          name: newUser.name,
-          email: newUser.email
-        });
+        // Save credentials into remembered store so login modal pre-fills them
+        saveRememberedCredentials(user.email, user.password, true);
+
+        showAuthAlert('Account created successfully! Logging you in...', 'success');
+        setTimeout(function () {
+          completeAuthentication({
+            name: user.name,
+            email: user.email
+          });
+        }, 500);
       });
 
       // Handle Forgot Password
@@ -2848,8 +4047,8 @@
       formReset.addEventListener('submit', function (e) {
         e.preventDefault();
         var code = $('resetCode').value.trim();
-        var newPass = $('resetNewPassword').value;
-        var confirmPass = $('resetConfirmPassword').value;
+        var newPass = $('resetNewPassword').value.trim();
+        var confirmPass = $('resetConfirmPassword').value.trim();
 
         if (!code || !newPass || !confirmPass) {
           showAuthAlert('Please fill in all verification and password fields.', 'error');
@@ -2872,7 +4071,7 @@
         }
 
         var db = getCustomersDb();
-        var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === activeResetEmail; });
+        var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === activeResetEmail.toLowerCase().trim(); });
         if (userIdx === -1) {
           showAuthAlert('Account could not be found to update password.', 'error');
           return;
@@ -2880,6 +4079,9 @@
 
         db[userIdx].password = newPass;
         saveCustomersDb(db);
+
+        // Update remembered credentials with new password
+        saveRememberedCredentials(db[userIdx].email, newPass, true);
 
         showAuthAlert('Password reset successful! Logging you in...', 'success');
         setTimeout(function () {
@@ -2893,7 +4095,9 @@
       // Complete Authentication & Direct Redirect to Quiz
       function completeAuthentication(sessionUser) {
         try {
-          localStorage.setItem('sts_active_session', JSON.stringify(sessionUser));
+          var str = JSON.stringify(sessionUser);
+          localStorage.setItem('sts_active_session', str);
+          sessionStorage.setItem('sts_active_session', str);
         } catch (e) {}
 
         // Populate User Status Badge in Header
@@ -2920,14 +4124,17 @@
         }
       }
 
-      // Logout Flow
+      // Logout Flow: ONLY remove session, NEVER wipe accounts or remembered credentials
       btnLogout.addEventListener('click', function () {
         try {
           localStorage.removeItem('sts_active_session');
+          sessionStorage.removeItem('sts_active_session');
         } catch (e) {}
+
         userBadge.style.display = 'none';
         showAuthAlert('You have been logged out successfully.', 'info');
         switchAuthView('login');
+        applyRememberedCredentialsToLoginForm();
         authOverlay.style.display = 'flex';
       });
 
@@ -2935,13 +4142,15 @@
       function checkActiveSession() {
         var savedSession = null;
         try {
-          savedSession = JSON.parse(localStorage.getItem('sts_active_session'));
+          var raw = localStorage.getItem('sts_active_session') || sessionStorage.getItem('sts_active_session');
+          if (raw) savedSession = JSON.parse(raw);
         } catch (e) {}
 
         if (savedSession && savedSession.email) {
           completeAuthentication(savedSession);
         } else {
           switchAuthView('login');
+          applyRememberedCredentialsToLoginForm();
           authOverlay.style.display = 'flex';
         }
       }

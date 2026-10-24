@@ -4150,7 +4150,24 @@
         } catch (_) {}
       }
 
+      function getApprovedRegistry() {
+        var map = {};
+        try {
+          var raw = localStorage.getItem('sts_approved_emails') || sessionStorage.getItem('sts_approved_emails');
+          if (raw) map = JSON.parse(raw) || {};
+        } catch (_) {}
+        try {
+          var match = document.cookie.match(/(?:^|; )sts_approved_emails=([^;]*)/);
+          if (match && match[1]) {
+            var cMap = JSON.parse(decodeURIComponent(match[1]));
+            Object.assign(map, cMap);
+          }
+        } catch (_) {}
+        return map;
+      }
+
       function getCustomersDb() {
+        var approvedMap = getApprovedRegistry();
         var rawList = readRawFromAllStorages('sts_customers_db');
         var userMap = {};
 
@@ -4164,8 +4181,26 @@
               parsed.forEach(function (u) {
                 if (u && (u.email || u.id)) {
                   var em = String(u.email || u.id).trim().toLowerCase();
+                  var nm = String(u.name || '').trim().toLowerCase();
+                  var cid = String(u.id || '').trim().toLowerCase();
                   var existing = userMap[em];
-                  var effStatus = u.approvalStatus || u.status || u.bookingStatus || (u.booking && (u.booking.approvalStatus || u.booking.status || u.booking.bookingStatus)) || (existing && existing.status) || 'pending';
+
+                  // Check if this candidate is in approved registry
+                  var reg = approvedMap[em] || (nm && approvedMap[nm]) || (cid && approvedMap[cid]);
+
+                  var uStatus = String(u.status || u.approvalStatus || u.bookingStatus || (u.booking && (u.booking.status || u.booking.approvalStatus || u.booking.bookingStatus)) || '').toLowerCase().trim();
+                  var exStatus = String(existing && (existing.status || existing.approvalStatus || (existing.booking && existing.booking.status)) || '').toLowerCase().trim();
+
+                  var effStatus = 'pending';
+                  if (reg && (reg.status === 'approved' || reg.status === 'rejected')) {
+                    effStatus = reg.status;
+                  } else if (exStatus === 'approved' || uStatus === 'approved') {
+                    effStatus = 'approved';
+                  } else if (exStatus === 'rejected' || uStatus === 'rejected') {
+                    effStatus = 'rejected';
+                  } else {
+                    effStatus = uStatus || exStatus || 'pending';
+                  }
 
                   userMap[em] = {
                     id: u.id || (existing && existing.id) || ('cust_' + Date.now()),
@@ -4183,11 +4218,39 @@
                     userMap[em].booking.status = effStatus;
                     userMap[em].booking.approvalStatus = effStatus;
                     userMap[em].booking.bookingStatus = effStatus;
+                    if (effStatus === 'approved') {
+                      var days = Number(userMap[em].booking.totalDays) > 0 ? Number(userMap[em].booking.totalDays) : 1;
+                      if (!userMap[em].booking.endTimestamp || isNaN(Number(userMap[em].booking.endTimestamp)) || Number(userMap[em].booking.endTimestamp) < Date.now()) {
+                        userMap[em].booking.endTimestamp = Date.now() + (days * 86400000);
+                      }
+                    }
                   }
                 }
               });
             }
           } catch (_) {}
+        });
+
+        // Ensure every approved entry from approvedMap is represented
+        Object.keys(approvedMap).forEach(function (k) {
+          var item = approvedMap[k];
+          if (item && item.status === 'approved') {
+            var targetEmail = (item.email || k).toLowerCase();
+            if (targetEmail.indexOf('@') !== -1) {
+              if (userMap[targetEmail]) {
+                userMap[targetEmail].status = 'approved';
+                userMap[targetEmail].approvalStatus = 'approved';
+                userMap[targetEmail].bookingStatus = 'approved';
+                if (userMap[targetEmail].booking) {
+                  userMap[targetEmail].booking.status = 'approved';
+                  userMap[targetEmail].booking.approvalStatus = 'approved';
+                  userMap[targetEmail].booking.bookingStatus = 'approved';
+                  var days = Number(userMap[targetEmail].booking.totalDays) > 0 ? Number(userMap[targetEmail].booking.totalDays) : 1;
+                  userMap[targetEmail].booking.endTimestamp = Date.now() + (days * 86400000);
+                }
+              }
+            }
+          }
         });
 
         var merged = Object.keys(userMap).map(function (k) { return userMap[k]; });
@@ -4197,13 +4260,29 @@
 
       function saveCustomersDb(db) {
         if (!Array.isArray(db)) return;
+        var approvedMap = getApprovedRegistry();
         var userMap = {};
         userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
 
         db.forEach(function (u) {
           if (u && (u.email || u.id)) {
             var em = String(u.email || u.id).trim().toLowerCase();
-            var effStatus = u.approvalStatus || u.status || u.bookingStatus || (u.booking && (u.booking.approvalStatus || u.booking.status || u.booking.bookingStatus)) || 'pending';
+            var nm = String(u.name || '').trim().toLowerCase();
+            var cid = String(u.id || '').trim().toLowerCase();
+            var reg = approvedMap[em] || (nm && approvedMap[nm]) || (cid && approvedMap[cid]);
+
+            var uStatus = String(u.status || u.approvalStatus || u.bookingStatus || (u.booking && (u.booking.status || u.booking.approvalStatus)) || 'pending').toLowerCase().trim();
+            var effStatus = 'pending';
+            if (reg && (reg.status === 'approved' || reg.status === 'rejected')) {
+              effStatus = reg.status;
+            } else if (uStatus === 'approved') {
+              effStatus = 'approved';
+            } else if (uStatus === 'rejected') {
+              effStatus = 'rejected';
+            } else {
+              effStatus = uStatus;
+            }
+
             userMap[em] = {
               id: u.id || ('cust_' + Date.now()),
               name: String(u.name || '').trim() || em.split('@')[0],
@@ -4220,6 +4299,12 @@
               userMap[em].booking.status = effStatus;
               userMap[em].booking.approvalStatus = effStatus;
               userMap[em].booking.bookingStatus = effStatus;
+              if (effStatus === 'approved') {
+                var days = Number(userMap[em].booking.totalDays) > 0 ? Number(userMap[em].booking.totalDays) : 1;
+                if (!userMap[em].booking.endTimestamp || isNaN(Number(userMap[em].booking.endTimestamp)) || Number(userMap[em].booking.endTimestamp) < Date.now()) {
+                  userMap[em].booking.endTimestamp = Date.now() + (days * 86400000);
+                }
+              }
             }
           }
         });
@@ -4351,6 +4436,8 @@
       function switchAuthView(viewName) {
         showAuthAlert('', '');
         codeNotification.style.display = 'none';
+        authOverlay.style.visibility = 'visible';
+        authOverlay.style.pointerEvents = 'auto';
 
         formLogin.style.display = (viewName === 'login') ? 'block' : 'none';
         formSignup.style.display = (viewName === 'signup') ? 'block' : 'none';
@@ -4762,7 +4849,7 @@
       }
 
       // Pending Screen Action Buttons: Refresh Approval Status
-      btnPendingRefresh.addEventListener('click', function () {
+      btnPendingRefresh.addEventListener('click', async function () {
         var btn = this;
         var origText = btn.textContent;
         btn.textContent = '🔄 Checking Approval...';
@@ -4777,59 +4864,148 @@
             return;
           }
 
-          var db = getCustomersDb();
           var normEmail = String(sessionUser.email || '').trim().toLowerCase();
           var normId = String(sessionUser.id || '').trim().toLowerCase();
           var normName = String(sessionUser.name || '').trim().toLowerCase();
 
-          var fresh = db.find(function (c) {
-            if (!c) return false;
-            var cEmail = String(c.email || '').trim().toLowerCase();
-            var cId = String(c.id || '').trim().toLowerCase();
-            var cName = String(c.name || '').trim().toLowerCase();
-            return (normEmail && cEmail === normEmail) || 
-                   (normId && cId === normId) || 
-                   (normEmail && cId === normEmail) || 
-                   (normId && cEmail === normId) ||
-                   (normName && cName === normName);
-          });
-
-          if (fresh) {
-            var isApproved = (
-              fresh.status === 'approved' || 
-              fresh.approvalStatus === 'approved' || 
-              fresh.bookingStatus === 'approved' ||
-              (fresh.booking && (fresh.booking.status === 'approved' || fresh.booking.approvalStatus === 'approved'))
-            );
-            var isRejected = (
-              fresh.status === 'rejected' || 
-              fresh.approvalStatus === 'rejected' || 
-              fresh.bookingStatus === 'rejected' ||
-              (fresh.booking && (fresh.booking.status === 'rejected' || fresh.booking.approvalStatus === 'rejected'))
-            );
-
-            if (isApproved) {
-              fresh.status = 'approved';
-              fresh.approvalStatus = 'approved';
-              fresh.bookingStatus = 'approved';
-              if (fresh.booking) fresh.booking.status = 'approved';
-              setSessionUser(fresh);
-              evaluateUserAccess(fresh);
-              return;
-            } else if (isRejected) {
-              fresh.status = 'rejected';
-              fresh.approvalStatus = 'rejected';
-              fresh.bookingStatus = 'rejected';
-              if (fresh.booking) fresh.booking.status = 'rejected';
-              setSessionUser(fresh);
-              evaluateUserAccess(fresh);
-              return;
-            } else {
-              setSessionUser(fresh);
-              showAuthAlert('Status Checked: Your practice access is still pending admin approval.', 'info');
+          function inspectApprovalState() {
+            var approvedMap = getApprovedRegistry();
+            var reg = (normEmail && approvedMap[normEmail]) || 
+                      (normName && approvedMap[normName]) || 
+                      (normId && approvedMap[normId]);
+            if (reg) {
+              if (reg.status === 'approved') return 'approved';
+              if (reg.status === 'rejected') return 'rejected';
             }
+
+            // Direct check in localStorage 'sts_customers_db'
+            try {
+              var raw = localStorage.getItem('sts_customers_db');
+              if (raw) {
+                var list = JSON.parse(raw);
+                if (Array.isArray(list)) {
+                  for (var i = 0; i < list.length; i++) {
+                    var it = list[i];
+                    if (!it) continue;
+                    var itEm = String(it.email || '').trim().toLowerCase();
+                    var itId = String(it.id || '').trim().toLowerCase();
+                    var itNm = String(it.name || '').trim().toLowerCase();
+                    if ((normEmail && itEm === normEmail) || (normId && itId === normId) || (normName && itNm === normName)) {
+                      var itStatus = String(it.status || it.approvalStatus || it.bookingStatus || (it.booking && (it.booking.status || it.booking.approvalStatus)) || '').toLowerCase().trim();
+                      if (itStatus === 'approved') return 'approved';
+                      if (itStatus === 'rejected') return 'rejected';
+                    }
+                  }
+                }
+              }
+            } catch (_) {}
+
+            // Merged DB check
+            var db = getCustomersDb();
+            var fresh = db.find(function (c) {
+              if (!c) return false;
+              var cEmail = String(c.email || '').trim().toLowerCase();
+              var cId = String(c.id || '').trim().toLowerCase();
+              var cName = String(c.name || '').trim().toLowerCase();
+              return (normEmail && cEmail === normEmail) || (normId && cId === normId) || (normName && cName === normName);
+            });
+            if (fresh) {
+              var fStatus = String(fresh.status || fresh.approvalStatus || fresh.bookingStatus || (fresh.booking && (fresh.booking.status || fresh.booking.approvalStatus)) || '').toLowerCase().trim();
+              if (fStatus === 'approved') return 'approved';
+              if (fStatus === 'rejected') return 'rejected';
+            }
+
+            // Session check
+            var sStatus = String(sessionUser.status || sessionUser.approvalStatus || (sessionUser.booking && sessionUser.booking.status) || '').toLowerCase().trim();
+            if (sStatus === 'approved') return 'approved';
+            if (sStatus === 'rejected') return 'rejected';
+
+            return 'pending';
+          }
+
+          var result = inspectApprovalState();
+
+          // If still pending, attempt fast cloud fetch (timeout 1800ms)
+          if (result === 'pending' && typeof fetch !== 'undefined') {
+            try {
+              var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+              var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 1800) : null;
+              var resp = await fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5', {
+                signal: controller ? controller.signal : undefined
+              });
+              if (timeoutId) clearTimeout(timeoutId);
+              if (resp && resp.ok) {
+                var json = await resp.json();
+                var data = (json && json.data) || {};
+                var cloudMatch = (normEmail && data[normEmail]) || (normName && data[normName]) || (normId && data[normId]);
+                if (cloudMatch && (cloudMatch.status === 'approved' || cloudMatch.status === 'rejected')) {
+                  result = cloudMatch.status;
+                  // Persist to local approved registry
+                  var reg = getApprovedRegistry();
+                  if (normEmail) reg[normEmail] = cloudMatch;
+                  if (normName) reg[normName] = cloudMatch;
+                  localStorage.setItem('sts_approved_emails', JSON.stringify(reg));
+                }
+              }
+            } catch (_) {}
+          }
+
+          if (result === 'approved') {
+            sessionUser.status = 'approved';
+            sessionUser.approvalStatus = 'approved';
+            sessionUser.bookingStatus = 'approved';
+            if (!sessionUser.booking) {
+              sessionUser.booking = {
+                startDate: new Date().toISOString().split('T')[0],
+                startTime: '10:00',
+                endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                finishTime: '10:00',
+                totalDays: 1,
+                totalAmount: 20
+              };
+            }
+            sessionUser.booking.status = 'approved';
+            sessionUser.booking.approvalStatus = 'approved';
+            sessionUser.booking.bookingStatus = 'approved';
+            var days = Number(sessionUser.booking.totalDays) > 0 ? Number(sessionUser.booking.totalDays) : 1;
+            sessionUser.booking.endTimestamp = Date.now() + (days * 86400000);
+
+            // Sync to all session keys
+            setSessionUser(sessionUser);
+
+            // Sync into customers DB
+            try {
+              var dbList = getCustomersDb();
+              for (var i = 0; i < dbList.length; i++) {
+                var c = dbList[i];
+                var cEm = String(c.email || '').trim().toLowerCase();
+                var cNm = String(c.name || '').trim().toLowerCase();
+                if ((normEmail && cEm === normEmail) || (normName && cNm === normName)) {
+                  c.status = 'approved';
+                  c.approvalStatus = 'approved';
+                  c.bookingStatus = 'approved';
+                  if (c.booking) {
+                    c.booking.status = 'approved';
+                    c.booking.approvalStatus = 'approved';
+                    c.booking.endTimestamp = sessionUser.booking.endTimestamp;
+                  }
+                }
+              }
+              saveCustomersDb(dbList);
+            } catch (_) {}
+
+            evaluateUserAccess(sessionUser);
+            return;
+          } else if (result === 'rejected') {
+            sessionUser.status = 'rejected';
+            sessionUser.approvalStatus = 'rejected';
+            if (sessionUser.booking) sessionUser.booking.status = 'rejected';
+            setSessionUser(sessionUser);
+            evaluateUserAccess(sessionUser);
+            return;
           } else {
-            showAuthAlert('Account not found in customer database. Please log in again.', 'error');
+            setSessionUser(sessionUser);
+            showAuthAlert('Status Checked: Your practice access is still pending admin approval.', 'info');
           }
         } finally {
           setTimeout(function () {
@@ -4866,8 +5042,18 @@
           return;
         }
 
+        var normEmail = String(user.email || '').trim().toLowerCase();
+        var normName = String(user.name || '').trim().toLowerCase();
+        var normId = String(user.id || '').trim().toLowerCase();
+
+        var approvedMap = getApprovedRegistry();
+        var reg = (normEmail && approvedMap[normEmail]) || 
+                  (normName && approvedMap[normName]) || 
+                  (normId && approvedMap[normId]);
+
         var booking = user.booking;
         var effectiveStatus = String(
+          (reg && reg.status) ||
           user.approvalStatus || 
           user.status || 
           user.bookingStatus || 
@@ -4888,6 +5074,23 @@
         // and regardless of whether the selected start time is in the future)
         if (effectiveStatus === 'approved') {
           var finishTimestamp = parseBookingExpiry(booking);
+          user.status = 'approved';
+          user.approvalStatus = 'approved';
+          user.bookingStatus = 'approved';
+          if (!user.booking) {
+            user.booking = {
+              startDate: new Date().toISOString().split('T')[0],
+              startTime: '10:00',
+              endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+              finishTime: '10:00',
+              totalDays: 1,
+              totalAmount: 20
+            };
+          }
+          user.booking.status = 'approved';
+          user.booking.approvalStatus = 'approved';
+          user.booking.bookingStatus = 'approved';
+          user.booking.endTimestamp = finishTimestamp;
 
           // Save active approved session in all storage keys
           setSessionUser(user);
@@ -4931,6 +5134,8 @@
       // -----------------------------------------------------------------
       function unlockPracticeSimulator(user, finishTimestamp) {
         authOverlay.style.display = 'none';
+        authOverlay.style.visibility = 'hidden';
+        authOverlay.style.pointerEvents = 'none';
 
         // Populate User Header Badge
         userNameEl.textContent = user.name || user.email;
@@ -5087,9 +5292,31 @@
       // Check Active Session on Page Load
       function checkActiveSession() {
         var sessionUser = getActiveSessionUser();
-        if (sessionUser && sessionUser.email) {
+        if (sessionUser && (sessionUser.email || sessionUser.name)) {
+          var normEmail = String(sessionUser.email || '').trim().toLowerCase();
+          var normName = String(sessionUser.name || '').trim().toLowerCase();
+          var normId = String(sessionUser.id || '').trim().toLowerCase();
+
+          var approvedMap = getApprovedRegistry();
+          var reg = (normEmail && approvedMap[normEmail]) || 
+                    (normName && approvedMap[normName]) || 
+                    (normId && approvedMap[normId]);
+
+          if (reg && reg.status === 'approved') {
+            sessionUser.status = 'approved';
+            sessionUser.approvalStatus = 'approved';
+            if (sessionUser.booking) sessionUser.booking.status = 'approved';
+            setSessionUser(sessionUser);
+            evaluateUserAccess(sessionUser);
+            return;
+          }
+
           var db = getCustomersDb();
-          var freshUser = db.find(function (u) { return u.email.toLowerCase() === sessionUser.email.toLowerCase(); });
+          var freshUser = db.find(function (u) {
+            var uEmail = String(u.email || '').trim().toLowerCase();
+            var uName = String(u.name || '').trim().toLowerCase();
+            return (normEmail && uEmail === normEmail) || (normName && uName === normName);
+          });
           if (freshUser) {
             setSessionUser(freshUser);
             evaluateUserAccess(freshUser);
@@ -5106,10 +5333,32 @@
       // Background heartbeat check (every 2.5 seconds)
       setInterval(function () {
         var sessionUser = getActiveSessionUser();
-        if (sessionUser && sessionUser.email) {
+        if (sessionUser && (sessionUser.email || sessionUser.name)) {
+          var normEmail = String(sessionUser.email || '').trim().toLowerCase();
+          var normName = String(sessionUser.name || '').trim().toLowerCase();
+          var normId = String(sessionUser.id || '').trim().toLowerCase();
+
+          var approvedMap = getApprovedRegistry();
+          var reg = (normEmail && approvedMap[normEmail]) || 
+                    (normName && approvedMap[normName]) || 
+                    (normId && approvedMap[normId]);
+
+          if (reg && reg.status === 'approved' && sessionUser.status !== 'approved') {
+            sessionUser.status = 'approved';
+            sessionUser.approvalStatus = 'approved';
+            if (sessionUser.booking) sessionUser.booking.status = 'approved';
+            setSessionUser(sessionUser);
+            evaluateUserAccess(sessionUser);
+            return;
+          }
+
           _memoryDbCache = null;
           var db = getCustomersDb();
-          var fresh = db.find(function (u) { return u.email.toLowerCase() === sessionUser.email.toLowerCase(); });
+          var fresh = db.find(function (u) {
+            var uEmail = String(u.email || '').trim().toLowerCase();
+            var uName = String(u.name || '').trim().toLowerCase();
+            return (normEmail && uEmail === normEmail) || (normName && uName === normName);
+          });
           if (fresh) {
             var curStatus = String(sessionUser.status || (sessionUser.booking ? sessionUser.booking.status : '')).toLowerCase();
             var newStatus = String(fresh.status || (fresh.booking ? fresh.booking.status : '')).toLowerCase();

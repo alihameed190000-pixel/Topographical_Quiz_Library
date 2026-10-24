@@ -1365,6 +1365,20 @@
         return null;
       }
 
+      function syncApprovalsToCloud(map) {
+        if (typeof fetch === 'undefined') return;
+        try {
+          fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: 'sts_approvals_registry',
+              data: map
+            })
+          }).catch(function (e) { console.warn('[Cloud Registry Sync]', e); });
+        } catch (_) {}
+      }
+
       // DOM Elements
       var $ = function (id) { return document.getElementById(id); };
 
@@ -1924,6 +1938,39 @@
         metricActiveSessions.textContent = activeCount;
         metricTotalRevenue.textContent = '£' + totalRev;
 
+        // Auto-sync approved map from all candidates
+        try {
+          var approvedMap = {};
+          try { approvedMap = JSON.parse(localStorage.getItem('sts_approved_emails') || '{}') || {}; } catch (_) {}
+          var mapChanged = false;
+          customers.forEach(function (c) {
+            var st = String(c.approvalStatus || c.status || c.bookingStatus || (c.booking && (c.booking.status || c.booking.approvalStatus)) || '').toLowerCase().trim();
+            if (st === 'approved' || st === 'rejected') {
+              var em = String(c.email || '').trim().toLowerCase();
+              var nm = String(c.name || '').trim().toLowerCase();
+              var cid = String(c.id || '').trim().toLowerCase();
+              var days = (c.booking && c.booking.totalDays) ? Number(c.booking.totalDays) : 1;
+              if (em && (!approvedMap[em] || approvedMap[em].status !== st)) {
+                approvedMap[em] = { status: st, updatedAt: Date.now(), days: days, name: nm, email: em };
+                mapChanged = true;
+              }
+              if (nm && (!approvedMap[nm] || approvedMap[nm].status !== st)) {
+                approvedMap[nm] = { status: st, updatedAt: Date.now(), days: days, email: em, name: nm };
+                mapChanged = true;
+              }
+              if (cid && (!approvedMap[cid] || approvedMap[cid].status !== st)) {
+                approvedMap[cid] = { status: st, updatedAt: Date.now(), days: days, email: em, name: nm };
+                mapChanged = true;
+              }
+            }
+          });
+          if (mapChanged) {
+            localStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap));
+            try { sessionStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap)); } catch (_) {}
+            syncApprovalsToCloud(approvedMap);
+          }
+        } catch (_) {}
+
         // Pending Alert Ticker
         if (pendingCount > 0) {
           alertTicker.style.display = 'flex';
@@ -2151,6 +2198,52 @@
               c.booking.endTimestamp = Date.now() + (days * 86400000);
             }
           }
+
+          // Also update any duplicate or matching records in customers list by email or name
+          var normEmail = String(c.email || email || '').trim().toLowerCase();
+          var normName = String(c.name || '').trim().toLowerCase();
+          var normId = String(c.id || customerId || '').trim().toLowerCase();
+          var days = (c.booking && c.booking.totalDays) ? Number(c.booking.totalDays) : 1;
+
+          customers.forEach(function (other) {
+            if (!other) return;
+            var oEmail = String(other.email || '').trim().toLowerCase();
+            var oName = String(other.name || '').trim().toLowerCase();
+            if ((normEmail && oEmail === normEmail) || (normName && oName === normName)) {
+              other.status = newStatus;
+              other.approvalStatus = newStatus;
+              other.bookingStatus = newStatus;
+              if (other.booking) {
+                other.booking.status = newStatus;
+                other.booking.approvalStatus = newStatus;
+                other.booking.bookingStatus = newStatus;
+                if (newStatus === 'approved') {
+                  other.booking.approvedAt = Date.now();
+                  other.booking.endTimestamp = Date.now() + (days * 86400000);
+                }
+              }
+            }
+          });
+
+          // Dedicated foolproof global lookup map in localStorage: sts_approved_emails
+          var approvedMap = {};
+          try {
+            approvedMap = JSON.parse(localStorage.getItem('sts_approved_emails') || '{}') || {};
+          } catch (_) {}
+
+          if (normEmail) approvedMap[normEmail] = { status: newStatus, updatedAt: Date.now(), days: days, name: normName, email: normEmail };
+          if (normName) approvedMap[normName] = { status: newStatus, updatedAt: Date.now(), days: days, email: normEmail, name: normName };
+          if (normId) approvedMap[normId] = { status: newStatus, updatedAt: Date.now(), days: days, email: normEmail, name: normName };
+
+          localStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap));
+          try { sessionStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap)); } catch (_) {}
+          try {
+            var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = 'sts_approved_emails=' + encodeURIComponent(JSON.stringify(approvedMap)) + '; expires=' + expires + '; path=/; SameSite=Lax';
+          } catch (_) {}
+
+          // Cloud registry sync
+          syncApprovalsToCloud(approvedMap);
 
           // Save the updated array immediately back to localStorage.setItem('sts_customers_db', JSON.stringify(customers))
           saveCustomersDb(customers);

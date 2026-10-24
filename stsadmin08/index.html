@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Taxi Solutions — Admin Portal (stsadmin08)</title>
+  <meta name="description"
+    content="Official Smart Taxi Solutions Ltd Administration Portal for TfL Topographical Skills candidate booking approval, customer account verification, and practice access control.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-navy: #1e3a78;
+      --navy-dark: #0f1f42;
+      --navy-light: #2c4d9e;
+      --navy-subtle: #f0f4fa;
+      --emerald-green: #10b981;
+      --green-dark: #059669;
+      --green-subtle: #ecfdf5;
+      --crimson-red: #ef4444;
+      --red-dark: #dc2626;
+      --red-subtle: #fef2f2;
+      --amber-warning: #f59e0b;
+      --amber-subtle: #fffbeb;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --card-bg: #ffffff;
+      --page-bg: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--page-bg);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* TOP ADMIN NAVIGATION */
+    .admin-navbar {
+      background: #0d1e3a;
+      color: #ffffff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #ffffff;
+    }
+
+    .admin-brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #2563eb, #1e3a78);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+    }
+
+    .admin-brand-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .admin-brand-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #f59e0b;
+      color: #0f172a;
+      padding: 2px 7px;
+      border-radius: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .admin-brand-sub {
+      font-size: 11.5px;
+      color: #94a3b8;
+    }
+
+    .admin-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .admin-slot-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #93c5fd;
+    }
+
+    .admin-slot-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .admin-user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 12px;
+      border-left: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .admin-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .admin-user-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    .admin-user-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .admin-user-role {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .btn-admin-logout {
+      padding: 6px 14px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-admin-logout:hover {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #ef4444;
+    }
+
+    /* AUTHENTICATION OVERLAY / CARD */
+    #adminAuthContainer {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      background: radial-gradient(circle at 50% 20%, #1e3a78 0%, #0d1e3a 100%);
+    }
+
+    .admin-auth-card {
+      width: 100%;
+      max-width: 460px;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      animation: authIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes authIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .admin-auth-header {
+      background: #0f1f42;
+      color: #ffffff;
+      padding: 26px 28px 20px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .admin-auth-header h1 {
+      font-size: 21px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .admin-auth-header p {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .admin-auth-body {
+      padding: 28px;
+    }
+
+    /* FORM ELEMENTS & INPUTS */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-field {
+      width: 100%;
+      height: 42px;
+      padding: 0 42px 0 13px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0f172a;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      transition: all 0.15s ease;
+    }
+
+    .input-field:focus {
+      outline: none;
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    /* EYE ICON TOGGLE BUTTON */
+    .eye-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 4px;
+      transition: color 0.15s ease;
+    }
+
+    .eye-btn:hover {
+      color: #1e293b;
+    }
+
+    .alert-box {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .alert-box.error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      display: block;
+      font-weight: 600;
+    }
+
+    .alert-box.success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+      display: block;
+    }
+
+    .alert-box.info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      display: block;
+    }
+
+    .btn-submit {
+      width: 100%;
+      height: 44px;
+      background: var(--primary-navy);
+      color: #ffffff;
+      border: none;
+      border-radius: 7px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(30, 58, 120, 0.25);
+      transition: all 0.15s ease;
+      margin-top: 6px;
+    }
+
+    .btn-submit:hover {
+      background: var(--navy-dark);
+      box-shadow: 0 4px 10px rgba(15, 31, 66, 0.35);
+    }
+
+    .auth-footer-links {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .auth-link {
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .auth-link:hover {
+      text-decoration: underline;
+    }
+
+    /* CODE DISPATCH SIMULATOR BANNER */
+    .otp-dispatch-banner {
+      background: #eff6ff;
+      border: 1px dashed #3b82f6;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .otp-code-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #1e3a78;
+      background: #ffffff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .btn-autofill {
+      padding: 5px 12px;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* DASHBOARD CONTENT */
+    #adminDashboardContainer {
+      flex: 1;
+      padding: 26px 30px 50px;
+      max-width: 1380px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* METRIC CARDS */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #cbd5e1;
+    }
+
+    .metric-card.navy::before { background: var(--primary-navy); }
+    .metric-card.amber::before { background: var(--amber-warning); }
+    .metric-card.green::before { background: var(--emerald-green); }
+    .metric-card.blue::before { background: #3b82f6; }
+
+    .metric-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .metric-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric-icon {
+      font-size: 18px;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    /* CUSTOMER ALERT BANNER */
+    .alert-ticker {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 9px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(245, 158, 11, 0.08);
+    }
+
+    .alert-ticker-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #92400e;
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .alert-pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+      animation: pulseAlert 1.6s infinite;
+    }
+
+    @keyframes pulseAlert {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    /* SECTION HEADER & CONTROLS */
+    .section-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-count-badge {
+      font-size: 12px;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #334155;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .search-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #ffffff;
+      min-width: 240px;
+    }
+
+    .filter-btn {
+      height: 38px;
+      padding: 0 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #475569;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    .filter-btn.active {
+      background: var(--primary-navy);
+      color: #ffffff;
+      border-color: var(--primary-navy);
+    }
+
+    /* CUSTOMER TABLE */
+    .table-container {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+      overflow-x: auto;
+    }
+
+    .customer-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .customer-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .customer-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    .customer-table tr:hover td {
+      background: #fafcff;
+    }
+
+    .customer-name-cell {
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .customer-email-sub {
+      font-size: 11.5px;
+      font-weight: 400;
+      color: #64748b;
+    }
+
+    .customer-phone-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #1e3a78;
+      background: #eff6ff;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+    }
+
+    .customer-phone-tag:hover {
+      background: #dbeafe;
+    }
+
+    .schedule-badge {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 12px;
+    }
+
+    .schedule-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #334155;
+    }
+
+    .schedule-row strong {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .schedule-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .schedule-tag.start { background: #dcfce7; color: #166534; }
+    .schedule-tag.finish { background: #fee2e2; color: #991b1b; }
+
+    .charge-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #166534;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+      padding: 3px 8px;
+      border-radius: 5px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .status-pill.pending {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .status-pill.approved {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-pill.rejected {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .status-pill.none {
+      background: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+
+    .status-pill.expired {
+      background: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+    }
+
+    /* ACTION BUTTONS (GREEN / RED) */
+    .action-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-green {
+      background: #10b981;
+      color: #ffffff;
+      border: 1px solid #059669;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+      transition: all 0.12s ease;
+    }
+
+    .btn-green:hover {
+      background: #059669;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-red {
+      background: #ef4444;
+      color: #ffffff;
+      border: 1px solid #dc2626;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+      transition: all 0.12s ease;
+    }
+
+    .btn-red:hover {
+      background: #dc2626;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-green:disabled,
+    .btn-red:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ADMIN SLOTS MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 500px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      background: #0d1e3a;
+      color: #ffffff;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 22px;
+    }
+
+    .admin-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: #f8fafc;
+    }
+
+    .admin-list-item-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-list-item-name {
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 13.5px;
+    }
+
+    .admin-list-item-email {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: #64748b;
+    }
+
+    .empty-state-icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ADMIN NAVBAR -->
+  <header class="admin-navbar">
+    <a href="#" class="admin-brand">
+      <div class="admin-brand-icon">STS</div>
+      <div class="admin-brand-info">
+        <div class="admin-brand-title">
+          Smart Taxi Solutions
+          <span class="admin-brand-pill">STSADMIN08</span>
+        </div>
+        <div class="admin-brand-sub">TfL Topographical Practice Master Control</div>
+      </div>
+    </a>
+
+    <div class="admin-nav-actions" id="adminNavActions" style="display: none;">
+      <div class="admin-slot-badge" id="navSlotBadge" title="Registered Administrators (Strict Limit: 3)">
+        <span class="admin-slot-dot"></span>
+        <span id="navSlotText">0 / 3 Admin Slots</span>
+      </div>
+
+      <button id="btnViewAdmins" class="filter-btn" type="button" style="height: 32px; padding: 0 10px; font-size: 11.5px;">View Admins</button>
+
+      <div class="admin-user-info">
+        <div class="admin-avatar" id="navAdminAvatar">AD</div>
+        <div class="admin-user-text">
+          <span class="admin-user-name" id="navAdminName">Admin</span>
+          <span class="admin-user-role">Administrator</span>
+        </div>
+        <button id="btnNavLogout" class="btn-admin-logout" type="button">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- VIEW A: ADMIN AUTHENTICATION SHELL -->
+  <main id="adminAuthContainer">
+    <div class="admin-auth-card">
+      <div class="admin-auth-header">
+        <h1 id="adminAuthTitle">Administrator Portal Login</h1>
+        <p id="adminAuthSubtitle">Sign in with your authorized Smart Taxi Solutions administrator account.</p>
+      </div>
+
+      <div class="admin-auth-body">
+        <!-- GLOBAL FEEDBACK ALERT -->
+        <div id="adminAuthAlert" class="alert-box"></div>
+
+        <!-- NOTIFICATION BANNER (FOR FORGOT PASSWORD OTP) -->
+        <div id="adminOtpBanner" class="otp-dispatch-banner" style="display: none;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #1e40af; text-transform: uppercase;">Admin OTP Code Generated</div>
+            <div>Code: <span id="adminOtpDisplay" class="otp-code-text">123456</span></div>
+          </div>
+          <button id="btnAdminAutofillOtp" class="btn-autofill" type="button">Auto-fill Code</button>
+        </div>
+
+        <!-- FORM 1: ADMIN LOGIN -->
+        <form id="adminFormLogin" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="loginAdminEmail">Admin Email Address</label>
+            <div class="input-wrapper">
+              <input type="email" id="loginAdminEmail" class="input-field" placeholder="admin@smarttaxisolutions.co.uk" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="form-label" for="loginAdminPassword" style="margin-bottom: 0;">Password</label>
+              <a href="javascript:void(0)" id="linkAdminForgot" class="auth-link" style="font-size: 12px;">Forgot Password?</a>
+            </div>
+            <div class="input-wrapper">
+              <input type="password" id="loginAdminPassword" class="input-field" placeholder="Enter your admin password" required autocomplete="current-password">
+              <button type="button" class="eye-btn" data-target="loginAdminPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btnAdminSubmitLogin">Sign In as Admin</button>
+
+          <div class="auth-footer-links">
+            Need to register an admin account? <a href="javascript:void(0)" id="linkAdminToSignup" class="auth-link">Admin Signup (Max 3)</a>
+          </div>
+        </form>
+
+        <!-- FORM 2: ADMIN SIGNUP (STRICT MAX 3 LIMIT) -->
+        <form id="adminFormSignup" style="display: none;" novalidate>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; font-size: 12px; color: #1e3a78;">
+            <strong>Admin Registration Gate:</strong> Strictly a maximum of 3 administrators are allowed to register for stsadmin08.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signupAdminName">Admin Full Name</label>
+            <div class="input-wrapper">
+              <input type="text" id="signupAdminName" class="input-field" placeholder="e.g. Sarah Jenkins" required autocomplete="name">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signupAdminPhone">Phone Number</label>
+            <div class="input-wrapper">
+              <input type="tel" id="signupAdminPhone" class="input-field" placeholder="e.g. 07123456789" required autocomplete="tel">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signupAdminEmail">Admin Email Address</label>
+            <div class="input-wrapper">
+              <input type="email" id="signupAdminEmail" class="input-field" placeholder="e.g. admin@smarttaxisolutions.co.uk" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signupAdminPassword">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="signupAdminPassword" class="input-field" placeholder="Minimum 6 characters" required autocomplete="new-password">
+              <button type="button" class="eye-btn" data-target="signupAdminPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signupAdminConfirmPassword">Confirm Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="signupAdminConfirmPassword" class="input-field" placeholder="Re-enter password" required autocomplete="new-password">
+              <button type="button" class="eye-btn" data-target="signupAdminConfirmPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btnAdminSubmitSignup">Create Admin Account</button>
+
+          <div class="auth-footer-links">
+            Already registered? <a href="javascript:void(0)" id="linkAdminToLoginFromSignup" class="auth-link">Back to Admin Login</a>
+          </div>
+        </form>
+
+        <!-- FORM 3: ADMIN FORGOT PASSWORD -->
+        <form id="adminFormForgot" style="display: none;" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="forgotAdminEmail">Registered Admin Email</label>
+            <div class="input-wrapper">
+              <input type="email" id="forgotAdminEmail" class="input-field" placeholder="Enter your admin email" required autocomplete="email">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btnAdminSubmitForgot">Send Admin Reset OTP</button>
+
+          <div class="auth-footer-links">
+            Remembered your password? <a href="javascript:void(0)" id="linkAdminToLoginFromForgot" class="auth-link">Back to Login</a>
+          </div>
+        </form>
+
+        <!-- FORM 4: ADMIN RESET PASSWORD (OTP VERIFICATION) -->
+        <form id="adminFormReset" style="display: none;" novalidate>
+          <div style="text-align: center; margin-bottom: 14px;">
+            <span id="adminResetEmailBadge" style="display: inline-block; padding: 4px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 12px; font-weight: 600; color: #1e3a78;">Resetting: admin@example.com</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="resetAdminCode">6-Digit Admin Verification OTP</label>
+            <div class="input-wrapper">
+              <input type="text" id="resetAdminCode" class="input-field" placeholder="Enter 6-digit code" maxlength="6" required autocomplete="one-time-code">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="resetAdminNewPassword">New Admin Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="resetAdminNewPassword" class="input-field" placeholder="Minimum 6 characters" required autocomplete="new-password">
+              <button type="button" class="eye-btn" data-target="resetAdminNewPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="resetAdminConfirmPassword">Confirm New Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="resetAdminConfirmPassword" class="input-field" placeholder="Re-enter new password" required autocomplete="new-password">
+              <button type="button" class="eye-btn" data-target="resetAdminConfirmPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
+                <svg class="eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btnAdminSubmitReset">Update Password & Login</button>
+
+          <div class="auth-footer-links">
+            <a href="javascript:void(0)" id="linkAdminToLoginFromReset" class="auth-link">Cancel & Return to Login</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- VIEW B: ADMIN DASHBOARD (ACCESSIBLE ONCE LOGGED IN) -->
+  <main id="adminDashboardContainer" style="display: none;">
+
+    <!-- TOP METRICS ROW -->
+    <section class="metrics-grid">
+      <div class="metric-card navy">
+        <div class="metric-header">
+          <span class="metric-title">Registered Candidates</span>
+          <span class="metric-icon">👥</span>
+        </div>
+        <div class="metric-value" id="metricTotalCustomers">0</div>
+        <div class="metric-sub">Total student accounts in database</div>
+      </div>
+
+      <div class="metric-card amber">
+        <div class="metric-header">
+          <span class="metric-title">Pending Approvals</span>
+          <span class="metric-icon">🟡</span>
+        </div>
+        <div class="metric-value" id="metricPendingApprovals" style="color: #b45309;">0</div>
+        <div class="metric-sub">Bookings awaiting receipt confirmation</div>
+      </div>
+
+      <div class="metric-card green">
+        <div class="metric-header">
+          <span class="metric-title">Active Practice Sessions</span>
+          <span class="metric-icon">🟢</span>
+        </div>
+        <div class="metric-value" id="metricActiveSessions" style="color: #15803d;">0</div>
+        <div class="metric-sub">Currently unlocked for 20 quizzes</div>
+      </div>
+
+      <div class="metric-card blue">
+        <div class="metric-header">
+          <span class="metric-title">Calculated Revenue</span>
+          <span class="metric-icon">💰</span>
+        </div>
+        <div class="metric-value" id="metricTotalRevenue">£0</div>
+        <div class="metric-sub">Based on £20/day approved bookings</div>
+      </div>
+    </section>
+
+    <!-- CUSTOMER ALERT TICKER -->
+    <div id="customerAlertTicker" class="alert-ticker" style="display: none;">
+      <div class="alert-ticker-left">
+        <div class="alert-pulse-dot"></div>
+        <span id="alertTickerMessage">1 customer has selected practice dates and is awaiting payment verification.</span>
+      </div>
+      <button class="filter-btn active" id="btnJumpToPending" type="button" style="height: 30px; font-size: 11.5px; padding: 0 10px;">Review Pending</button>
+    </div>
+
+    <!-- CUSTOMER TABLE CONTROLS BAR -->
+    <div class="section-bar">
+      <div class="section-title">
+        <span>Candidate Practice Bookings</span>
+        <span class="section-count-badge" id="customerCountBadge">0 Total</span>
+      </div>
+
+      <div class="search-filter-row">
+        <input type="text" id="customerSearchInput" class="search-box" placeholder="Search name, phone, or email...">
+        <button type="button" class="filter-btn active" data-filter="all">All</button>
+        <button type="button" class="filter-btn" data-filter="pending">Pending</button>
+        <button type="button" class="filter-btn" data-filter="approved">Approved</button>
+        <button type="button" class="filter-btn" data-filter="rejected">Rejected</button>
+        <button type="button" class="filter-btn" id="btnRefreshData" title="Refresh Database">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- MAIN CUSTOMER TABLE -->
+    <div class="table-container">
+      <table class="customer-table" id="customerTable">
+        <thead>
+          <tr>
+            <th>Candidate Details</th>
+            <th>Contact Phone</th>
+            <th>Practice Window (Strict Match)</th>
+            <th>Days & Amount</th>
+            <th>Access Status</th>
+            <th style="text-align: right;">Action Controls</th>
+          </tr>
+        </thead>
+        <tbody id="customerTableBody">
+          <!-- Rendered dynamically -->
+        </tbody>
+      </table>
+
+      <div id="customerEmptyState" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">📋</div>
+        <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">No Candidate Records Found</div>
+        <div>When candidates sign up and book practice sessions, their requests will appear here immediately.</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: REGISTERED ADMINS LIST -->
+  <div id="adminsModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Registered Administrators (Max 3)</h3>
+        <button type="button" class="modal-close-btn" id="btnCloseAdminsModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 12.5px; color: #64748b; margin-bottom: 14px;">
+          Smart Taxi Solutions restricts administrator portal access to a strict limit of 3 registered administrators.
+        </div>
+        <div id="adminsListContainer">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // Storage keys
+      var STORAGE_KEY_CUSTOMERS = 'sts_customers_db';
+      var STORAGE_KEY_ADMINS = 'sts_admins_db';
+      var STORAGE_KEY_ADMIN_SESSION = 'sts_admin_session';
+
+      // DOM Elements
+      var $ = function (id) { return document.getElementById(id); };
+
+      var authContainer = $('adminAuthContainer');
+      var dashboardContainer = $('adminDashboardContainer');
+      var navActions = $('adminNavActions');
+      var navAdminName = $('navAdminName');
+      var navAdminAvatar = $('navAdminAvatar');
+      var navSlotText = $('navSlotText');
+      var btnNavLogout = $('btnNavLogout');
+      var btnViewAdmins = $('btnViewAdmins');
+
+      var authTitle = $('adminAuthTitle');
+      var authSubtitle = $('adminAuthSubtitle');
+      var authAlert = $('adminAuthAlert');
+      var otpBanner = $('adminOtpBanner');
+      var otpDisplay = $('adminOtpDisplay');
+      var btnAutofillOtp = $('btnAdminAutofillOtp');
+
+      var formLogin = $('adminFormLogin');
+      var formSignup = $('adminFormSignup');
+      var formForgot = $('adminFormForgot');
+      var formReset = $('adminFormReset');
+
+      var linkForgot = $('linkAdminForgot');
+      var linkToSignup = $('linkAdminToSignup');
+      var linkToLoginFromSignup = $('linkAdminToLoginFromSignup');
+      var linkToLoginFromForgot = $('linkAdminToLoginFromForgot');
+      var linkToLoginFromReset = $('linkAdminToLoginFromReset');
+
+      var metricTotalCustomers = $('metricTotalCustomers');
+      var metricPendingApprovals = $('metricPendingApprovals');
+      var metricActiveSessions = $('metricActiveSessions');
+      var metricTotalRevenue = $('metricTotalRevenue');
+
+      var alertTicker = $('customerAlertTicker');
+      var alertTickerMessage = $('alertTickerMessage');
+      var btnJumpToPending = $('btnJumpToPending');
+
+      var customerTableBody = $('customerTableBody');
+      var customerEmptyState = $('customerEmptyState');
+      var customerCountBadge = $('customerCountBadge');
+      var customerSearchInput = $('customerSearchInput');
+      var btnRefreshData = $('btnRefreshData');
+
+      var adminsModal = $('adminsModal');
+      var btnCloseAdminsModal = $('btnCloseAdminsModal');
+      var adminsListContainer = $('adminsListContainer');
+
+      var activeResetEmail = '';
+      var activeResetCode = '';
+      var currentFilter = 'all';
+
+      // -----------------------------------------------------------------
+      // Cross-Tab Real-Time Sync Channel
+      // -----------------------------------------------------------------
+      var syncChannel = null;
+      try {
+        syncChannel = new BroadcastChannel('sts_sync');
+        syncChannel.onmessage = function (e) {
+          if (e && e.data) {
+            renderDashboard();
+          }
+        };
+      } catch (_) {}
+
+      window.addEventListener('storage', function (e) {
+        if (e.key === STORAGE_KEY_CUSTOMERS || e.key === STORAGE_KEY_ADMINS || e.key === 'sts_last_sync_timestamp') {
+          renderDashboard();
+        }
+      });
+
+      function broadcastSync(type, details) {
+        try {
+          localStorage.setItem('sts_last_sync_timestamp', Date.now().toString());
+          if (syncChannel) {
+            syncChannel.postMessage({ type: type, details: details, timestamp: Date.now() });
+          }
+        } catch (_) {}
+      }
+
+      // -----------------------------------------------------------------
+      // Database Persistence Helpers
+      // -----------------------------------------------------------------
+      function getAdminsDb() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY_ADMINS);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        } catch (_) {}
+        return [];
+      }
+
+      function saveAdminsDb(list) {
+        try {
+          localStorage.setItem(STORAGE_KEY_ADMINS, JSON.stringify(list || []));
+          broadcastSync('ADMINS_UPDATED');
+        } catch (_) {}
+      }
+
+      function getCustomersDb() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY_CUSTOMERS);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        } catch (_) {}
+        return [];
+      }
+
+      function saveCustomersDb(list) {
+        try {
+          localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(list || []));
+          broadcastSync('CUSTOMERS_UPDATED');
+        } catch (_) {}
+      }
+
+      // -----------------------------------------------------------------
+      // Eye Icon Toggle Functionality (All Password Fields)
+      // -----------------------------------------------------------------
+      document.querySelectorAll('.eye-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          var targetId = this.getAttribute('data-target');
+          var input = $(targetId);
+          if (!input) return;
+
+          var isPassword = (input.type === 'password');
+          input.type = isPassword ? 'text' : 'password';
+
+          var openIcon = this.querySelector('.eye-open');
+          var closedIcon = this.querySelector('.eye-closed');
+          if (openIcon && closedIcon) {
+            openIcon.style.display = isPassword ? 'none' : 'block';
+            closedIcon.style.display = isPassword ? 'block' : 'none';
+          }
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // Feedback Alert Helper
+      // -----------------------------------------------------------------
+      function showAlert(msg, type) {
+        if (!msg) {
+          authAlert.style.display = 'none';
+          authAlert.textContent = '';
+          authAlert.className = 'alert-box';
+          return;
+        }
+        authAlert.textContent = msg;
+        authAlert.className = 'alert-box ' + (type || 'info');
+        authAlert.style.display = 'block';
+      }
+
+      // -----------------------------------------------------------------
+      // Switch Admin Auth Views
+      // -----------------------------------------------------------------
+      function switchAuthView(viewName) {
+        showAlert('', '');
+        otpBanner.style.display = 'none';
+
+        formLogin.style.display = (viewName === 'login') ? 'block' : 'none';
+        formSignup.style.display = (viewName === 'signup') ? 'block' : 'none';
+        formForgot.style.display = (viewName === 'forgot') ? 'block' : 'none';
+        formReset.style.display = (viewName === 'reset') ? 'block' : 'none';
+
+        var admins = getAdminsDb();
+
+        if (viewName === 'login') {
+          authTitle.textContent = 'Administrator Portal Login';
+          authSubtitle.textContent = 'Sign in with your authorized Smart Taxi Solutions administrator account.';
+          setTimeout(function () { $('loginAdminEmail').focus(); }, 40);
+        } else if (viewName === 'signup') {
+          authTitle.textContent = 'Register Administrator Account';
+          authSubtitle.textContent = 'Strict Limit: Maximum of 3 administrators allowed (' + admins.length + ' of 3 slots used).';
+          setTimeout(function () { $('signupAdminName').focus(); }, 40);
+        } else if (viewName === 'forgot') {
+          authTitle.textContent = 'Reset Admin Password';
+          authSubtitle.textContent = 'Enter your registered administrator email to receive a 6-digit OTP code.';
+          setTimeout(function () { $('forgotAdminEmail').focus(); }, 40);
+        } else if (viewName === 'reset') {
+          authTitle.textContent = 'Set New Admin Password';
+          authSubtitle.textContent = 'Enter the 6-digit verification code and your new password.';
+          $('adminResetEmailBadge').textContent = 'Resetting: ' + activeResetEmail;
+          setTimeout(function () { $('resetAdminCode').focus(); }, 40);
+        }
+      }
+
+      linkToSignup.addEventListener('click', function () { switchAuthView('signup'); });
+      linkForgot.addEventListener('click', function () { switchAuthView('forgot'); });
+      linkToLoginFromSignup.addEventListener('click', function () { switchAuthView('login'); });
+      linkToLoginFromForgot.addEventListener('click', function () { switchAuthView('login'); });
+      linkToLoginFromReset.addEventListener('click', function () { switchAuthView('login'); });
+
+      // -----------------------------------------------------------------
+      // Handle Admin Signup (STRICT MAX 3 ADMINS RULE)
+      // -----------------------------------------------------------------
+      formSignup.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var name = $('signupAdminName').value.trim();
+        var phone = $('signupAdminPhone').value.trim();
+        var email = $('signupAdminEmail').value.trim().toLowerCase();
+        var password = $('signupAdminPassword').value.trim();
+        var confirmPassword = $('signupAdminConfirmPassword').value.trim();
+
+        if (!name || !phone || !email || !password || !confirmPassword) {
+          showAlert('All registration fields are required.', 'error');
+          return;
+        }
+
+        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email)) {
+          showAlert('Please enter a valid email address.', 'error');
+          return;
+        }
+
+        if (password.length < 6) {
+          showAlert('Password must be at least 6 characters long.', 'error');
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          showAlert('Passwords do not match. Please re-enter matching passwords.', 'error');
+          return;
+        }
+
+        var admins = getAdminsDb();
+        var existingIdx = admins.findIndex(function (a) { return a.email.toLowerCase() === email; });
+
+        // STRICT MAX 3 ADMINS RULE:
+        // Only a maximum of 3 persons are allowed to sign up as Admin.
+        // If all 3 admin slots are taken and a 4th person tries to sign up as Admin,
+        // block the signup and display the exact message: "You are not allowed".
+        if (existingIdx === -1 && admins.length >= 3) {
+          showAlert('You are not allowed', 'error');
+          return;
+        }
+
+        var adminUser;
+        if (existingIdx !== -1) {
+          admins[existingIdx].name = name;
+          admins[existingIdx].phone = phone;
+          admins[existingIdx].password = password;
+          adminUser = admins[existingIdx];
+        } else {
+          adminUser = {
+            id: 'admin_' + Date.now(),
+            name: name,
+            phone: phone,
+            email: email,
+            password: password,
+            createdAt: Date.now()
+          };
+          admins.push(adminUser);
+        }
+
+        saveAdminsDb(admins);
+        showAlert('Admin account registered successfully! Logging you in...', 'success');
+        setTimeout(function () {
+          setAdminSession(adminUser);
+        }, 600);
+      });
+
+      // -----------------------------------------------------------------
+      // Handle Admin Login
+      // -----------------------------------------------------------------
+      formLogin.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('loginAdminEmail').value.trim().toLowerCase();
+        var password = $('loginAdminPassword').value.trim();
+
+        if (!email || !password) {
+          showAlert('Please enter both your email and password.', 'error');
+          return;
+        }
+
+        var admins = getAdminsDb();
+
+        // If no admins exist yet, provide helpful initial registration prompt
+        if (admins.length === 0) {
+          showAlert('No administrator accounts registered yet. Please click "Admin Signup" below to register the first admin (up to 3 max).', 'info');
+          return;
+        }
+
+        var user = admins.find(function (a) {
+          return a.email.toLowerCase() === email && a.password.trim() === password;
+        });
+
+        if (!user) {
+          showAlert('Invalid administrator email or password.', 'error');
+          return;
+        }
+
+        showAlert('Admin authenticated successfully! Opening portal...', 'success');
+        setTimeout(function () {
+          setAdminSession(user);
+        }, 400);
+      });
+
+      // -----------------------------------------------------------------
+      // Handle Admin Forgot Password & OTP
+      // -----------------------------------------------------------------
+      formForgot.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('forgotAdminEmail').value.trim().toLowerCase();
+        if (!email) {
+          showAlert('Please enter your admin email address.', 'error');
+          return;
+        }
+
+        var admins = getAdminsDb();
+        var user = admins.find(function (a) { return a.email.toLowerCase() === email; });
+        if (!user) {
+          showAlert('No administrator account found with this email.', 'error');
+          return;
+        }
+
+        activeResetEmail = email;
+        activeResetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        switchAuthView('reset');
+        otpDisplay.textContent = activeResetCode;
+        otpBanner.style.display = 'flex';
+        showAlert('A 6-digit verification code has been dispatched to ' + email + '.', 'info');
+      });
+
+      btnAutofillOtp.addEventListener('click', function () {
+        $('resetAdminCode').value = activeResetCode;
+        $('resetAdminNewPassword').focus();
+      });
+
+      formReset.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var code = $('resetAdminCode').value.trim();
+        var newPass = $('resetAdminNewPassword').value.trim();
+        var confirmPass = $('resetAdminConfirmPassword').value.trim();
+
+        if (!code || !newPass || !confirmPass) {
+          showAlert('Please fill in all verification and password fields.', 'error');
+          return;
+        }
+
+        if (code !== activeResetCode) {
+          showAlert('Invalid verification code. Please check the 6-digit code.', 'error');
+          return;
+        }
+
+        if (newPass.length < 6) {
+          showAlert('Password must be at least 6 characters long.', 'error');
+          return;
+        }
+
+        if (newPass !== confirmPass) {
+          showAlert('Passwords do not match.', 'error');
+          return;
+        }
+
+        var admins = getAdminsDb();
+        var idx = admins.findIndex(function (a) { return a.email.toLowerCase() === activeResetEmail.toLowerCase(); });
+        if (idx === -1) {
+          showAlert('Admin account not found.', 'error');
+          return;
+        }
+
+        admins[idx].password = newPass;
+        saveAdminsDb(admins);
+
+        showAlert('Password reset successfully! Logging you in...', 'success');
+        setTimeout(function () {
+          setAdminSession(admins[idx]);
+        }, 700);
+      });
+
+      // -----------------------------------------------------------------
+      // Session Management
+      // -----------------------------------------------------------------
+      function setAdminSession(admin) {
+        try {
+          var str = JSON.stringify({
+            name: admin.name,
+            email: admin.email,
+            phone: admin.phone || '',
+            role: 'admin'
+          });
+          localStorage.setItem(STORAGE_KEY_ADMIN_SESSION, str);
+          sessionStorage.setItem(STORAGE_KEY_ADMIN_SESSION, str);
+        } catch (_) {}
+
+        checkAdminSession();
+      }
+
+      function clearAdminSession() {
+        try {
+          localStorage.removeItem(STORAGE_KEY_ADMIN_SESSION);
+          sessionStorage.removeItem(STORAGE_KEY_ADMIN_SESSION);
+        } catch (_) {}
+
+        authContainer.style.display = 'flex';
+        dashboardContainer.style.display = 'none';
+        navActions.style.display = 'none';
+        switchAuthView('login');
+      }
+
+      btnNavLogout.addEventListener('click', clearAdminSession);
+
+      function checkAdminSession() {
+        var session = null;
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY_ADMIN_SESSION) || sessionStorage.getItem(STORAGE_KEY_ADMIN_SESSION);
+          if (raw) session = JSON.parse(raw);
+        } catch (_) {}
+
+        if (session && session.email) {
+          authContainer.style.display = 'none';
+          dashboardContainer.style.display = 'block';
+          navActions.style.display = 'flex';
+
+          navAdminName.textContent = session.name || session.email;
+          var initials = (session.name || session.email)
+            .split(' ')
+            .filter(Boolean)
+            .map(function (w) { return w[0]; })
+            .join('')
+            .substring(0, 2)
+            .toUpperCase() || 'AD';
+          navAdminAvatar.textContent = initials;
+
+          renderDashboard();
+        } else {
+          authContainer.style.display = 'flex';
+          dashboardContainer.style.display = 'none';
+          navActions.style.display = 'none';
+          switchAuthView('login');
+        }
+      }
+
+      // -----------------------------------------------------------------
+      // Dashboard Data Rendering & Action Handlers
+      // -----------------------------------------------------------------
+      function formatDateTimePretty(dateStr, timeStr) {
+        if (!dateStr) return '—';
+        var parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr + ' ' + (timeStr || '');
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10) - 1;
+        var d = parseInt(parts[2], 10);
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var monthName = months[m] || '';
+
+        var timeDisplay = timeStr || '10:00';
+        if (timeStr && timeStr.indexOf(':') !== -1) {
+          var tParts = timeStr.split(':');
+          var hr = parseInt(tParts[0], 10);
+          var min = tParts[1];
+          var ampm = hr >= 12 ? 'PM' : 'AM';
+          var hr12 = hr % 12;
+          if (hr12 === 0) hr12 = 12;
+          timeDisplay = hr12 + ':' + min + ' ' + ampm;
+        }
+        return d + ' ' + monthName + ' ' + y + ' @ ' + timeDisplay;
+      }
+
+      function renderDashboard() {
+        var admins = getAdminsDb();
+        navSlotText.textContent = admins.length + ' / 3 Admin Slots Used';
+
+        var customers = getCustomersDb();
+        var pendingCount = 0;
+        var activeCount = 0;
+        var totalRev = 0;
+
+        customers.forEach(function (c) {
+          var b = c.booking;
+          if (b) {
+            if (b.status === 'pending') {
+              pendingCount++;
+            } else if (b.status === 'approved') {
+              activeCount++;
+              totalRev += (Number(b.totalAmount) || 0);
+            }
+          }
+        });
+
+        metricTotalCustomers.textContent = customers.length;
+        metricPendingApprovals.textContent = pendingCount;
+        metricActiveSessions.textContent = activeCount;
+        metricTotalRevenue.textContent = '£' + totalRev;
+
+        // Pending Alert Ticker
+        if (pendingCount > 0) {
+          alertTicker.style.display = 'flex';
+          alertTickerMessage.textContent = pendingCount === 1
+            ? '1 customer booking request is awaiting payment verification.'
+            : pendingCount + ' customer booking requests are awaiting payment verification.';
+        } else {
+          alertTicker.style.display = 'none';
+        }
+
+        // Filter and Search Table Rows
+        var query = (customerSearchInput.value || '').trim().toLowerCase();
+        var filtered = customers.filter(function (c) {
+          var status = (c.booking && c.booking.status) || 'none';
+          if (currentFilter !== 'all') {
+            if (currentFilter === 'pending' && status !== 'pending') return false;
+            if (currentFilter === 'approved' && status !== 'approved') return false;
+            if (currentFilter === 'rejected' && status !== 'rejected') return false;
+          }
+          if (!query) return true;
+          var name = (c.name || '').toLowerCase();
+          var phone = (c.phone || '').toLowerCase();
+          var email = (c.email || '').toLowerCase();
+          return name.indexOf(query) !== -1 || phone.indexOf(query) !== -1 || email.indexOf(query) !== -1;
+        });
+
+        customerCountBadge.textContent = filtered.length + ' of ' + customers.length;
+
+        if (filtered.length === 0) {
+          customerTableBody.innerHTML = '';
+          customerEmptyState.style.display = 'block';
+          return;
+        }
+
+        customerEmptyState.style.display = 'none';
+
+        var html = '';
+        filtered.forEach(function (c) {
+          var b = c.booking;
+          var status = b ? (b.status || 'pending') : 'none';
+
+          // Check if approved booking has expired
+          var isExpired = false;
+          if (status === 'approved' && b.endDate && b.finishTime) {
+            var expiryMs = new Date(b.endDate + 'T' + b.finishTime + ':00').getTime();
+            if (Date.now() >= expiryMs) {
+              isExpired = true;
+            }
+          }
+
+          var statusBadge = '';
+          if (status === 'none') {
+            statusBadge = '<span class="status-pill none">⚪ No Booking</span>';
+          } else if (isExpired) {
+            statusBadge = '<span class="status-pill expired">⏱️ Expired</span>';
+          } else if (status === 'pending') {
+            statusBadge = '<span class="status-pill pending">🟡 Pending Approval</span>';
+          } else if (status === 'approved') {
+            statusBadge = '<span class="status-pill approved">🟢 Approved</span>';
+          } else if (status === 'rejected') {
+            statusBadge = '<span class="status-pill rejected">🔴 Rejected</span>';
+          }
+
+          var scheduleHtml = '—';
+          var chargeHtml = '—';
+          if (b) {
+            scheduleHtml = '<div class="schedule-badge">' +
+              '<div class="schedule-row"><span class="schedule-tag start">Start</span> <strong>' + formatDateTimePretty(b.startDate, b.startTime) + '</strong></div>' +
+              '<div class="schedule-row"><span class="schedule-tag finish">Finish</span> <strong>' + formatDateTimePretty(b.endDate, b.finishTime || b.startTime) + '</strong></div>' +
+              '</div>';
+
+            var daysCount = b.totalDays || 1;
+            var amount = b.totalAmount || (daysCount * 20);
+            chargeHtml = '<span class="charge-pill">' + daysCount + ' Day' + (daysCount > 1 ? 's' : '') + ' • £' + amount + '</span>';
+          }
+
+          var phoneDisplay = c.phone || 'Not provided';
+          var phoneClean = (c.phone || '').replace(/[^0-9]/g, '');
+          var phoneLink = phoneClean
+            ? '<a href="https://wa.me/' + phoneClean + '" target="_blank" class="customer-phone-tag" title="Open WhatsApp chat">📱 ' + phoneDisplay + '</a>'
+            : '<span style="color: #94a3b8; font-size: 12px;">Not provided</span>';
+
+          var approveDisabled = (status === 'approved' && !isExpired) ? 'disabled' : '';
+          var rejectDisabled = (status === 'rejected') ? 'disabled' : '';
+
+          html += '<tr>' +
+            '<td>' +
+              '<div class="customer-name-cell">' +
+                '<span>' + (escapeHtml(c.name || 'Candidate')) + '</span>' +
+                '<span class="customer-email-sub">' + (escapeHtml(c.email)) + '</span>' +
+              '</div>' +
+            '</td>' +
+            '<td>' + phoneLink + '</td>' +
+            '<td>' + scheduleHtml + '</td>' +
+            '<td>' + chargeHtml + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '<td style="text-align: right;">' +
+              '<div class="action-btn-group" style="justify-content: flex-end;">' +
+                '<button type="button" class="btn-green" data-email="' + escapeHtml(c.email) + '" ' + approveDisabled + ' title="Approve booking and unlock practice portal">' +
+                  '✓ Approved' +
+                '</button>' +
+                '<button type="button" class="btn-red" data-email="' + escapeHtml(c.email) + '" ' + rejectDisabled + ' title="Reject or revoke practice access">' +
+                  '✕ Rejected' +
+                '</button>' +
+              '</div>' +
+            '</td>' +
+          '</tr>';
+        });
+
+        customerTableBody.innerHTML = html;
+
+        // Attach Button Listeners
+        customerTableBody.querySelectorAll('.btn-green').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var email = this.getAttribute('data-email');
+            handleCustomerApproval(email, 'approved');
+          });
+        });
+
+        customerTableBody.querySelectorAll('.btn-red').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var email = this.getAttribute('data-email');
+            handleCustomerApproval(email, 'rejected');
+          });
+        });
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // -----------------------------------------------------------------
+      // Approval / Rejection Logic
+      // -----------------------------------------------------------------
+      function handleCustomerApproval(email, newStatus) {
+        var customers = getCustomersDb();
+        var idx = customers.findIndex(function (c) { return c.email.toLowerCase() === email.toLowerCase(); });
+        if (idx === -1) return;
+
+        var c = customers[idx];
+        if (!c.booking) {
+          // If customer has not booked yet, initialize a standard default 1-day booking
+          var today = new Date();
+          var tomorrow = new Date(Date.now() + 86400000);
+          var todayStr = today.toISOString().split('T')[0];
+          var tomorrowStr = tomorrow.toISOString().split('T')[0];
+          c.booking = {
+            startDate: todayStr,
+            startTime: '10:00',
+            endDate: tomorrowStr,
+            finishTime: '10:00',
+            totalDays: 1,
+            totalAmount: 20,
+            status: newStatus,
+            approvedAt: Date.now()
+          };
+        } else {
+          c.booking.status = newStatus;
+          if (newStatus === 'approved') {
+            c.booking.approvedAt = Date.now();
+          }
+        }
+
+        saveCustomersDb(customers);
+        renderDashboard();
+
+        var alertText = newStatus === 'approved'
+          ? 'Candidate ' + (c.name || c.email) + ' APPROVED! Practice portal access unlocked.'
+          : 'Candidate ' + (c.name || c.email) + ' REJECTED. Practice access revoked.';
+        alert(alertText);
+      }
+
+      // Filter Buttons
+      document.querySelectorAll('.filter-btn[data-filter]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.filter-btn[data-filter]').forEach(function (b) { b.classList.remove('active'); });
+          this.classList.add('active');
+          currentFilter = this.getAttribute('data-filter');
+          renderDashboard();
+        });
+      });
+
+      btnJumpToPending.addEventListener('click', function () {
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(function (b) { b.classList.remove('active'); });
+        var pendingBtn = document.querySelector('.filter-btn[data-filter="pending"]');
+        if (pendingBtn) pendingBtn.classList.add('active');
+        currentFilter = 'pending';
+        renderDashboard();
+      });
+
+      customerSearchInput.addEventListener('input', function () {
+        renderDashboard();
+      });
+
+      btnRefreshData.addEventListener('click', function () {
+        renderDashboard();
+      });
+
+      // -----------------------------------------------------------------
+      // Admin Slots Modal
+      // -----------------------------------------------------------------
+      btnViewAdmins.addEventListener('click', function () {
+        var admins = getAdminsDb();
+        var html = '';
+        if (admins.length === 0) {
+          html = '<div style="text-align: center; color: #64748b; padding: 20px;">No administrators registered yet.</div>';
+        } else {
+          admins.forEach(function (a, i) {
+            html += '<div class="admin-list-item">' +
+              '<div class="admin-list-item-info">' +
+                '<span class="admin-list-item-name">#' + (i + 1) + ' ' + escapeHtml(a.name) + '</span>' +
+                '<span class="admin-list-item-email">' + escapeHtml(a.email) + ' • ' + escapeHtml(a.phone || 'No phone') + '</span>' +
+              '</div>' +
+              '<span class="status-pill approved" style="font-size: 10px;">Active Admin</span>' +
+            '</div>';
+          });
+        }
+        adminsListContainer.innerHTML = html;
+        adminsModal.style.display = 'flex';
+      });
+
+      btnCloseAdminsModal.addEventListener('click', function () {
+        adminsModal.style.display = 'none';
+      });
+
+      window.addEventListener('click', function (e) {
+        if (e.target === adminsModal) adminsModal.style.display = 'none';
+      });
+
+      // -----------------------------------------------------------------
+      // Background Heartbeat Check (Every 3 seconds)
+      // -----------------------------------------------------------------
+      setInterval(function () {
+        if (dashboardContainer.style.display === 'block') {
+          renderDashboard();
+        }
+      }, 3000);
+
+      // Initialize
+      checkAdminSession();
+
+    })();
+  </script>
+</body>
+
+</html>

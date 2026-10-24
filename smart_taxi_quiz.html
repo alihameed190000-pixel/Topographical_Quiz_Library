@@ -1193,7 +1193,7 @@
     }
 
     /* =============================================================
-       7. CUSTOMER AUTHENTICATION GATE & USER BADGE
+       7. CUSTOMER AUTHENTICATION GATE, BOOKING & USER BADGE
        ============================================================= */
     .sts-user-badge {
       display: none;
@@ -1261,7 +1261,58 @@
       border-color: #dc2626;
     }
 
-    /* Auth Overlay */
+    /* Small Practice Countdown Clock Pill */
+    .sts-countdown-pill {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e3a78;
+      box-shadow: 0 1px 2px rgba(30, 58, 120, 0.08);
+      white-space: nowrap;
+      cursor: default;
+    }
+
+    .sts-countdown-pill.warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #b45309;
+    }
+
+    .sts-countdown-pill.critical {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #dc2626;
+      animation: stsPulse 1.5s infinite;
+    }
+
+    .sts-countdown-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+    }
+
+    .sts-countdown-pill.warning .sts-countdown-dot {
+      background: #f59e0b;
+    }
+
+    .sts-countdown-pill.critical .sts-countdown-dot {
+      background: #ef4444;
+    }
+
+    @keyframes stsPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
+    /* Auth & Booking Overlay */
     #sts-auth-overlay {
       position: fixed;
       inset: 0;
@@ -1273,16 +1324,18 @@
       padding: 20px;
       backdrop-filter: blur(6px);
       user-select: text;
+      overflow-y: auto;
     }
 
     .sts-auth-card {
       background: #ffffff;
       width: 100%;
-      max-width: 440px;
-      border-radius: 12px;
+      max-width: 480px;
+      border-radius: 14px;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15);
       overflow: hidden;
       animation: authCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      margin: auto;
     }
 
     @keyframes authCardIn {
@@ -1372,24 +1425,17 @@
       padding: 12px 14px;
       margin-bottom: 16px;
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      text-align: left;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
 
     .sts-code-banner-title {
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 700;
       color: #1e40af;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-    }
-
-    .sts-code-banner-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
     }
 
     .sts-code-display {
@@ -1399,7 +1445,7 @@
       letter-spacing: 0.15em;
       color: #1e3a78;
       background: #ffffff;
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 4px;
       border: 1px solid #bfdbfe;
     }
@@ -1439,52 +1485,60 @@
       align-items: center;
     }
 
-    .sts-input-wrap input {
+    .sts-input-wrap input,
+    .sts-input-wrap select {
       width: 100%;
       height: 40px;
       padding: 0 40px 0 12px;
       font-size: 13.5px;
+      font-family: inherit;
       color: #0f172a;
       background: #f8fafc;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      outline: none;
       transition: all 0.15s ease;
-      font-family: inherit;
     }
 
-    .sts-input-wrap input:focus {
+    .sts-input-wrap input:focus,
+    .sts-input-wrap select:focus {
+      outline: none;
       background: #ffffff;
-      border-color: #1e3a78;
-      box-shadow: 0 0 0 3px rgba(30, 58, 120, 0.15);
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .sts-input-wrap input[readonly],
+    .sts-input-wrap input[disabled] {
+      background: #f1f5f9;
+      color: #475569;
+      cursor: not-allowed;
+      border-color: #cbd5e1;
     }
 
     .sts-eye-btn {
       position: absolute;
-      right: 6px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: transparent;
+      right: 8px;
+      background: none;
       border: none;
-      color: #64748b;
-      cursor: pointer;
       padding: 6px;
+      cursor: pointer;
+      color: #64748b;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 4px;
+      transition: color 0.15s;
     }
 
     .sts-eye-btn:hover {
-      color: #1e3a78;
-      background: rgba(0, 0, 0, 0.04);
+      color: #1e293b;
     }
 
     .sts-form-options {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       font-size: 12.5px;
     }
 
@@ -1553,11 +1607,152 @@
       color: #1e3a78;
       margin-bottom: 14px;
     }
+
+    /* PRACTICE DAYS BOOKING PANEL STYLES */
+    .sts-date-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .sts-strict-rule-notice {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 11.5px;
+      color: #166534;
+      line-height: 1.4;
+      margin-bottom: 14px;
+    }
+
+    .sts-calc-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .sts-calc-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    .sts-calc-row.total {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #cbd5e1;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0;
+    }
+
+    .sts-calc-amount {
+      font-family: monospace;
+      font-size: 18px;
+      font-weight: 800;
+      color: #15803d;
+    }
+
+    .sts-payment-banner {
+      background: #eff6ff;
+      border: 1.5px solid #3b82f6;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .sts-payment-banner-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e40af;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sts-payment-banner-message {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #1e3a78;
+      font-weight: 500;
+    }
+
+    .sts-bank-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 11.5px;
+      color: #334155;
+      margin: 10px 0;
+      line-height: 1.45;
+    }
+
+    .sts-btn-whatsapp {
+      width: 100%;
+      height: 40px;
+      background: #25d366;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s ease;
+      margin-bottom: 12px;
+      text-decoration: none;
+    }
+
+    .sts-btn-whatsapp:hover {
+      background: #1eb956;
+    }
+
+    .sts-status-box {
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .sts-status-box.pending {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .sts-status-box.rejected {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .sts-status-box.expired {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+    }
   </style>
 </head>
 
 <body>
-  <!-- Customer Authentication Gate (Smart Taxi Solutions Ltd) -->
+  <!-- Customer Authentication & Practice Booking Gate (Smart Taxi Solutions Ltd) -->
   <div id="sts-auth-overlay" role="dialog" aria-modal="true">
     <div class="sts-auth-card">
       <div class="sts-auth-header">
@@ -1576,16 +1771,16 @@
         <!-- Global Feedback Alert -->
         <div id="stsAuthAlert" class="sts-auth-alert"></div>
 
-        <!-- Notification Banner (For Password Reset) -->
+        <!-- Notification Banner (For Password Reset OTP) -->
         <div id="stsCodeNotification" class="sts-code-banner" style="display: none;">
-          <div class="sts-code-banner-title">Email Verification Code Sent</div>
-          <div class="sts-code-banner-content">
-            <div>Code: <span id="stsCodeDisplay" class="sts-code-display">123456</span></div>
-            <button id="stsBtnAutofill" class="sts-btn-autofill" type="button">Auto-fill Code</button>
+          <div>
+            <div class="sts-code-banner-title">Email Verification Code Sent</div>
+            <div style="font-size: 13px;">Code: <span id="stsCodeDisplay" class="sts-code-display">123456</span></div>
           </div>
+          <button id="stsBtnAutofill" class="sts-btn-autofill" type="button">Auto-fill Code</button>
         </div>
 
-        <!-- VIEW 1: LOGIN -->
+        <!-- VIEW 1: CUSTOMER LOGIN -->
         <form id="stsFormLogin" novalidate>
           <div class="sts-input-group">
             <label class="sts-input-label" for="loginEmail">Customer Email Address</label>
@@ -1599,13 +1794,11 @@
             <div class="sts-input-wrap">
               <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
               <button type="button" class="sts-eye-btn" data-target="loginPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
-                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+                <svg class="sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
-                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                <svg class="sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
                 </svg>
               </button>
             </div>
@@ -1626,12 +1819,19 @@
           </div>
         </form>
 
-        <!-- VIEW 2: SIGN UP -->
+        <!-- VIEW 2: CUSTOMER SIGN UP -->
         <form id="stsFormSignup" style="display: none;" novalidate>
           <div class="sts-input-group">
             <label class="sts-input-label" for="signupName">Full Name</label>
             <div class="sts-input-wrap">
               <input type="text" id="signupName" placeholder="e.g. John Doe" required autocomplete="name">
+            </div>
+          </div>
+
+          <div class="sts-input-group">
+            <label class="sts-input-label" for="signupPhone">Phone Number</label>
+            <div class="sts-input-wrap">
+              <input type="tel" id="signupPhone" placeholder="e.g. 07123456789" required autocomplete="tel">
             </div>
           </div>
 
@@ -1647,13 +1847,11 @@
             <div class="sts-input-wrap">
               <input type="password" id="signupPassword" placeholder="Minimum 6 characters" required autocomplete="new-password">
               <button type="button" class="sts-eye-btn" data-target="signupPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
-                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+                <svg class="sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
-                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                <svg class="sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
                 </svg>
               </button>
             </div>
@@ -1664,19 +1862,17 @@
             <div class="sts-input-wrap">
               <input type="password" id="signupConfirmPassword" placeholder="Re-enter password" required autocomplete="new-password">
               <button type="button" class="sts-eye-btn" data-target="signupConfirmPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
-                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+                <svg class="sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
-                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                <svg class="sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
                 </svg>
               </button>
             </div>
           </div>
 
-          <button type="submit" class="sts-submit-btn" id="btnSubmitSignup">Create Account & Start Practice</button>
+          <button type="submit" class="sts-submit-btn" id="btnSubmitSignup">Create Account & Continue</button>
 
           <div class="sts-auth-footer">
             Already have an account? <a href="javascript:void(0)" id="linkToLoginFromSignup" class="sts-link">Log In</a>
@@ -1686,20 +1882,20 @@
         <!-- VIEW 3: FORGOT PASSWORD -->
         <form id="stsFormForgot" style="display: none;" novalidate>
           <div class="sts-input-group">
-            <label class="sts-input-label" for="forgotEmail">Customer Email Address</label>
+            <label class="sts-input-label" for="forgotEmail">Registered Customer Email</label>
             <div class="sts-input-wrap">
               <input type="email" id="forgotEmail" placeholder="Enter your registered email" required autocomplete="email">
             </div>
           </div>
 
-          <button type="submit" class="sts-submit-btn" id="btnSubmitForgot">Send Password Reset Code</button>
+          <button type="submit" class="sts-submit-btn" id="btnSubmitForgot">Send 6-Digit Verification Code</button>
 
           <div class="sts-auth-footer">
             Remembered your password? <a href="javascript:void(0)" id="linkToLoginFromForgot" class="sts-link">Back to Login</a>
           </div>
         </form>
 
-        <!-- VIEW 4: RESET PASSWORD -->
+        <!-- VIEW 4: RESET PASSWORD (OTP VERIFICATION) -->
         <form id="stsFormReset" style="display: none;" novalidate>
           <div style="text-align: center;">
             <div id="stsResetEmailBadge" class="sts-email-badge">Resetting: user@example.com</div>
@@ -1717,13 +1913,11 @@
             <div class="sts-input-wrap">
               <input type="password" id="resetNewPassword" placeholder="Minimum 6 characters" required autocomplete="new-password">
               <button type="button" class="sts-eye-btn" data-target="resetNewPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
-                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+                <svg class="sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
-                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                <svg class="sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
                 </svg>
               </button>
             </div>
@@ -1734,13 +1928,11 @@
             <div class="sts-input-wrap">
               <input type="password" id="resetConfirmPassword" placeholder="Re-enter new password" required autocomplete="new-password">
               <button type="button" class="sts-eye-btn" data-target="resetConfirmPassword" title="Show/Hide Password" aria-label="Toggle password visibility">
-                <svg class="sts-eye-icon sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+                <svg class="sts-eye-open" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
-                <svg class="sts-eye-icon sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                <svg class="sts-eye-closed" style="display:none;" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
                 </svg>
               </button>
             </div>
@@ -1752,11 +1944,196 @@
             Cancel and return to <a href="javascript:void(0)" id="linkToLoginFromReset" class="sts-link">Log In</a>
           </div>
         </form>
+
+        <!-- VIEW 5: PRACTICE DAYS BOOKING PANEL (£20 PER DAY AUTO-CALCULATOR) -->
+        <div id="stsViewBooking" style="display: none;">
+          <div style="background: #f1f5f9; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 12.5px; display: flex; justify-content: space-between; align-items: center;">
+            <span id="bookingCandidateGreeting" style="font-weight: 600; color: #1e3a78;">Candidate: John Doe</span>
+            <a href="javascript:void(0)" id="btnBookingLogout" class="sts-link" style="color: #dc2626; font-size: 11.5px;">Switch Account</a>
+          </div>
+
+          <form id="stsFormBooking" novalidate>
+            <!-- Start Date & Start Time -->
+            <div class="sts-date-grid">
+              <div class="sts-input-group" style="margin-bottom: 0;">
+                <label class="sts-input-label" for="bookingStartDate">Start Date</label>
+                <div class="sts-input-wrap">
+                  <input type="date" id="bookingStartDate" required>
+                </div>
+              </div>
+
+              <div class="sts-input-group" style="margin-bottom: 0;">
+                <label class="sts-input-label" for="bookingStartTime">Start Time</label>
+                <div class="sts-input-wrap">
+                  <input type="time" id="bookingStartTime" value="10:00" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- End Date & Finish Time (Strictly Identical to Start Time) -->
+            <div class="sts-date-grid">
+              <div class="sts-input-group" style="margin-bottom: 0;">
+                <label class="sts-input-label" for="bookingEndDate">End Date</label>
+                <div class="sts-input-wrap">
+                  <input type="date" id="bookingEndDate" required>
+                </div>
+              </div>
+
+              <div class="sts-input-group" style="margin-bottom: 0;">
+                <label class="sts-input-label" for="bookingFinishTime">Finish Time</label>
+                <div class="sts-input-wrap">
+                  <input type="text" id="bookingFinishTime" value="10:00 AM" readonly title="Strictly identical to Start Time">
+                </div>
+              </div>
+            </div>
+
+            <div class="sts-strict-rule-notice">
+              ⏱️ <strong>STRICT TIME RULE:</strong> Whatever Start Time you select, your session will automatically finish at that exact same time on your selected End Date.
+            </div>
+
+            <!-- Live Auto-Calculation Card -->
+            <div class="sts-calc-card">
+              <div class="sts-calc-row">
+                <span>Selected Window:</span>
+                <strong id="calcSummaryWindow">24 Oct 2026, 10:00 AM → 25 Oct 2026, 10:00 AM</strong>
+              </div>
+              <div class="sts-calc-row">
+                <span>Total Days Selected:</span>
+                <strong><span id="calcDaysDisplay">1</span> Day(s)</strong>
+              </div>
+              <div class="sts-calc-row">
+                <span>Standard Daily Rate:</span>
+                <span>£20.00 / day</span>
+              </div>
+              <div class="sts-calc-row total">
+                <span>Total Amount Due:</span>
+                <span class="sts-calc-amount" id="calcTotalDisplay">£20</span>
+              </div>
+            </div>
+
+            <!-- PAYMENT & WHATSAPP MESSAGE (EXACT SPECIFICATION) -->
+            <div class="sts-payment-banner">
+              <div class="sts-payment-banner-title">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Payment & Activation Instructions
+              </div>
+              <p class="sts-payment-banner-message" id="paymentNoticeParagraph">
+                <strong>[ Pay <span id="calcPaymentNoticeAmount">£20</span> ]</strong> into our Company Account and send the payment receipt to our official WhatsApp. Once your payment is confirmed by our team, your portal access will be activated immediately and you can begin your topographical practice!
+              </p>
+            </div>
+
+            <div class="sts-bank-box">
+              <strong>Official Company Account Details:</strong><br>
+              Bank: <strong>Barclays Bank UK</strong> &bull; Name: <strong>Smart Taxi Solutions Ltd</strong><br>
+              Sort Code: <strong>20-00-00</strong> &bull; Account: <strong>12345678</strong><br>
+              Reference: <strong id="bankRefCandidate">Your Name / Mobile</strong>
+            </div>
+
+            <a href="javascript:void(0)" id="btnWhatsAppReceipt" class="sts-btn-whatsapp" target="_blank">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Send Payment Receipt to Official WhatsApp
+            </a>
+
+            <button type="submit" class="sts-submit-btn" id="btnSubmitBooking">Submit Booking &amp; Await Verification</button>
+          </form>
+        </div>
+
+        <!-- VIEW 6: AWAITING ADMIN APPROVAL SCREEN -->
+        <div id="stsViewPending" style="display: none;">
+          <div class="sts-status-box pending">
+            <div style="font-size: 26px; margin-bottom: 6px;">🟡</div>
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Awaiting Admin Approval</h3>
+            <p style="font-size: 13px; margin-bottom: 0;">Your practice booking request has been submitted and is currently awaiting verification by our administrative team.</p>
+          </div>
+
+          <div class="sts-calc-card">
+            <div class="sts-calc-row">
+              <span>Candidate:</span>
+              <strong id="pendingCandidateName">John Doe</strong>
+            </div>
+            <div class="sts-calc-row">
+              <span>Start Window:</span>
+              <strong id="pendingStartDisplay">24 Oct 2026 @ 10:00 AM</strong>
+            </div>
+            <div class="sts-calc-row">
+              <span>Finish Window:</span>
+              <strong id="pendingFinishDisplay">25 Oct 2026 @ 10:00 AM</strong>
+            </div>
+            <div class="sts-calc-row total">
+              <span>Total Practice Fee:</span>
+              <span class="sts-calc-amount" id="pendingChargeDisplay">1 Day • £20</span>
+            </div>
+          </div>
+
+          <div class="sts-payment-banner">
+            <div class="sts-payment-banner-title">Payment Confirmation Required</div>
+            <p class="sts-payment-banner-message" id="pendingPaymentNotice">
+              <strong>[ Pay <span id="pendingPaymentAmount">£20</span> ]</strong> into our Company Account and send the payment receipt to our official WhatsApp. Once your payment is confirmed by our team, your portal access will be activated immediately and you can begin your topographical practice!
+            </p>
+          </div>
+
+          <a href="javascript:void(0)" id="btnPendingWhatsApp" class="sts-btn-whatsapp" target="_blank">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Send Payment Receipt on WhatsApp
+          </a>
+
+          <button type="button" class="sts-submit-btn" id="btnPendingRefresh" style="background: #10b981;">🔄 Refresh Approval Status</button>
+          <button type="button" class="sts-submit-btn" id="btnPendingModify" style="background: #475569;">Modify Booking Dates</button>
+
+          <div class="sts-auth-footer">
+            <a href="javascript:void(0)" id="btnPendingLogout" class="sts-link" style="color: #dc2626;">Log Out of Candidate Account</a>
+          </div>
+        </div>
+
+        <!-- VIEW 7: ACCESS REJECTED SCREEN -->
+        <div id="stsViewRejected" style="display: none;">
+          <div class="sts-status-box rejected">
+            <div style="font-size: 26px; margin-bottom: 6px;">🔴</div>
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Practice Access Denied / Revoked</h3>
+            <p style="font-size: 13px; margin-bottom: 0;">Your practice access request was denied or revoked by the administrative team.</p>
+          </div>
+
+          <div style="font-size: 13px; color: #475569; margin-bottom: 16px; line-height: 1.5;">
+            Please contact our administration team on WhatsApp if your payment receipt was already transferred, or select new dates below to submit a new practice booking request.
+          </div>
+
+          <button type="button" class="sts-submit-btn" id="btnRejectedRebook">Select New Practice Dates</button>
+
+          <div class="sts-auth-footer">
+            <a href="javascript:void(0)" id="btnRejectedLogout" class="sts-link" style="color: #dc2626;">Log Out</a>
+          </div>
+        </div>
+
+        <!-- VIEW 8: PRACTICE SESSION EXPIRED SCREEN -->
+        <div id="stsViewExpired" style="display: none;">
+          <div class="sts-status-box expired">
+            <div style="font-size: 26px; margin-bottom: 6px;">⏱️</div>
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Practice Session Expired</h3>
+            <p style="font-size: 13px; margin-bottom: 0;" id="expiredNoticeText">Your scheduled practice session has reached its end time and access has been automatically disconnected.</p>
+          </div>
+
+          <div style="font-size: 13px; color: #475569; margin-bottom: 16px; line-height: 1.5;">
+            To continue practicing all 20 TfL Topographical exam scenarios, you can book additional practice days at £20/day.
+          </div>
+
+          <button type="button" class="sts-submit-btn" id="btnExpiredRebook">Book More Practice Days (£20/day)</button>
+
+          <div class="sts-auth-footer">
+            <a href="javascript:void(0)" id="btnExpiredLogout" class="sts-link" style="color: #dc2626;">Log Out</a>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 
-  <div id="appContainer">
+    <div id="appContainer">
 
     <!-- 1. Top Breadcrumb & Exercise Selector Bar -->
     <header id="topBar">
@@ -1774,6 +2151,11 @@
         <div class="exercise-select-wrapper">
           <label for="exerciseSelector" class="exercise-select-label">Select Exercise:</label>
           <select id="exerciseSelector" aria-label="Select Topographical Exercise"></select>
+        </div>
+        <div id="stsCountdownPill" class="sts-countdown-pill" title="Practice Remaining Time">
+          <span class="sts-countdown-dot"></span>
+          <span class="sts-countdown-icon">⏱️</span>
+          <span id="stsCountdownVal" class="sts-countdown-text">--h --m left</span>
         </div>
         <div id="stsUserBadge" class="sts-user-badge">
           <div class="sts-user-avatar" id="stsUserAvatar">ST</div>
@@ -3610,7 +3992,7 @@
       loadExercise(currentExerciseIndex);
 
       /* =========================================================================
-         14. CUSTOMER AUTHENTICATION GATE & SESSION CONTROLLER
+         14. CUSTOMER AUTHENTICATION GATE, BOOKING & LIVE COUNTDOWN CONTROLLER
          ========================================================================= */
       var authOverlay = $('sts-auth-overlay');
       var authTitle = $('stsAuthTitle');
@@ -3625,41 +4007,106 @@
       var formForgot = $('stsFormForgot');
       var formReset = $('stsFormReset');
 
+      var viewBooking = $('stsViewBooking');
+      var formBooking = $('stsFormBooking');
+      var bookingStartDate = $('bookingStartDate');
+      var bookingStartTime = $('bookingStartTime');
+      var bookingEndDate = $('bookingEndDate');
+      var bookingFinishTime = $('bookingFinishTime');
+      var calcSummaryWindow = $('calcSummaryWindow');
+      var calcDaysDisplay = $('calcDaysDisplay');
+      var calcTotalDisplay = $('calcTotalDisplay');
+      var calcPaymentNoticeAmount = $('calcPaymentNoticeAmount');
+      var bankRefCandidate = $('bankRefCandidate');
+      var btnWhatsAppReceipt = $('btnWhatsAppReceipt');
+      var btnBookingLogout = $('btnBookingLogout');
+
+      var viewPending = $('stsViewPending');
+      var pendingCandidateName = $('pendingCandidateName');
+      var pendingStartDisplay = $('pendingStartDisplay');
+      var pendingFinishDisplay = $('pendingFinishDisplay');
+      var pendingChargeDisplay = $('pendingChargeDisplay');
+      var pendingPaymentAmount = $('pendingPaymentAmount');
+      var btnPendingWhatsApp = $('btnPendingWhatsApp');
+      var btnPendingRefresh = $('btnPendingRefresh');
+      var btnPendingModify = $('btnPendingModify');
+      var btnPendingLogout = $('btnPendingLogout');
+
+      var viewRejected = $('stsViewRejected');
+      var btnRejectedRebook = $('btnRejectedRebook');
+      var btnRejectedLogout = $('btnRejectedLogout');
+
+      var viewExpired = $('stsViewExpired');
+      var expiredNoticeText = $('expiredNoticeText');
+      var btnExpiredRebook = $('btnExpiredRebook');
+      var btnExpiredLogout = $('btnExpiredLogout');
+
       var userBadge = $('stsUserBadge');
       var userNameEl = $('stsUserName');
       var userAvatarEl = $('stsUserAvatar');
       var btnLogout = $('stsBtnLogout');
 
+      var countdownPill = $('stsCountdownPill');
+      var countdownVal = $('stsCountdownVal');
+
       var activeResetEmail = '';
       var activeResetCode = '';
+      var _countdownInterval = null;
+      var _memoryDbCache = null;
 
-      // Seed candidate account (always available)
+      // Seed candidate account (always accessible)
       var SEED_CANDIDATE = {
+        id: 'cust_seed_1',
         name: 'TfL Practice Candidate',
+        phone: '07123456789',
         email: 'candidate@smarttaxisolutions.co.uk',
         password: 'password123',
         createdAt: 1700000000000
       };
 
-      // In-memory customer cache for current page lifecycle
-      var _memoryDbCache = null;
+      // -----------------------------------------------------------------
+      // Cross-Tab Real-Time Sync Channel
+      // -----------------------------------------------------------------
+      var syncChannel = null;
+      try {
+        syncChannel = new BroadcastChannel('sts_sync');
+        syncChannel.onmessage = function (e) {
+          if (e && e.data) {
+            checkActiveSession();
+          }
+        };
+      } catch (_) {}
 
-      // Multi-storage read helper across localStorage, sessionStorage, window.name & document.cookie
+      window.addEventListener('storage', function (e) {
+        if (e.key === 'sts_customers_db' || e.key === 'sts_last_sync_timestamp') {
+          checkActiveSession();
+        }
+      });
+
+      function broadcastSync(type, details) {
+        try {
+          localStorage.setItem('sts_last_sync_timestamp', Date.now().toString());
+          if (syncChannel) {
+            syncChannel.postMessage({ type: type, details: details, timestamp: Date.now() });
+          }
+        } catch (_) {}
+      }
+
+      // -----------------------------------------------------------------
+      // Multi-Storage Account Persistence
+      // -----------------------------------------------------------------
       function readRawFromAllStorages(key) {
         var found = [];
-        // 1. localStorage
         try {
           var ls = localStorage.getItem(key);
           if (ls) found.push(ls);
         } catch (_) {}
 
-        // 2. sessionStorage
         try {
           var ss = sessionStorage.getItem(key);
           if (ss) found.push(ss);
         } catch (_) {}
 
-        // 3. window.name fallback (preserves state across page reloads on local file:// URLs)
         try {
           if (window.name && window.name.indexOf(key + '=') !== -1) {
             var parts = window.name.split(';');
@@ -3672,7 +4119,6 @@
           }
         } catch (_) {}
 
-        // 4. document.cookie fallback
         try {
           var match = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]*)'));
           if (match && match[1]) {
@@ -3683,19 +4129,9 @@
         return found;
       }
 
-      // Multi-storage write helper across localStorage, sessionStorage, window.name & document.cookie
       function writeToAllStorages(key, valueStr) {
-        // 1. localStorage
-        try {
-          localStorage.setItem(key, valueStr);
-        } catch (_) {}
-
-        // 2. sessionStorage
-        try {
-          sessionStorage.setItem(key, valueStr);
-        } catch (_) {}
-
-        // 3. window.name fallback
+        try { localStorage.setItem(key, valueStr); } catch (_) {}
+        try { sessionStorage.setItem(key, valueStr); } catch (_) {}
         try {
           var currentName = window.name || '';
           var prefix = key + '=';
@@ -3706,38 +4142,28 @@
           parts.push(encoded);
           window.name = parts.join(';');
         } catch (_) {}
-
-        // 4. document.cookie fallback (1-year persistence)
         try {
           var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
           document.cookie = key + '=' + encodeURIComponent(valueStr) + '; expires=' + expires + '; path=/; SameSite=Lax';
         } catch (_) {}
       }
 
-      // Bulletproof Multi-Storage Account Database: guarantees accounts are never lost
       function getCustomersDb() {
         var rawList = readRawFromAllStorages('sts_customers_db');
         var userMap = {};
 
-        // 1. Always register the seed candidate first
+        // Always register the seed candidate first
         userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
 
-        // 2. Merge from memory cache if populated
         if (Array.isArray(_memoryDbCache)) {
           _memoryDbCache.forEach(function (u) {
             if (u && u.email) {
               var em = String(u.email).trim().toLowerCase();
-              userMap[em] = {
-                name: String(u.name || '').trim() || em.split('@')[0],
-                email: em,
-                password: String(u.password || '').trim(),
-                createdAt: u.createdAt || Date.now()
-              };
+              userMap[em] = u;
             }
           });
         }
 
-        // 3. Merge from all discovered storage layers (never overwrite registered users with seed user)
         rawList.forEach(function (raw) {
           try {
             var parsed = JSON.parse(raw);
@@ -3747,9 +4173,12 @@
                   var em = String(u.email).trim().toLowerCase();
                   var existing = userMap[em];
                   userMap[em] = {
+                    id: u.id || (existing && existing.id) || ('cust_' + Date.now()),
                     name: String(u.name || (existing && existing.name) || '').trim() || em.split('@')[0],
+                    phone: String(u.phone || (existing && existing.phone) || '').trim(),
                     email: em,
                     password: String(u.password || (existing && existing.password) || '').trim(),
+                    booking: u.booking || (existing && existing.booking) || null,
                     createdAt: u.createdAt || (existing && existing.createdAt) || Date.now()
                   };
                 }
@@ -3767,16 +4196,18 @@
       function saveCustomersDb(db) {
         if (!Array.isArray(db)) return;
         var userMap = {};
-        // Seed candidate is always included
         userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
 
         db.forEach(function (u) {
           if (u && u.email) {
             var em = String(u.email).trim().toLowerCase();
             userMap[em] = {
+              id: u.id || ('cust_' + Date.now()),
               name: String(u.name || '').trim() || em.split('@')[0],
+              phone: String(u.phone || '').trim(),
               email: em,
               password: String(u.password || '').trim(),
+              booking: u.booking || null,
               createdAt: u.createdAt || Date.now()
             };
           }
@@ -3785,9 +4216,9 @@
         var normalized = Object.keys(userMap).map(function (k) { return userMap[k]; });
         _memoryDbCache = normalized;
         writeToAllStorages('sts_customers_db', JSON.stringify(normalized));
+        broadcastSync('CUSTOMERS_UPDATED');
       }
 
-      // Remember Me Credential Helpers
       function getRememberedCredentials() {
         var rawList = readRawFromAllStorages('sts_remembered_credentials');
         for (var i = 0; i < rawList.length; i++) {
@@ -3820,14 +4251,8 @@
         var passInput = $('loginPassword');
         var rememberBox = $('loginRemember');
 
-        if (rememberBox) {
-          rememberBox.checked = creds.remember !== false;
-        }
-
-        if (emailInput && creds.email) {
-          emailInput.value = creds.email;
-        }
-
+        if (rememberBox) rememberBox.checked = creds.remember !== false;
+        if (emailInput && creds.email) emailInput.value = creds.email;
         if (passInput) {
           if (creds.remember && creds.password) {
             passInput.value = creds.password;
@@ -3849,52 +4274,9 @@
         authAlert.style.display = 'block';
       }
 
-      // Switch Authentication Views
-      function switchAuthView(viewName) {
-        showAuthAlert('', '');
-        codeNotification.style.display = 'none';
-
-        formLogin.style.display = (viewName === 'login') ? 'block' : 'none';
-        formSignup.style.display = (viewName === 'signup') ? 'block' : 'none';
-        formForgot.style.display = (viewName === 'forgot') ? 'block' : 'none';
-        formReset.style.display = (viewName === 'reset') ? 'block' : 'none';
-
-        if (viewName === 'login') {
-          authTitle.textContent = 'Candidate Practice Portal';
-          authSubtitle.textContent = 'Sign in to access your TfL Topographical Skills simulator.';
-          applyRememberedCredentialsToLoginForm();
-          setTimeout(function () {
-            var emailInput = $('loginEmail');
-            var passInput = $('loginPassword');
-            if (emailInput && !emailInput.value) {
-              emailInput.focus();
-            } else if (passInput && !passInput.value) {
-              passInput.focus();
-            } else if (passInput) {
-              passInput.focus();
-            }
-          }, 50);
-        } else if (viewName === 'signup') {
-          authTitle.textContent = 'Create Student Account';
-          authSubtitle.textContent = 'Register to practice all 20 TfL Topographical exam scenarios.';
-          setTimeout(function () { $('signupName').focus(); }, 50);
-        } else if (viewName === 'forgot') {
-          authTitle.textContent = 'Reset Your Password';
-          authSubtitle.textContent = 'Enter your registered email address to receive a 6-digit verification code.';
-          var creds = getRememberedCredentials();
-          if (creds && creds.email && $('forgotEmail')) {
-            $('forgotEmail').value = creds.email;
-          }
-          setTimeout(function () { $('forgotEmail').focus(); }, 50);
-        } else if (viewName === 'reset') {
-          authTitle.textContent = 'Set New Password';
-          authSubtitle.textContent = 'Enter the 6-digit code sent to your email and choose a new password.';
-          $('stsResetEmailBadge').textContent = 'Resetting: ' + activeResetEmail;
-          setTimeout(function () { $('resetCode').focus(); }, 50);
-        }
-      }
-
-      // Eye / Eye-Slash Password Visibility Toggle
+      // -----------------------------------------------------------------
+      // Eye Icon Toggle Functionality (All Password Fields)
+      // -----------------------------------------------------------------
       document.querySelectorAll('.sts-eye-btn').forEach(function (btn) {
         btn.addEventListener('click', function (e) {
           e.preventDefault();
@@ -3914,6 +4296,95 @@
         });
       });
 
+      // -----------------------------------------------------------------
+      // Date Formatting Helpers
+      // -----------------------------------------------------------------
+      function formatDateTimeHuman(dateStr, timeStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr + ' ' + (timeStr || '');
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10) - 1;
+        var d = parseInt(parts[2], 10);
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var monthName = months[m] || '';
+
+        var timeDisplay = timeStr || '10:00';
+        if (timeStr && timeStr.indexOf(':') !== -1) {
+          var tParts = timeStr.split(':');
+          var hr = parseInt(tParts[0], 10);
+          var min = tParts[1];
+          var ampm = hr >= 12 ? 'PM' : 'AM';
+          var hr12 = hr % 12;
+          if (hr12 === 0) hr12 = 12;
+          timeDisplay = hr12 + ':' + min + ' ' + ampm;
+        }
+        return d + ' ' + monthName + ' ' + y + ' at ' + timeDisplay;
+      }
+
+      function formatTimeOnly(timeStr) {
+        if (!timeStr) return '10:00 AM';
+        if (timeStr.indexOf(':') === -1) return timeStr;
+        var parts = timeStr.split(':');
+        var hr = parseInt(parts[0], 10);
+        var min = parts[1];
+        var ampm = hr >= 12 ? 'PM' : 'AM';
+        var hr12 = hr % 12;
+        if (hr12 === 0) hr12 = 12;
+        return hr12 + ':' + min + ' ' + ampm;
+      }
+
+      // -----------------------------------------------------------------
+      // Switch Authentication & Booking Views
+      // -----------------------------------------------------------------
+      function switchAuthView(viewName) {
+        showAuthAlert('', '');
+        codeNotification.style.display = 'none';
+
+        formLogin.style.display = (viewName === 'login') ? 'block' : 'none';
+        formSignup.style.display = (viewName === 'signup') ? 'block' : 'none';
+        formForgot.style.display = (viewName === 'forgot') ? 'block' : 'none';
+        formReset.style.display = (viewName === 'reset') ? 'block' : 'none';
+        viewBooking.style.display = (viewName === 'booking') ? 'block' : 'none';
+        viewPending.style.display = (viewName === 'pending') ? 'block' : 'none';
+        viewRejected.style.display = (viewName === 'rejected') ? 'block' : 'none';
+        viewExpired.style.display = (viewName === 'expired') ? 'block' : 'none';
+
+        if (viewName === 'login') {
+          authTitle.textContent = 'Candidate Practice Portal';
+          authSubtitle.textContent = 'Sign in to access your TfL Topographical Skills simulator.';
+          applyRememberedCredentialsToLoginForm();
+        } else if (viewName === 'signup') {
+          authTitle.textContent = 'Create Candidate Account';
+          authSubtitle.textContent = 'Register to practice all 20 TfL Topographical exam scenarios.';
+          setTimeout(function () { $('signupName').focus(); }, 40);
+        } else if (viewName === 'forgot') {
+          authTitle.textContent = 'Reset Candidate Password';
+          authSubtitle.textContent = 'Enter your registered email to receive a 6-digit OTP code.';
+          var creds = getRememberedCredentials();
+          if (creds && creds.email && $('forgotEmail')) {
+            $('forgotEmail').value = creds.email;
+          }
+        } else if (viewName === 'reset') {
+          authTitle.textContent = 'Set New Password';
+          authSubtitle.textContent = 'Enter the 6-digit code and choose a new password.';
+          $('stsResetEmailBadge').textContent = 'Resetting: ' + activeResetEmail;
+        } else if (viewName === 'booking') {
+          authTitle.textContent = 'Practice Days Booking Panel';
+          authSubtitle.textContent = 'Select your practice dates. Practice is calculated at £20 per day.';
+          initBookingPanelDates();
+        } else if (viewName === 'pending') {
+          authTitle.textContent = 'Booking Status: Pending Approval';
+          authSubtitle.textContent = 'Your booking is awaiting payment confirmation by our team.';
+        } else if (viewName === 'rejected') {
+          authTitle.textContent = 'Booking Status: Denied';
+          authSubtitle.textContent = 'Your practice access has not been approved.';
+        } else if (viewName === 'expired') {
+          authTitle.textContent = 'Practice Session Expired';
+          authSubtitle.textContent = 'Your booked practice period has ended.';
+        }
+      }
+
       // View Switching Links
       $('linkToSignup').addEventListener('click', function () { switchAuthView('signup'); });
       $('linkToForgot').addEventListener('click', function () { switchAuthView('forgot'); });
@@ -3921,46 +4392,18 @@
       $('linkToLoginFromForgot').addEventListener('click', function () { switchAuthView('login'); });
       $('linkToLoginFromReset').addEventListener('click', function () { switchAuthView('login'); });
 
-      // Handle Login with trimmed credentials and Remember Me persistence
-      formLogin.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var email = $('loginEmail').value.trim().toLowerCase();
-        var password = $('loginPassword').value.trim();
-        var remember = $('loginRemember') ? $('loginRemember').checked : true;
-
-        if (!email || !password) {
-          showAuthAlert('Please enter both your email and password.', 'error');
-          return;
-        }
-
-        var db = getCustomersDb();
-        var user = db.find(function (u) {
-          return u.email.toLowerCase() === email && u.password.trim() === password;
-        });
-
-        if (!user) {
-          showAuthAlert('Invalid email or password. Please check your details and try again.', 'error');
-          return;
-        }
-
-        // Save or update remembered credentials
-        saveRememberedCredentials(user.email, user.password, remember);
-
-        completeAuthentication({
-          name: user.name || user.email.split('@')[0],
-          email: user.email
-        });
-      });
-
-      // Handle Sign Up with multi-storage persistence & auto-login
+      // -----------------------------------------------------------------
+      // Customer Signup (Full Name, Phone Number, Email, Password)
+      // -----------------------------------------------------------------
       formSignup.addEventListener('submit', function (e) {
         e.preventDefault();
         var name = $('signupName').value.trim();
+        var phone = $('signupPhone').value.trim();
         var email = $('signupEmail').value.trim().toLowerCase();
         var password = $('signupPassword').value.trim();
         var confirmPassword = $('signupConfirmPassword').value.trim();
 
-        if (!name || !email || !password || !confirmPassword) {
+        if (!name || !phone || !email || !password || !confirmPassword) {
           showAuthAlert('All registration fields are required.', 'error');
           return;
         }
@@ -3985,34 +4428,65 @@
         var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === email; });
         var user;
         if (userIdx !== -1) {
-          // If already registered with this email, update name/password smoothly and log in without blocking
-          db[userIdx].name = name || db[userIdx].name;
+          db[userIdx].name = name;
+          db[userIdx].phone = phone;
           db[userIdx].password = password;
           user = db[userIdx];
         } else {
           user = {
+            id: 'cust_' + Date.now(),
             name: name,
+            phone: phone,
             email: email,
             password: password,
+            booking: null,
             createdAt: Date.now()
           };
           db.push(user);
         }
         saveCustomersDb(db);
-
-        // Save credentials into remembered store so login modal pre-fills them
         saveRememberedCredentials(user.email, user.password, true);
 
-        showAuthAlert('Account created successfully! Logging you in...', 'success');
+        // Store active session and switch to Booking Panel
+        setSessionUser(user);
+        showAuthAlert('Account created successfully! Please select your practice days.', 'success');
         setTimeout(function () {
-          completeAuthentication({
-            name: user.name,
-            email: user.email
-          });
+          switchAuthView('booking');
         }, 500);
       });
 
-      // Handle Forgot Password
+      // -----------------------------------------------------------------
+      // Customer Login
+      // -----------------------------------------------------------------
+      formLogin.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('loginEmail').value.trim().toLowerCase();
+        var password = $('loginPassword').value.trim();
+        var remember = $('loginRemember') ? $('loginRemember').checked : true;
+
+        if (!email || !password) {
+          showAuthAlert('Please enter both your email and password.', 'error');
+          return;
+        }
+
+        var db = getCustomersDb();
+        var user = db.find(function (u) {
+          return u.email.toLowerCase() === email && u.password.trim() === password;
+        });
+
+        if (!user) {
+          showAuthAlert('Invalid email or password. Please check your credentials.', 'error');
+          return;
+        }
+
+        saveRememberedCredentials(user.email, user.password, remember);
+        setSessionUser(user);
+        evaluateUserAccess(user);
+      });
+
+      // -----------------------------------------------------------------
+      // Customer Forgot Password & OTP
+      // -----------------------------------------------------------------
       formForgot.addEventListener('submit', function (e) {
         e.preventDefault();
         var email = $('forgotEmail').value.trim().toLowerCase();
@@ -4024,7 +4498,7 @@
         var db = getCustomersDb();
         var user = db.find(function (u) { return u.email.toLowerCase() === email; });
         if (!user) {
-          showAuthAlert('No account found with this email address.', 'error');
+          showAuthAlert('No registered account found with this email address.', 'error');
           return;
         }
 
@@ -4034,16 +4508,14 @@
         switchAuthView('reset');
         codeDisplay.textContent = activeResetCode;
         codeNotification.style.display = 'flex';
-        showAuthAlert('Verification code generated and dispatched to ' + email + '.', 'info');
+        showAuthAlert('6-digit verification code sent to ' + email + '.', 'info');
       });
 
-      // Auto-fill Verification Code
       btnAutofill.addEventListener('click', function () {
         $('resetCode').value = activeResetCode;
         $('resetNewPassword').focus();
       });
 
-      // Handle Password Reset
       formReset.addEventListener('submit', function (e) {
         e.preventDefault();
         var code = $('resetCode').value.trim();
@@ -4073,36 +4545,269 @@
         var db = getCustomersDb();
         var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === activeResetEmail.toLowerCase().trim(); });
         if (userIdx === -1) {
-          showAuthAlert('Account could not be found to update password.', 'error');
+          showAuthAlert('Account could not be found.', 'error');
           return;
         }
 
         db[userIdx].password = newPass;
         saveCustomersDb(db);
-
-        // Update remembered credentials with new password
         saveRememberedCredentials(db[userIdx].email, newPass, true);
 
         showAuthAlert('Password reset successful! Logging you in...', 'success');
         setTimeout(function () {
-          completeAuthentication({
-            name: db[userIdx].name || db[userIdx].email.split('@')[0],
-            email: db[userIdx].email
-          });
-        }, 800);
+          setSessionUser(db[userIdx]);
+          evaluateUserAccess(db[userIdx]);
+        }, 700);
       });
 
-      // Complete Authentication & Direct Redirect to Quiz
-      function completeAuthentication(sessionUser) {
-        try {
-          var str = JSON.stringify(sessionUser);
-          localStorage.setItem('sts_active_session', str);
-          sessionStorage.setItem('sts_active_session', str);
-        } catch (e) {}
+      // -----------------------------------------------------------------
+      // Practice Days Booking Panel (£20/day Auto-Calculator)
+      // -----------------------------------------------------------------
+      function initBookingPanelDates() {
+        var today = new Date();
+        var tomorrow = new Date(Date.now() + 86400000);
 
-        // Populate User Status Badge in Header
-        userNameEl.textContent = sessionUser.name || sessionUser.email;
-        var initials = (sessionUser.name || sessionUser.email)
+        var todayStr = today.toISOString().split('T')[0];
+        var tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+        bookingStartDate.min = todayStr;
+        if (!bookingStartDate.value || bookingStartDate.value < todayStr) {
+          bookingStartDate.value = todayStr;
+        }
+
+        bookingEndDate.min = tomorrowStr;
+        if (!bookingEndDate.value || bookingEndDate.value <= bookingStartDate.value) {
+          bookingEndDate.value = tomorrowStr;
+        }
+
+        if (!bookingStartTime.value) {
+          bookingStartTime.value = '10:00';
+        }
+
+        updateBookingCalculation();
+      }
+
+      function updateBookingCalculation() {
+        var sDate = bookingStartDate.value;
+        var sTime = bookingStartTime.value || '10:00';
+        var eDate = bookingEndDate.value;
+
+        // STRICT TIME RULE: Finish Time is automatically locked to match Start Time
+        var formattedTime = formatTimeOnly(sTime);
+        bookingFinishTime.value = formattedTime;
+
+        if (!sDate) return;
+
+        // Ensure End Date is at least 1 day after Start Date
+        var startDt = new Date(sDate + 'T' + sTime + ':00');
+        var nextDayStr = new Date(startDt.getTime() + 86400000).toISOString().split('T')[0];
+        bookingEndDate.min = nextDayStr;
+
+        if (!eDate || eDate <= sDate) {
+          eDate = nextDayStr;
+          bookingEndDate.value = eDate;
+        }
+
+        var endDt = new Date(eDate + 'T' + sTime + ':00');
+
+        // Calculate days difference (24 hours = 1 day)
+        var msDiff = endDt.getTime() - startDt.getTime();
+        var days = Math.max(1, Math.round(msDiff / 86400000));
+        var totalCost = days * 20;
+
+        calcDaysDisplay.textContent = days;
+        calcTotalDisplay.textContent = '£' + totalCost;
+        calcPaymentNoticeAmount.textContent = '£' + totalCost;
+
+        calcSummaryWindow.textContent = formatDateTimeHuman(sDate, sTime) + ' → ' + formatDateTimeHuman(eDate, sTime);
+
+        // Update WhatsApp quick action button link
+        var sessionUser = getActiveSessionUser();
+        var candidateName = sessionUser ? (sessionUser.name || sessionUser.email) : 'Candidate';
+        var candidatePhone = sessionUser ? (sessionUser.phone || '') : '';
+
+        var waText = encodeURIComponent(
+          'Hello Smart Taxi Solutions Ltd Team,\n\n' +
+          'I have submitted my TfL Topographical practice booking:\n' +
+          '• Candidate Name: ' + candidateName + '\n' +
+          '• Mobile Phone: ' + candidatePhone + '\n' +
+          '• Practice Window: ' + formatDateTimeHuman(sDate, sTime) + ' to ' + formatDateTimeHuman(eDate, sTime) + '\n' +
+          '• Duration: ' + days + ' Day(s)\n' +
+          '• Total Amount Due: £' + totalCost + '\n\n' +
+          'Please find attached my payment receipt. Kindly activate my portal access. Thank you!'
+        );
+
+        // Generic direct WhatsApp link
+        var waLink = 'https://wa.me/?text=' + waText;
+        btnWhatsAppReceipt.href = waLink;
+
+        var refName = candidateName + (candidatePhone ? ' / ' + candidatePhone : '');
+        bankRefCandidate.textContent = refName;
+      }
+
+      bookingStartDate.addEventListener('change', updateBookingCalculation);
+      bookingStartTime.addEventListener('input', updateBookingCalculation);
+      bookingEndDate.addEventListener('change', updateBookingCalculation);
+
+      // Handle Submit Booking
+      formBooking.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var sDate = bookingStartDate.value;
+        var sTime = bookingStartTime.value || '10:00';
+        var eDate = bookingEndDate.value;
+        var fTime = sTime; // STRICT RULE: exactly identical
+
+        if (!sDate || !eDate) {
+          showAuthAlert('Please select valid start and end dates.', 'error');
+          return;
+        }
+
+        var startDt = new Date(sDate + 'T' + sTime + ':00');
+        var endDt = new Date(eDate + 'T' + fTime + ':00');
+        var days = Math.max(1, Math.round((endDt.getTime() - startDt.getTime()) / 86400000));
+        var totalCost = days * 20;
+
+        var sessionUser = getActiveSessionUser();
+        if (!sessionUser || !sessionUser.email) {
+          showAuthAlert('Session expired. Please log in again.', 'error');
+          switchAuthView('login');
+          return;
+        }
+
+        var db = getCustomersDb();
+        var uIdx = db.findIndex(function (u) { return u.email.toLowerCase() === sessionUser.email.toLowerCase(); });
+        if (uIdx === -1) {
+          showAuthAlert('Candidate account not found.', 'error');
+          return;
+        }
+
+        var booking = {
+          startDate: sDate,
+          startTime: sTime,
+          endDate: eDate,
+          finishTime: fTime,
+          totalDays: days,
+          totalAmount: totalCost,
+          status: 'pending',
+          bookedAt: Date.now()
+        };
+
+        db[uIdx].booking = booking;
+        saveCustomersDb(db);
+
+        // Refresh session object
+        sessionUser.booking = booking;
+        setSessionUser(sessionUser);
+
+        showAuthAlert('Booking submitted successfully! Awaiting administrator confirmation.', 'success');
+        setTimeout(function () {
+          evaluateUserAccess(db[uIdx]);
+        }, 500);
+      });
+
+      // Pending Screen Action Buttons
+      btnPendingRefresh.addEventListener('click', function () {
+        var sessionUser = getActiveSessionUser();
+        if (!sessionUser) { switchAuthView('login'); return; }
+        var db = getCustomersDb();
+        var u = db.find(function (c) { return c.email.toLowerCase() === sessionUser.email.toLowerCase(); });
+        if (u) {
+          evaluateUserAccess(u);
+        }
+      });
+
+      btnPendingModify.addEventListener('click', function () {
+        switchAuthView('booking');
+      });
+
+      btnBookingLogout.addEventListener('click', handleLogout);
+      btnPendingLogout.addEventListener('click', handleLogout);
+      btnRejectedLogout.addEventListener('click', handleLogout);
+      btnExpiredLogout.addEventListener('click', handleLogout);
+
+      btnRejectedRebook.addEventListener('click', function () {
+        switchAuthView('booking');
+      });
+
+      btnExpiredRebook.addEventListener('click', function () {
+        switchAuthView('booking');
+      });
+
+      // -----------------------------------------------------------------
+      // User Access Evaluation (Gatekeeper Logic)
+      // -----------------------------------------------------------------
+      function evaluateUserAccess(user) {
+        if (!user || !user.email) {
+          switchAuthView('login');
+          authOverlay.style.display = 'flex';
+          return;
+        }
+
+        var booking = user.booking;
+
+        // State 1: No Booking Created Yet
+        if (!booking) {
+          $('bookingCandidateGreeting').textContent = 'Candidate: ' + (user.name || user.email);
+          switchAuthView('booking');
+          authOverlay.style.display = 'flex';
+          return;
+        }
+
+        // State 2: Awaiting Admin Approval (Pending)
+        if (booking.status === 'pending') {
+          pendingCandidateName.textContent = (user.name || 'Candidate') + ' (' + user.email + ')';
+          pendingStartDisplay.textContent = formatDateTimeHuman(booking.startDate, booking.startTime);
+          pendingFinishDisplay.textContent = formatDateTimeHuman(booking.endDate, booking.finishTime || booking.startTime);
+          pendingChargeDisplay.textContent = (booking.totalDays || 1) + ' Day(s) • £' + (booking.totalAmount || 20);
+          pendingPaymentAmount.textContent = '£' + (booking.totalAmount || 20);
+
+          var waText = encodeURIComponent(
+            'Hello Smart Taxi Solutions Ltd Team,\n\n' +
+            'My payment receipt has been transferred for:\n' +
+            '• Candidate: ' + (user.name || user.email) + '\n' +
+            '• Practice Window: ' + formatDateTimeHuman(booking.startDate, booking.startTime) + ' to ' + formatDateTimeHuman(booking.endDate, booking.finishTime) + '\n' +
+            '• Amount: £' + (booking.totalAmount || 20) + '\n\n' +
+            'Kindly approve my portal access. Thank you!'
+          );
+          btnPendingWhatsApp.href = 'https://wa.me/?text=' + waText;
+
+          switchAuthView('pending');
+          authOverlay.style.display = 'flex';
+          return;
+        }
+
+        // State 3: Admin Rejected / Revoked
+        if (booking.status === 'rejected') {
+          switchAuthView('rejected');
+          authOverlay.style.display = 'flex';
+          return;
+        }
+
+        // State 4: Admin Approved -> Check for Expiry
+        if (booking.status === 'approved') {
+          var finishTimestamp = new Date(booking.endDate + 'T' + (booking.finishTime || booking.startTime) + ':00').getTime();
+          var now = Date.now();
+
+          if (now >= finishTimestamp) {
+            // Session expired! Disconnect automatically
+            handleSessionExpired(booking);
+            return;
+          }
+
+          // Access Active! Unlock simulator
+          unlockPracticeSimulator(user, finishTimestamp);
+        }
+      }
+
+      // -----------------------------------------------------------------
+      // Live Practice Countdown Clock & Simulator Unlock
+      // -----------------------------------------------------------------
+      function unlockPracticeSimulator(user, finishTimestamp) {
+        authOverlay.style.display = 'none';
+
+        // Populate User Header Badge
+        userNameEl.textContent = user.name || user.email;
+        var initials = (user.name || user.email)
           .split(' ')
           .filter(Boolean)
           .map(function (w) { return w[0]; })
@@ -4112,10 +4817,10 @@
         userAvatarEl.textContent = initials;
         userBadge.style.display = 'flex';
 
-        // Smoothly hide authentication overlay
-        authOverlay.style.display = 'none';
+        // Start Live Countdown Timer
+        startPracticeCountdown(finishTimestamp);
 
-        // Invalidate Map Size so tiles render without grey gaps
+        // Invalidate Map Size so tiles render seamlessly
         window.dispatchEvent(new Event('resize'));
         if (typeof map !== 'undefined' && map && map.invalidateSize) {
           map.invalidateSize();
@@ -4124,36 +4829,154 @@
         }
       }
 
-      // Logout Flow: ONLY remove session, NEVER wipe accounts or remembered credentials
-      btnLogout.addEventListener('click', function () {
+      function startPracticeCountdown(finishTimestamp) {
+        if (_countdownInterval) {
+          clearInterval(_countdownInterval);
+          _countdownInterval = null;
+        }
+
+        countdownPill.style.display = 'inline-flex';
+
+        function updateClock() {
+          var now = Date.now();
+          var diff = finishTimestamp - now;
+
+          if (diff <= 0) {
+            // AUTOMATIC LOGOUT ON EXPIRY:
+            // When End Date & Finish Time is reached, disconnect immediately!
+            if (_countdownInterval) clearInterval(_countdownInterval);
+            _countdownInterval = null;
+            countdownPill.style.display = 'none';
+
+            var sessionUser = getActiveSessionUser();
+            handleSessionExpired(sessionUser ? sessionUser.booking : null);
+            return;
+          }
+
+          var totalHours = Math.floor(diff / (1000 * 60 * 60));
+          var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          var secs = Math.floor((diff % (1000 * 60)) / 1000);
+          var days = Math.floor(totalHours / 24);
+          var remHours = totalHours % 24;
+
+          if (totalHours < 1) {
+            countdownPill.className = 'sts-countdown-pill critical';
+            countdownVal.textContent = mins + 'm ' + secs + 's left';
+          } else if (totalHours < 6) {
+            countdownPill.className = 'sts-countdown-pill warning';
+            countdownVal.textContent = totalHours + 'h ' + mins + 'm left';
+          } else if (days >= 1) {
+            countdownPill.className = 'sts-countdown-pill';
+            countdownVal.textContent = days + 'd ' + remHours + 'h left';
+          } else {
+            countdownPill.className = 'sts-countdown-pill';
+            countdownVal.textContent = remHours + 'h ' + mins + 'm left';
+          }
+        }
+
+        updateClock();
+        _countdownInterval = setInterval(updateClock, 1000);
+      }
+
+      function handleSessionExpired(booking) {
+        if (_countdownInterval) {
+          clearInterval(_countdownInterval);
+          _countdownInterval = null;
+        }
+
+        countdownPill.style.display = 'none';
+        userBadge.style.display = 'none';
+
+        if (booking) {
+          expiredNoticeText.textContent = 'Your practice booking expired at ' + formatDateTimeHuman(booking.endDate, booking.finishTime || booking.startTime) + '.';
+        }
+
+        switchAuthView('expired');
+        authOverlay.style.display = 'flex';
+      }
+
+      // -----------------------------------------------------------------
+      // Session Storage Helpers
+      // -----------------------------------------------------------------
+      function setSessionUser(user) {
+        try {
+          var str = JSON.stringify({
+            id: user.id,
+            name: user.name,
+            phone: user.phone || '',
+            email: user.email,
+            booking: user.booking || null
+          });
+          localStorage.setItem('sts_active_session', str);
+          sessionStorage.setItem('sts_active_session', str);
+        } catch (_) {}
+      }
+
+      function getActiveSessionUser() {
+        try {
+          var raw = localStorage.getItem('sts_active_session') || sessionStorage.getItem('sts_active_session');
+          if (raw) return JSON.parse(raw);
+        } catch (_) {}
+        return null;
+      }
+
+      function handleLogout() {
         try {
           localStorage.removeItem('sts_active_session');
           sessionStorage.removeItem('sts_active_session');
-        } catch (e) {}
+        } catch (_) {}
 
+        if (_countdownInterval) {
+          clearInterval(_countdownInterval);
+          _countdownInterval = null;
+        }
+
+        countdownPill.style.display = 'none';
         userBadge.style.display = 'none';
-        showAuthAlert('You have been logged out successfully.', 'info');
         switchAuthView('login');
         applyRememberedCredentialsToLoginForm();
         authOverlay.style.display = 'flex';
-      });
+      }
+
+      btnLogout.addEventListener('click', handleLogout);
 
       // Check Active Session on Page Load
       function checkActiveSession() {
-        var savedSession = null;
-        try {
-          var raw = localStorage.getItem('sts_active_session') || sessionStorage.getItem('sts_active_session');
-          if (raw) savedSession = JSON.parse(raw);
-        } catch (e) {}
-
-        if (savedSession && savedSession.email) {
-          completeAuthentication(savedSession);
+        var sessionUser = getActiveSessionUser();
+        if (sessionUser && sessionUser.email) {
+          var db = getCustomersDb();
+          var freshUser = db.find(function (u) { return u.email.toLowerCase() === sessionUser.email.toLowerCase(); });
+          if (freshUser) {
+            setSessionUser(freshUser);
+            evaluateUserAccess(freshUser);
+          } else {
+            evaluateUserAccess(sessionUser);
+          }
         } else {
           switchAuthView('login');
           applyRememberedCredentialsToLoginForm();
           authOverlay.style.display = 'flex';
         }
       }
+
+      // Background heartbeat check (every 2.5 seconds)
+      setInterval(function () {
+        var sessionUser = getActiveSessionUser();
+        if (sessionUser && sessionUser.email) {
+          var db = getCustomersDb();
+          var fresh = db.find(function (u) { return u.email.toLowerCase() === sessionUser.email.toLowerCase(); });
+          if (fresh) {
+            // If approval status changed in admin portal
+            var curStatus = sessionUser.booking ? sessionUser.booking.status : null;
+            var newStatus = fresh.booking ? fresh.booking.status : null;
+
+            if (curStatus !== newStatus) {
+              setSessionUser(fresh);
+              evaluateUserAccess(fresh);
+            }
+          }
+        }
+      }, 2500);
 
       checkActiveSession();
 

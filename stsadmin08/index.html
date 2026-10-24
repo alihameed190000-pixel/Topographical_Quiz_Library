@@ -1467,20 +1467,51 @@
         } catch (_) {}
       }
 
+      // Helper to find customer index by id, email, or name
+      function findCustomerIndex(list, customerId, customerEmail) {
+        if (!Array.isArray(list)) return -1;
+        var normId = String(customerId || '').trim().toLowerCase();
+        var normEmail = String(customerEmail || '').trim().toLowerCase();
+
+        for (var i = 0; i < list.length; i++) {
+          var c = list[i];
+          if (!c) continue;
+          var cId = String(c.id || '').trim().toLowerCase();
+          var cEmail = String(c.email || '').trim().toLowerCase();
+          var cName = String(c.name || '').trim().toLowerCase();
+
+          if (normId && cId && cId === normId) return i;
+          if (normEmail && cEmail && cEmail === normEmail) return i;
+          if (normId && cEmail && cEmail === normId) return i;
+          if (normEmail && cId && cId === normEmail) return i;
+          if (cName && (cName === normEmail || cName === normId)) return i;
+        }
+        return -1;
+      }
+
       function getCustomersDb() {
         try {
           var raw = localStorage.getItem(STORAGE_KEY_CUSTOMERS);
           if (raw) {
             var parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
+              var needsSave = false;
               parsed.forEach(function (c, idx) {
                 if (!c.id) {
                   c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
+                  needsSave = true;
                 }
-                if (!c.status) {
-                  c.status = (c.booking && c.booking.status) || 'pending';
+                var curStatus = c.status || c.approvalStatus || c.bookingStatus || (c.booking && (c.booking.status || c.booking.approvalStatus)) || 'pending';
+                if (!c.status || !c.approvalStatus) {
+                  c.status = curStatus;
+                  c.approvalStatus = curStatus;
+                  c.bookingStatus = curStatus;
+                  needsSave = true;
                 }
               });
+              if (needsSave) {
+                localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(parsed));
+              }
               return parsed;
             }
           }
@@ -1495,8 +1526,14 @@
               if (!c.id) {
                 c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
               }
-              if (!c.status) {
-                c.status = (c.booking && c.booking.status) || 'pending';
+              var curStatus = c.status || c.approvalStatus || c.bookingStatus || (c.booking && (c.booking.status || c.booking.approvalStatus)) || 'pending';
+              c.status = curStatus;
+              c.approvalStatus = curStatus;
+              c.bookingStatus = curStatus;
+              if (c.booking) {
+                c.booking.status = curStatus;
+                c.booking.approvalStatus = curStatus;
+                c.booking.bookingStatus = curStatus;
               }
             });
           }
@@ -1861,11 +1898,19 @@
         var totalRev = 0;
 
         customers.forEach(function (c) {
-          var s = (c.status || (c.booking && c.booking.status) || 'pending').toString().toLowerCase();
+          var b = c.booking;
+          var s = String(
+            c.approvalStatus || 
+            c.status || 
+            c.bookingStatus || 
+            (b && (b.approvalStatus || b.status || b.bookingStatus)) || 
+            'pending'
+          ).toLowerCase().trim();
+
           if (s === 'approved') {
             activeCount++;
-            if (c.booking) {
-              totalRev += (Number(c.booking.totalAmount) || 0);
+            if (b) {
+              totalRev += (Number(b.totalAmount) || 0);
             }
           } else if (s === 'rejected') {
             // rejected
@@ -1892,7 +1937,15 @@
         // Filter and Search Table Rows
         var query = (customerSearchInput.value || '').trim().toLowerCase();
         var filtered = customers.filter(function (c) {
-          var rawStatus = (c.status || (c.booking && c.booking.status) || 'pending').toString().toLowerCase();
+          var b = c.booking;
+          var rawStatus = String(
+            c.approvalStatus || 
+            c.status || 
+            c.bookingStatus || 
+            (b && (b.approvalStatus || b.status || b.bookingStatus)) || 
+            'pending'
+          ).toLowerCase().trim();
+
           var displayStatus = (rawStatus === 'approved') ? 'approved' : (rawStatus === 'rejected' ? 'rejected' : 'pending');
 
           if (currentFilter !== 'all') {
@@ -1921,14 +1974,20 @@
         var html = '';
         filtered.forEach(function (c) {
           var b = c.booking;
-          var rawStatus = (c.status || (b && b.status) || 'pending').toString().toLowerCase();
+          var rawStatus = String(
+            c.approvalStatus || 
+            c.status || 
+            c.bookingStatus || 
+            (b && (b.approvalStatus || b.status || b.bookingStatus)) || 
+            'pending'
+          ).toLowerCase().trim();
+
           var displayStatus = 'pending';
           if (rawStatus === 'approved') {
             displayStatus = 'approved';
           } else if (rawStatus === 'rejected') {
             displayStatus = 'rejected';
           } else {
-            // 'pending' or 'unbooked'
             displayStatus = 'pending';
           }
 
@@ -1960,6 +2019,9 @@
             ? '<a href="https://wa.me/' + phoneClean + '" target="_blank" class="customer-phone-tag" title="Open WhatsApp chat">📱 ' + phoneDisplay + '</a>'
             : '<span style="color: #94a3b8; font-size: 12px;">Not provided</span>';
 
+          var approveBtnStyle = (displayStatus === 'approved') ? 'style="box-shadow: 0 0 0 2px #059669;"' : '';
+          var rejectBtnStyle = (displayStatus === 'rejected') ? 'style="box-shadow: 0 0 0 2px #dc2626;"' : '';
+
           html += '<tr>' +
             '<td>' +
               '<div class="customer-name-cell">' +
@@ -1973,10 +2035,10 @@
             '<td>' + statusBadge + '</td>' +
             '<td style="text-align: right;">' +
               '<div class="action-btn-group" style="justify-content: flex-end;">' +
-                '<button type="button" class="btn-green" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\', \'approved\')" title="Approve candidate and unlock practice portal">' +
+                '<button type="button" class="btn-green" ' + approveBtnStyle + ' data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\', \'approved\')" title="Approve candidate and unlock practice portal">' +
                   'Approve' +
                 '</button>' +
-                '<button type="button" class="btn-red" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\', \'rejected\')" title="Reject candidate and revoke practice access">' +
+                '<button type="button" class="btn-red" ' + rejectBtnStyle + ' data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\', \'rejected\')" title="Reject candidate and revoke practice access">' +
                   'Reject' +
                 '</button>' +
               '</div>' +
@@ -1987,15 +2049,15 @@
         customerTableBody.innerHTML = html;
 
         // Global Action Handler (Works directly via onclick and event listeners)
-      window.handleAdminAction = function (e, customerId, email, newStatus) {
-        if (e) {
-          if (e.preventDefault) e.preventDefault();
-          if (e.stopPropagation) e.stopPropagation();
-        }
-        handleCustomerApproval(customerId, email, newStatus);
-      };
+        window.handleAdminAction = function (e, customerId, email, newStatus) {
+          if (e) {
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+          }
+          handleCustomerApproval(customerId, email, newStatus);
+        };
 
-      // Attach Button Listeners
+        // Attach Button Listeners
         customerTableBody.querySelectorAll('.btn-green').forEach(function (btn) {
           btn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -2028,30 +2090,39 @@
       // -----------------------------------------------------------------
       // Approval / Rejection Logic
       // -----------------------------------------------------------------
-      async function handleCustomerApproval(customerId, email, newStatus) {
+      function handleCustomerApproval(customerId, email, newStatus) {
         console.log('[Admin Portal] Processing approval status change:', { id: customerId, email: email, status: newStatus });
-        // 1. Supabase Query: Filter and update rows by customer ID
-        try {
-          await updateCustomerStatusInSupabase(customerId, newStatus, email);
-        } catch (sbErr) {
-          console.warn('[Supabase] Update caught:', sbErr);
-        }
 
-        // 2. Update local database & cross-tab storage
+        // 1. Read fresh database from localStorage
         var customers = getCustomersDb();
-        var idx = -1;
-        if (customerId) {
-          idx = customers.findIndex(function (c) { return String(c.id) === String(customerId); });
-        }
-        if (idx === -1 && email) {
-          idx = customers.findIndex(function (c) { return c.email.toLowerCase() === email.toLowerCase(); });
+        var idx = findCustomerIndex(customers, customerId, email);
+
+        if (idx === -1) {
+          console.warn('[Admin Portal] Candidate not found in database by id or email:', { id: customerId, email: email });
+          // Fallback fuzzy search by name or email substring
+          for (var i = 0; i < customers.length; i++) {
+            var cust = customers[i];
+            if (cust && (
+              (cust.name && email && cust.name.toLowerCase().indexOf(email.toLowerCase()) !== -1) ||
+              (cust.email && customerId && cust.email.toLowerCase().indexOf(customerId.toLowerCase()) !== -1)
+            )) {
+              idx = i;
+              break;
+            }
+          }
         }
 
         var candidateName = email;
+
         if (idx !== -1) {
           var c = customers[idx];
-          candidateName = c.name || c.email;
+          candidateName = c.name || c.email || 'Candidate';
+
+          // Update ALL status properties on that candidate object AND its nested booking object
           c.status = newStatus;
+          c.approvalStatus = newStatus;
+          c.bookingStatus = newStatus;
+
           if (!c.booking) {
             var today = new Date();
             var tomorrow = new Date(Date.now() + 86400000);
@@ -2065,38 +2136,60 @@
               totalDays: 1,
               totalAmount: 20,
               status: newStatus,
-              approvedAt: Date.now()
+              approvalStatus: newStatus,
+              bookingStatus: newStatus,
+              approvedAt: Date.now(),
+              endTimestamp: Date.now() + 86400000
             };
           } else {
             c.booking.status = newStatus;
+            c.booking.approvalStatus = newStatus;
+            c.booking.bookingStatus = newStatus;
             if (newStatus === 'approved') {
               c.booking.approvedAt = Date.now();
+              var days = Number(c.booking.totalDays) > 0 ? Number(c.booking.totalDays) : 1;
+              c.booking.endTimestamp = Date.now() + (days * 86400000);
             }
           }
+
+          // Save the updated array immediately back to localStorage.setItem('sts_customers_db', JSON.stringify(customers))
           saveCustomersDb(customers);
+
+          // Also check if an active customer session exists in localStorage and update its status too!
+          var sessionKeys = ['sts_active_session', 'sts_current_customer', 'sts_active_user', 'sts_session_user'];
+          sessionKeys.forEach(function (key) {
+            try {
+              var raw = localStorage.getItem(key) || sessionStorage.getItem(key);
+              if (raw) {
+                var s = JSON.parse(raw);
+                if (s && (
+                  (s.email && c.email && s.email.toLowerCase() === c.email.toLowerCase()) ||
+                  (s.id && c.id && String(s.id) === String(c.id)) ||
+                  (s.name && c.name && s.name.toLowerCase() === c.name.toLowerCase())
+                )) {
+                  s.status = newStatus;
+                  s.approvalStatus = newStatus;
+                  s.bookingStatus = newStatus;
+                  if (!s.booking) s.booking = c.booking;
+                  else {
+                    s.booking.status = newStatus;
+                    s.booking.approvalStatus = newStatus;
+                    s.booking.bookingStatus = newStatus;
+                    if (newStatus === 'approved') s.booking.approvedAt = Date.now();
+                  }
+                  var updatedStr = JSON.stringify(s);
+                  localStorage.setItem(key, updatedStr);
+                  sessionStorage.setItem(key, updatedStr);
+                }
+              }
+            } catch (_) {}
+          });
         }
 
-        // 3. Immediately re-fetch/reload candidate list
-        try {
-          var remoteCandidates = await fetchCandidatesFromSupabase();
-          if (remoteCandidates && Array.isArray(remoteCandidates)) {
-            var map = {};
-            customers.forEach(function (c) { map[c.email.toLowerCase()] = c; });
-            remoteCandidates.forEach(function (row) {
-              var em = (row.email || '').toLowerCase();
-              if (map[em]) {
-                map[em].status = row.status || map[em].status;
-                if (map[em].booking) map[em].booking.status = map[em].status;
-              }
-            });
-            saveCustomersDb(Object.keys(map).map(function (k) { return map[k]; }));
-          }
-        } catch (_) {}
-
-        // 4. Update the status badge immediately (render dashboard)
+        // 2. Immediately re-render the dashboard so the badge and metrics update on screen instantly
         renderDashboard();
 
-        // 5. Unlock/lock candidate practice portal via real-time broadcast sync
+        // 3. Real-Time Sync: Broadcast status change immediately
         broadcastSync('CUSTOMER_STATUS_CHANGED', {
           id: customerId,
           email: email,
@@ -2105,11 +2198,18 @@
         });
         broadcastSync('CUSTOMERS_UPDATED');
 
-        // 6. Crisp visual confirmation toast
+        // 4. Crisp visual confirmation toast
         var toastText = (newStatus === 'approved')
           ? 'Candidate ' + candidateName + ' APPROVED! Practice portal access unlocked.'
           : 'Candidate ' + candidateName + ' REJECTED. Practice access revoked.';
         showAdminToast(toastText, newStatus === 'approved' ? 'success' : 'danger');
+
+        // 5. Supabase background sync (unawaited so it never blocks UI or local storage)
+        if (typeof supabaseClient !== 'undefined' && supabaseClient && (customerId || email)) {
+          updateCustomerStatusInSupabase(customerId, newStatus, email).catch(function (err) {
+            console.warn('[Supabase] Background sync warning:', err);
+          });
+        }
       }
 
       // Filter Buttons

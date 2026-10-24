@@ -4157,33 +4157,33 @@
         // Always register the seed candidate first
         userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
 
-        if (Array.isArray(_memoryDbCache)) {
-          _memoryDbCache.forEach(function (u) {
-            if (u && u.email) {
-              var em = String(u.email).trim().toLowerCase();
-              userMap[em] = u;
-            }
-          });
-        }
-
         rawList.forEach(function (raw) {
           try {
             var parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
               parsed.forEach(function (u) {
-                if (u && u.email) {
-                  var em = String(u.email).trim().toLowerCase();
+                if (u && (u.email || u.id)) {
+                  var em = String(u.email || u.id).trim().toLowerCase();
                   var existing = userMap[em];
+                  var effStatus = u.approvalStatus || u.status || u.bookingStatus || (u.booking && (u.booking.approvalStatus || u.booking.status || u.booking.bookingStatus)) || (existing && existing.status) || 'pending';
+
                   userMap[em] = {
                     id: u.id || (existing && existing.id) || ('cust_' + Date.now()),
                     name: String(u.name || (existing && existing.name) || '').trim() || em.split('@')[0],
                     phone: String(u.phone || (existing && existing.phone) || '').trim(),
-                    email: em,
+                    email: String(u.email || (existing && existing.email) || em).trim(),
                     password: String(u.password || (existing && existing.password) || '').trim(),
-                    status: u.status || (existing && existing.status) || (u.booking && u.booking.status) || 'pending',
+                    status: effStatus,
+                    approvalStatus: effStatus,
+                    bookingStatus: effStatus,
                     booking: u.booking || (existing && existing.booking) || null,
                     createdAt: u.createdAt || (existing && existing.createdAt) || Date.now()
                   };
+                  if (userMap[em].booking) {
+                    userMap[em].booking.status = effStatus;
+                    userMap[em].booking.approvalStatus = effStatus;
+                    userMap[em].booking.bookingStatus = effStatus;
+                  }
                 }
               });
             }
@@ -4192,7 +4192,6 @@
 
         var merged = Object.keys(userMap).map(function (k) { return userMap[k]; });
         _memoryDbCache = merged;
-        writeToAllStorages('sts_customers_db', JSON.stringify(merged));
         return merged;
       }
 
@@ -4202,18 +4201,26 @@
         userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
 
         db.forEach(function (u) {
-          if (u && u.email) {
-            var em = String(u.email).trim().toLowerCase();
+          if (u && (u.email || u.id)) {
+            var em = String(u.email || u.id).trim().toLowerCase();
+            var effStatus = u.approvalStatus || u.status || u.bookingStatus || (u.booking && (u.booking.approvalStatus || u.booking.status || u.booking.bookingStatus)) || 'pending';
             userMap[em] = {
               id: u.id || ('cust_' + Date.now()),
               name: String(u.name || '').trim() || em.split('@')[0],
               phone: String(u.phone || '').trim(),
-              email: em,
+              email: String(u.email || em).trim(),
               password: String(u.password || '').trim(),
-              status: u.status || (u.booking && u.booking.status) || 'pending',
+              status: effStatus,
+              approvalStatus: effStatus,
+              bookingStatus: effStatus,
               booking: u.booking || null,
               createdAt: u.createdAt || Date.now()
             };
+            if (userMap[em].booking) {
+              userMap[em].booking.status = effStatus;
+              userMap[em].booking.approvalStatus = effStatus;
+              userMap[em].booking.bookingStatus = effStatus;
+            }
           }
         });
 
@@ -4709,7 +4716,52 @@
         }, 500);
       });
 
-      // Pending Screen Action Buttons
+      // Robust booking expiry parser: handles formatted dates, ISO, timestamps and ensures valid future end time upon approval
+      function parseBookingExpiry(booking) {
+        var finishTimestamp = null;
+        if (booking) {
+          if (booking.endTimestamp && !isNaN(Number(booking.endTimestamp)) && Number(booking.endTimestamp) > Date.now()) {
+            return Number(booking.endTimestamp);
+          }
+          if (booking.expiryTimestamp && !isNaN(Number(booking.expiryTimestamp)) && Number(booking.expiryTimestamp) > Date.now()) {
+            return Number(booking.expiryTimestamp);
+          }
+
+          if (booking.endDate) {
+            var cleanTime = String(booking.finishTime || booking.startTime || '23:59').replace(/[^0-9:]/g, '');
+            if (cleanTime.indexOf(':') === -1) cleanTime = cleanTime + ':00';
+            if (cleanTime.split(':').length === 2) cleanTime = cleanTime + ':00';
+
+            var dateStr = String(booking.endDate).trim();
+            var tryIso = new Date(dateStr + 'T' + cleanTime).getTime();
+            if (!isNaN(tryIso) && tryIso > Date.now()) {
+              finishTimestamp = tryIso;
+            } else {
+              var tryDirect = new Date(dateStr + ' ' + cleanTime).getTime();
+              if (!isNaN(tryDirect) && tryDirect > Date.now()) {
+                finishTimestamp = tryDirect;
+              } else {
+                var tryDateOnly = new Date(dateStr).getTime();
+                if (!isNaN(tryDateOnly) && tryDateOnly > Date.now()) {
+                  finishTimestamp = tryDateOnly;
+                }
+              }
+            }
+          }
+        }
+
+        // Fallback: If missing, invalid, or in past, provide full active duration from now based on totalDays (default 24 hours)
+        if (!finishTimestamp || isNaN(finishTimestamp) || finishTimestamp <= Date.now()) {
+          var days = (booking && Number(booking.totalDays) > 0) ? Number(booking.totalDays) : 1;
+          finishTimestamp = Date.now() + (days * 86400000);
+          if (booking) {
+            booking.endTimestamp = finishTimestamp;
+          }
+        }
+        return finishTimestamp;
+      }
+
+      // Pending Screen Action Buttons: Refresh Approval Status
       btnPendingRefresh.addEventListener('click', function () {
         var btn = this;
         var origText = btn.textContent;
@@ -4719,34 +4771,71 @@
         try {
           _memoryDbCache = null;
           var sessionUser = getActiveSessionUser();
-          if (!sessionUser || !sessionUser.email) {
+          if (!sessionUser) {
             switchAuthView('login');
             authOverlay.style.display = 'flex';
             return;
           }
 
           var db = getCustomersDb();
-          var fresh = db.find(function (c) { return c.email.toLowerCase() === sessionUser.email.toLowerCase(); });
-          if (fresh) {
-            setSessionUser(fresh);
-            var effStatus = String(fresh.status || (fresh.booking && fresh.booking.status) || 'pending').toLowerCase();
-            console.log('[Candidate Portal] Refresh approval check:', { email: fresh.email, status: effStatus });
+          var normEmail = String(sessionUser.email || '').trim().toLowerCase();
+          var normId = String(sessionUser.id || '').trim().toLowerCase();
+          var normName = String(sessionUser.name || '').trim().toLowerCase();
 
-            if (effStatus === 'approved') {
+          var fresh = db.find(function (c) {
+            if (!c) return false;
+            var cEmail = String(c.email || '').trim().toLowerCase();
+            var cId = String(c.id || '').trim().toLowerCase();
+            var cName = String(c.name || '').trim().toLowerCase();
+            return (normEmail && cEmail === normEmail) || 
+                   (normId && cId === normId) || 
+                   (normEmail && cId === normEmail) || 
+                   (normId && cEmail === normId) ||
+                   (normName && cName === normName);
+          });
+
+          if (fresh) {
+            var isApproved = (
+              fresh.status === 'approved' || 
+              fresh.approvalStatus === 'approved' || 
+              fresh.bookingStatus === 'approved' ||
+              (fresh.booking && (fresh.booking.status === 'approved' || fresh.booking.approvalStatus === 'approved'))
+            );
+            var isRejected = (
+              fresh.status === 'rejected' || 
+              fresh.approvalStatus === 'rejected' || 
+              fresh.bookingStatus === 'rejected' ||
+              (fresh.booking && (fresh.booking.status === 'rejected' || fresh.booking.approvalStatus === 'rejected'))
+            );
+
+            if (isApproved) {
+              fresh.status = 'approved';
+              fresh.approvalStatus = 'approved';
+              fresh.bookingStatus = 'approved';
+              if (fresh.booking) fresh.booking.status = 'approved';
+              setSessionUser(fresh);
               evaluateUserAccess(fresh);
               return;
-            } else if (effStatus === 'rejected') {
+            } else if (isRejected) {
+              fresh.status = 'rejected';
+              fresh.approvalStatus = 'rejected';
+              fresh.bookingStatus = 'rejected';
+              if (fresh.booking) fresh.booking.status = 'rejected';
+              setSessionUser(fresh);
               evaluateUserAccess(fresh);
               return;
             } else {
+              setSessionUser(fresh);
               showAuthAlert('Status Checked: Your practice access is still pending admin approval.', 'info');
             }
+          } else {
+            showAuthAlert('Account not found in customer database. Please log in again.', 'error');
           }
         } finally {
           setTimeout(function () {
             btn.textContent = origText;
             btn.disabled = false;
-          }, 450);
+          }, 350);
         }
       });
 
@@ -4771,14 +4860,20 @@
       // User Access Evaluation (Gatekeeper Logic)
       // -----------------------------------------------------------------
       function evaluateUserAccess(user) {
-        if (!user || !user.email) {
+        if (!user || (!user.email && !user.id && !user.name)) {
           switchAuthView('login');
           authOverlay.style.display = 'flex';
           return;
         }
 
         var booking = user.booking;
-        var effectiveStatus = String(user.status || (booking && booking.status) || 'pending').toLowerCase();
+        var effectiveStatus = String(
+          user.approvalStatus || 
+          user.status || 
+          user.bookingStatus || 
+          (booking && (booking.approvalStatus || booking.status || booking.bookingStatus)) || 
+          'pending'
+        ).toLowerCase().trim();
 
         // 1. REJECTION LOCKOUT:
         // If rejected, keep the gateway locked, display clear rejection notice, prevent entering quiz portal under any circumstances
@@ -4789,29 +4884,22 @@
         }
 
         // 2. UNLOCKING ON APPROVAL:
-        // Access must be granted if approved (regardless of payment receipt confirmation state)
+        // Access MUST be granted if approved (regardless of payment receipt confirmation state,
+        // and regardless of whether the selected start time is in the future)
         if (effectiveStatus === 'approved') {
-          var finishTimestamp;
-          if (booking && booking.endDate && (booking.finishTime || booking.startTime)) {
-            finishTimestamp = new Date(booking.endDate + 'T' + (booking.finishTime || booking.startTime) + ':00').getTime();
-          }
-          if (!finishTimestamp || isNaN(finishTimestamp) || finishTimestamp <= Date.now()) {
-            var baseTime = (booking && booking.approvedAt) ? booking.approvedAt : Date.now();
-            var days = (booking && booking.totalDays) ? booking.totalDays : 1;
-            finishTimestamp = baseTime + (days * 86400000);
-            if (finishTimestamp <= Date.now()) {
-              finishTimestamp = Date.now() + 86400000;
-            }
-          }
+          var finishTimestamp = parseBookingExpiry(booking);
 
+          // Save active approved session in all storage keys
           setSessionUser(user);
+
+          // Instantly unlock and hide the customer gateway overlay, reveal quiz simulator, start live countdown clock
           unlockPracticeSimulator(user, finishTimestamp);
           return;
         }
 
         // 3. AWAITING ADMIN APPROVAL (Pending):
-        if (booking && (booking.status === 'pending' || effectiveStatus === 'pending')) {
-          pendingCandidateName.textContent = (user.name || 'Candidate') + ' (' + user.email + ')';
+        if (booking && (effectiveStatus === 'pending' || booking.status === 'pending' || booking.startDate)) {
+          pendingCandidateName.textContent = (user.name || user.email || 'Candidate') + (user.email ? ' (' + user.email + ')' : '');
           pendingStartDisplay.textContent = formatDateTimeHuman(booking.startDate, booking.startTime);
           pendingFinishDisplay.textContent = formatDateTimeHuman(booking.endDate, booking.finishTime || booking.startTime);
           pendingChargeDisplay.textContent = (booking.totalDays || 1) + ' Day(s) • £' + (booking.totalAmount || 20);
@@ -4833,7 +4921,7 @@
         }
 
         // 4. NO BOOKING CREATED YET:
-        $('bookingCandidateGreeting').textContent = 'Candidate: ' + (user.name || user.email);
+        $('bookingCandidateGreeting').textContent = 'Candidate: ' + (user.name || user.email || 'Candidate');
         switchAuthView('booking');
         authOverlay.style.display = 'flex';
       }
@@ -4938,24 +5026,41 @@
       // Session Storage Helpers
       // -----------------------------------------------------------------
       function setSessionUser(user) {
+        if (!user) return;
         try {
-          var str = JSON.stringify({
-            id: user.id,
-            name: user.name,
+          var curStatus = user.status || user.approvalStatus || user.bookingStatus || (user.booking && (user.booking.status || user.booking.approvalStatus)) || 'pending';
+          var sessionObj = {
+            id: user.id || ('cust_' + Date.now()),
+            name: user.name || '',
             phone: user.phone || '',
-            email: user.email,
+            email: user.email || '',
+            status: curStatus,
+            approvalStatus: curStatus,
+            bookingStatus: curStatus,
             booking: user.booking || null
-          });
+          };
+          var str = JSON.stringify(sessionObj);
           localStorage.setItem('sts_active_session', str);
+          localStorage.setItem('sts_current_customer', str);
+          localStorage.setItem('sts_active_user', str);
           sessionStorage.setItem('sts_active_session', str);
+          sessionStorage.setItem('sts_current_customer', str);
         } catch (_) {}
       }
 
       function getActiveSessionUser() {
-        try {
-          var raw = localStorage.getItem('sts_active_session') || sessionStorage.getItem('sts_active_session');
-          if (raw) return JSON.parse(raw);
-        } catch (_) {}
+        var keys = ['sts_active_session', 'sts_current_customer', 'sts_active_user'];
+        for (var i = 0; i < keys.length; i++) {
+          try {
+            var raw = localStorage.getItem(keys[i]) || sessionStorage.getItem(keys[i]);
+            if (raw) {
+              var parsed = JSON.parse(raw);
+              if (parsed && (parsed.email || parsed.id || parsed.name)) {
+                return parsed;
+              }
+            }
+          } catch (_) {}
+        }
         return null;
       }
 

@@ -710,12 +710,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      gap: 5px;
+      font-size: 12px;
       font-weight: 700;
       padding: 5px 12px;
       border-radius: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
       white-space: nowrap;
       user-select: none;
     }
@@ -1935,11 +1934,11 @@
 
           var statusBadge = '';
           if (displayStatus === 'approved') {
-            statusBadge = '<span class="status-pill approved">APPROVED</span>';
+            statusBadge = '<span class="status-pill approved">✓ Approved</span>';
           } else if (displayStatus === 'rejected') {
-            statusBadge = '<span class="status-pill rejected">REJECTED</span>';
+            statusBadge = '<span class="status-pill rejected">✕ Rejected</span>';
           } else {
-            statusBadge = '<span class="status-pill pending">PENDING APPROVAL</span>';
+            statusBadge = '<span class="status-pill pending">Pending Approval</span>';
           }
 
           var scheduleHtml = '—';
@@ -1974,10 +1973,10 @@
             '<td>' + statusBadge + '</td>' +
             '<td style="text-align: right;">' +
               '<div class="action-btn-group" style="justify-content: flex-end;">' +
-                '<button type="button" class="btn-green" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" title="Approve candidate and unlock practice portal">' +
+                '<button type="button" class="btn-green" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\', \'approved\')" title="Approve candidate and unlock practice portal">' +
                   'Approve' +
                 '</button>' +
-                '<button type="button" class="btn-red" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" title="Reject candidate and revoke practice access">' +
+                '<button type="button" class="btn-red" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\', \'rejected\')" title="Reject candidate and revoke practice access">' +
                   'Reject' +
                 '</button>' +
               '</div>' +
@@ -1987,7 +1986,16 @@
 
         customerTableBody.innerHTML = html;
 
-        // Attach Button Listeners
+        // Global Action Handler (Works directly via onclick and event listeners)
+      window.handleAdminAction = function (e, customerId, email, newStatus) {
+        if (e) {
+          if (e.preventDefault) e.preventDefault();
+          if (e.stopPropagation) e.stopPropagation();
+        }
+        handleCustomerApproval(customerId, email, newStatus);
+      };
+
+      // Attach Button Listeners
         customerTableBody.querySelectorAll('.btn-green').forEach(function (btn) {
           btn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -2021,6 +2029,7 @@
       // Approval / Rejection Logic
       // -----------------------------------------------------------------
       async function handleCustomerApproval(customerId, email, newStatus) {
+        console.log('[Admin Portal] Processing approval status change:', { id: customerId, email: email, status: newStatus });
         // 1. Supabase Query: Filter and update rows by customer ID
         try {
           await updateCustomerStatusInSupabase(customerId, newStatus, email);

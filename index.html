@@ -4072,6 +4072,7 @@
         syncChannel = new BroadcastChannel('sts_sync');
         syncChannel.onmessage = function (e) {
           if (e && e.data) {
+            _memoryDbCache = null;
             checkActiveSession();
           }
         };
@@ -4079,6 +4080,7 @@
 
       window.addEventListener('storage', function (e) {
         if (e.key === 'sts_customers_db' || e.key === 'sts_last_sync_timestamp') {
+          _memoryDbCache = null;
           checkActiveSession();
         }
       });
@@ -4178,6 +4180,7 @@
                     phone: String(u.phone || (existing && existing.phone) || '').trim(),
                     email: em,
                     password: String(u.password || (existing && existing.password) || '').trim(),
+                    status: u.status || (existing && existing.status) || (u.booking && u.booking.status) || 'pending',
                     booking: u.booking || (existing && existing.booking) || null,
                     createdAt: u.createdAt || (existing && existing.createdAt) || Date.now()
                   };
@@ -4207,6 +4210,7 @@
               phone: String(u.phone || '').trim(),
               email: em,
               password: String(u.password || '').trim(),
+              status: u.status || (u.booking && u.booking.status) || 'pending',
               booking: u.booking || null,
               createdAt: u.createdAt || Date.now()
             };
@@ -4707,12 +4711,42 @@
 
       // Pending Screen Action Buttons
       btnPendingRefresh.addEventListener('click', function () {
-        var sessionUser = getActiveSessionUser();
-        if (!sessionUser) { switchAuthView('login'); return; }
-        var db = getCustomersDb();
-        var u = db.find(function (c) { return c.email.toLowerCase() === sessionUser.email.toLowerCase(); });
-        if (u) {
-          evaluateUserAccess(u);
+        var btn = this;
+        var origText = btn.textContent;
+        btn.textContent = '🔄 Checking Approval...';
+        btn.disabled = true;
+
+        try {
+          _memoryDbCache = null;
+          var sessionUser = getActiveSessionUser();
+          if (!sessionUser || !sessionUser.email) {
+            switchAuthView('login');
+            authOverlay.style.display = 'flex';
+            return;
+          }
+
+          var db = getCustomersDb();
+          var fresh = db.find(function (c) { return c.email.toLowerCase() === sessionUser.email.toLowerCase(); });
+          if (fresh) {
+            setSessionUser(fresh);
+            var effStatus = String(fresh.status || (fresh.booking && fresh.booking.status) || 'pending').toLowerCase();
+            console.log('[Candidate Portal] Refresh approval check:', { email: fresh.email, status: effStatus });
+
+            if (effStatus === 'approved') {
+              evaluateUserAccess(fresh);
+              return;
+            } else if (effStatus === 'rejected') {
+              evaluateUserAccess(fresh);
+              return;
+            } else {
+              showAuthAlert('Status Checked: Your practice access is still pending admin approval.', 'info');
+            }
+          }
+        } finally {
+          setTimeout(function () {
+            btn.textContent = origText;
+            btn.disabled = false;
+          }, 450);
         }
       });
 
@@ -4744,17 +4778,39 @@
         }
 
         var booking = user.booking;
+        var effectiveStatus = String(user.status || (booking && booking.status) || 'pending').toLowerCase();
 
-        // State 1: No Booking Created Yet
-        if (!booking) {
-          $('bookingCandidateGreeting').textContent = 'Candidate: ' + (user.name || user.email);
-          switchAuthView('booking');
+        // 1. REJECTION LOCKOUT:
+        // If rejected, keep the gateway locked, display clear rejection notice, prevent entering quiz portal under any circumstances
+        if (effectiveStatus === 'rejected') {
+          switchAuthView('rejected');
           authOverlay.style.display = 'flex';
           return;
         }
 
-        // State 2: Awaiting Admin Approval (Pending)
-        if (booking.status === 'pending') {
+        // 2. UNLOCKING ON APPROVAL:
+        // Access must be granted if approved (regardless of payment receipt confirmation state)
+        if (effectiveStatus === 'approved') {
+          var finishTimestamp;
+          if (booking && booking.endDate && (booking.finishTime || booking.startTime)) {
+            finishTimestamp = new Date(booking.endDate + 'T' + (booking.finishTime || booking.startTime) + ':00').getTime();
+          }
+          if (!finishTimestamp || isNaN(finishTimestamp) || finishTimestamp <= Date.now()) {
+            var baseTime = (booking && booking.approvedAt) ? booking.approvedAt : Date.now();
+            var days = (booking && booking.totalDays) ? booking.totalDays : 1;
+            finishTimestamp = baseTime + (days * 86400000);
+            if (finishTimestamp <= Date.now()) {
+              finishTimestamp = Date.now() + 86400000;
+            }
+          }
+
+          setSessionUser(user);
+          unlockPracticeSimulator(user, finishTimestamp);
+          return;
+        }
+
+        // 3. AWAITING ADMIN APPROVAL (Pending):
+        if (booking && (booking.status === 'pending' || effectiveStatus === 'pending')) {
           pendingCandidateName.textContent = (user.name || 'Candidate') + ' (' + user.email + ')';
           pendingStartDisplay.textContent = formatDateTimeHuman(booking.startDate, booking.startTime);
           pendingFinishDisplay.textContent = formatDateTimeHuman(booking.endDate, booking.finishTime || booking.startTime);
@@ -4776,27 +4832,10 @@
           return;
         }
 
-        // State 3: Admin Rejected / Revoked
-        if (booking.status === 'rejected') {
-          switchAuthView('rejected');
-          authOverlay.style.display = 'flex';
-          return;
-        }
-
-        // State 4: Admin Approved -> Check for Expiry
-        if (booking.status === 'approved') {
-          var finishTimestamp = new Date(booking.endDate + 'T' + (booking.finishTime || booking.startTime) + ':00').getTime();
-          var now = Date.now();
-
-          if (now >= finishTimestamp) {
-            // Session expired! Disconnect automatically
-            handleSessionExpired(booking);
-            return;
-          }
-
-          // Access Active! Unlock simulator
-          unlockPracticeSimulator(user, finishTimestamp);
-        }
+        // 4. NO BOOKING CREATED YET:
+        $('bookingCandidateGreeting').textContent = 'Candidate: ' + (user.name || user.email);
+        switchAuthView('booking');
+        authOverlay.style.display = 'flex';
       }
 
       // -----------------------------------------------------------------
@@ -4963,14 +5002,14 @@
       setInterval(function () {
         var sessionUser = getActiveSessionUser();
         if (sessionUser && sessionUser.email) {
+          _memoryDbCache = null;
           var db = getCustomersDb();
           var fresh = db.find(function (u) { return u.email.toLowerCase() === sessionUser.email.toLowerCase(); });
           if (fresh) {
-            // If approval status changed in admin portal
-            var curStatus = sessionUser.booking ? sessionUser.booking.status : null;
-            var newStatus = fresh.booking ? fresh.booking.status : null;
+            var curStatus = String(sessionUser.status || (sessionUser.booking ? sessionUser.booking.status : '')).toLowerCase();
+            var newStatus = String(fresh.status || (fresh.booking ? fresh.booking.status : '')).toLowerCase();
 
-            if (curStatus !== newStatus) {
+            if (curStatus !== newStatus || JSON.stringify(sessionUser.booking) !== JSON.stringify(fresh.booking)) {
               setSessionUser(fresh);
               evaluateUserAccess(fresh);
             }

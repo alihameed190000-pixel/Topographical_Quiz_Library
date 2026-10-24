@@ -9,6 +9,7 @@
     content="Official Smart Taxi Solutions Ltd Administration Portal for TfL Topographical Skills candidate booking approval, customer account verification, and practice access control.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -708,14 +709,15 @@
     .status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 11.5px;
+      justify-content: center;
+      font-size: 11px;
       font-weight: 700;
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 20px;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       white-space: nowrap;
+      user-select: none;
     }
 
     .status-pill.pending {
@@ -746,6 +748,51 @@
       background: #f3f4f6;
       color: #4b5563;
       border: 1px solid #d1d5db;
+    }
+
+    
+    /* TOAST NOTIFICATION CONTAINER */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 3000;
+      pointer-events: none;
+    }
+
+    .toast-item {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastSlideIn 0.22s ease-out;
+      pointer-events: auto;
+      border-left: 4px solid #3b82f6;
+      max-width: 420px;
+    }
+
+    .toast-item.success {
+      background: #064e3b;
+      border-left-color: #10b981;
+    }
+
+    .toast-item.danger {
+      background: #7f1d1d;
+      border-left-color: #ef4444;
+    }
+
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* ACTION BUTTONS (GREEN / RED) */
@@ -1234,9 +1281,90 @@
       'use strict';
 
       // Storage keys
+      // Storage keys
       var STORAGE_KEY_CUSTOMERS = 'sts_customers_db';
       var STORAGE_KEY_ADMINS = 'sts_admins_db';
       var STORAGE_KEY_ADMIN_SESSION = 'sts_admin_session';
+
+      // -----------------------------------------------------------------
+      // Supabase Integration & Configuration
+      // -----------------------------------------------------------------
+      var SUPABASE_URL = window.SUPABASE_URL || localStorage.getItem('sts_supabase_url') || 'https://ststopographical.supabase.co';
+      var SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || localStorage.getItem('sts_supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key_sts';
+
+      var supabaseClient = null;
+      if (typeof window.supabase !== 'undefined' && window.supabase && window.supabase.createClient) {
+        try {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          window.supabaseClient = supabaseClient;
+        } catch (err) {
+          console.warn('[Supabase] Initialization warning:', err);
+        }
+      }
+
+      function showAdminToast(msg, type) {
+        var container = $('adminToastContainer');
+        if (!container) return;
+        var toast = document.createElement('div');
+        toast.className = 'toast-item ' + (type || 'info');
+        toast.textContent = msg;
+        container.appendChild(toast);
+        setTimeout(function () {
+          toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          setTimeout(function () {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+          }, 300);
+        }, 3500);
+      }
+
+      async function updateCustomerStatusInSupabase(customerId, newStatus, customerEmail) {
+        if (!supabaseClient) {
+          return { success: true, localOnly: true };
+        }
+        try {
+          var query = supabaseClient.from('customers').update({
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          });
+
+          // Correctly filter and update rows by customer ID
+          if (customerId) {
+            query = query.eq('id', customerId);
+          } else if (customerEmail) {
+            query = query.eq('email', customerEmail.toLowerCase());
+          }
+
+          var res = await query;
+          if (res && res.error) {
+            console.warn('[Supabase] Query warning:', res.error);
+            if (customerId && customerEmail) {
+              await supabaseClient
+                .from('customers')
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .eq('email', customerEmail.toLowerCase());
+            }
+          }
+          return { success: true, data: res ? res.data : null };
+        } catch (err) {
+          console.warn('[Supabase] Update exception:', err);
+          return { success: false, error: err };
+        }
+      }
+
+      async function fetchCandidatesFromSupabase() {
+        if (!supabaseClient) return null;
+        try {
+          var res = await supabaseClient.from('customers').select('*').order('created_at', { ascending: false });
+          if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+            return res.data;
+          }
+        } catch (err) {
+          console.warn('[Supabase] Fetch exception:', err);
+        }
+        return null;
+      }
 
       // DOM Elements
       var $ = function (id) { return document.getElementById(id); };
@@ -1345,7 +1473,17 @@
           var raw = localStorage.getItem(STORAGE_KEY_CUSTOMERS);
           if (raw) {
             var parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return parsed;
+            if (Array.isArray(parsed)) {
+              parsed.forEach(function (c, idx) {
+                if (!c.id) {
+                  c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
+                }
+                if (!c.status) {
+                  c.status = (c.booking && c.booking.status) || 'pending';
+                }
+              });
+              return parsed;
+            }
           }
         } catch (_) {}
         return [];
@@ -1353,7 +1491,18 @@
 
       function saveCustomersDb(list) {
         try {
+          if (Array.isArray(list)) {
+            list.forEach(function (c, idx) {
+              if (!c.id) {
+                c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
+              }
+              if (!c.status) {
+                c.status = (c.booking && c.booking.status) || 'pending';
+              }
+            });
+          }
           localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(list || []));
+          localStorage.setItem('sts_last_sync_timestamp', Date.now().toString());
           broadcastSync('CUSTOMERS_UPDATED');
         } catch (_) {}
       }
@@ -1713,14 +1862,16 @@
         var totalRev = 0;
 
         customers.forEach(function (c) {
-          var b = c.booking;
-          if (b) {
-            if (b.status === 'pending') {
-              pendingCount++;
-            } else if (b.status === 'approved') {
-              activeCount++;
-              totalRev += (Number(b.totalAmount) || 0);
+          var s = (c.status || (c.booking && c.booking.status) || 'pending').toString().toLowerCase();
+          if (s === 'approved') {
+            activeCount++;
+            if (c.booking) {
+              totalRev += (Number(c.booking.totalAmount) || 0);
             }
+          } else if (s === 'rejected') {
+            // rejected
+          } else {
+            pendingCount++;
           }
         });
 
@@ -1733,8 +1884,8 @@
         if (pendingCount > 0) {
           alertTicker.style.display = 'flex';
           alertTickerMessage.textContent = pendingCount === 1
-            ? '1 customer booking request is awaiting payment verification.'
-            : pendingCount + ' customer booking requests are awaiting payment verification.';
+            ? '1 customer booking request is awaiting verification.'
+            : pendingCount + ' customer booking requests are awaiting verification.';
         } else {
           alertTicker.style.display = 'none';
         }
@@ -1742,17 +1893,20 @@
         // Filter and Search Table Rows
         var query = (customerSearchInput.value || '').trim().toLowerCase();
         var filtered = customers.filter(function (c) {
-          var status = (c.booking && c.booking.status) || 'none';
+          var rawStatus = (c.status || (c.booking && c.booking.status) || 'pending').toString().toLowerCase();
+          var displayStatus = (rawStatus === 'approved') ? 'approved' : (rawStatus === 'rejected' ? 'rejected' : 'pending');
+
           if (currentFilter !== 'all') {
-            if (currentFilter === 'pending' && status !== 'pending') return false;
-            if (currentFilter === 'approved' && status !== 'approved') return false;
-            if (currentFilter === 'rejected' && status !== 'rejected') return false;
+            if (currentFilter === 'pending' && displayStatus !== 'pending') return false;
+            if (currentFilter === 'approved' && displayStatus !== 'approved') return false;
+            if (currentFilter === 'rejected' && displayStatus !== 'rejected') return false;
           }
           if (!query) return true;
           var name = (c.name || '').toLowerCase();
           var phone = (c.phone || '').toLowerCase();
           var email = (c.email || '').toLowerCase();
-          return name.indexOf(query) !== -1 || phone.indexOf(query) !== -1 || email.indexOf(query) !== -1;
+          var cid = (c.id || '').toLowerCase();
+          return name.indexOf(query) !== -1 || phone.indexOf(query) !== -1 || email.indexOf(query) !== -1 || cid.indexOf(query) !== -1;
         });
 
         customerCountBadge.textContent = filtered.length + ' of ' + customers.length;
@@ -1768,28 +1922,24 @@
         var html = '';
         filtered.forEach(function (c) {
           var b = c.booking;
-          var status = b ? (b.status || 'pending') : 'none';
-
-          // Check if approved booking has expired
-          var isExpired = false;
-          if (status === 'approved' && b.endDate && b.finishTime) {
-            var expiryMs = new Date(b.endDate + 'T' + b.finishTime + ':00').getTime();
-            if (Date.now() >= expiryMs) {
-              isExpired = true;
-            }
+          var rawStatus = (c.status || (b && b.status) || 'pending').toString().toLowerCase();
+          var displayStatus = 'pending';
+          if (rawStatus === 'approved') {
+            displayStatus = 'approved';
+          } else if (rawStatus === 'rejected') {
+            displayStatus = 'rejected';
+          } else {
+            // 'pending' or 'unbooked'
+            displayStatus = 'pending';
           }
 
           var statusBadge = '';
-          if (status === 'none') {
-            statusBadge = '<span class="status-pill none">⚪ No Booking</span>';
-          } else if (isExpired) {
-            statusBadge = '<span class="status-pill expired">⏱️ Expired</span>';
-          } else if (status === 'pending') {
-            statusBadge = '<span class="status-pill pending">🟡 Pending Approval</span>';
-          } else if (status === 'approved') {
-            statusBadge = '<span class="status-pill approved">🟢 Approved</span>';
-          } else if (status === 'rejected') {
-            statusBadge = '<span class="status-pill rejected">🔴 Rejected</span>';
+          if (displayStatus === 'approved') {
+            statusBadge = '<span class="status-pill approved">APPROVED</span>';
+          } else if (displayStatus === 'rejected') {
+            statusBadge = '<span class="status-pill rejected">REJECTED</span>';
+          } else {
+            statusBadge = '<span class="status-pill pending">PENDING APPROVAL</span>';
           }
 
           var scheduleHtml = '—';
@@ -1811,9 +1961,6 @@
             ? '<a href="https://wa.me/' + phoneClean + '" target="_blank" class="customer-phone-tag" title="Open WhatsApp chat">📱 ' + phoneDisplay + '</a>'
             : '<span style="color: #94a3b8; font-size: 12px;">Not provided</span>';
 
-          var approveDisabled = (status === 'approved' && !isExpired) ? 'disabled' : '';
-          var rejectDisabled = (status === 'rejected') ? 'disabled' : '';
-
           html += '<tr>' +
             '<td>' +
               '<div class="customer-name-cell">' +
@@ -1827,11 +1974,11 @@
             '<td>' + statusBadge + '</td>' +
             '<td style="text-align: right;">' +
               '<div class="action-btn-group" style="justify-content: flex-end;">' +
-                '<button type="button" class="btn-green" data-email="' + escapeHtml(c.email) + '" ' + approveDisabled + ' title="Approve booking and unlock practice portal">' +
-                  '✓ Approved' +
+                '<button type="button" class="btn-green" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" title="Approve candidate and unlock practice portal">' +
+                  'Approve' +
                 '</button>' +
-                '<button type="button" class="btn-red" data-email="' + escapeHtml(c.email) + '" ' + rejectDisabled + ' title="Reject or revoke practice access">' +
-                  '✕ Rejected' +
+                '<button type="button" class="btn-red" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" title="Reject candidate and revoke practice access">' +
+                  'Reject' +
                 '</button>' +
               '</div>' +
             '</td>' +
@@ -1842,16 +1989,20 @@
 
         // Attach Button Listeners
         customerTableBody.querySelectorAll('.btn-green').forEach(function (btn) {
-          btn.addEventListener('click', function () {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var customerId = this.getAttribute('data-id');
             var email = this.getAttribute('data-email');
-            handleCustomerApproval(email, 'approved');
+            handleCustomerApproval(customerId, email, 'approved');
           });
         });
 
         customerTableBody.querySelectorAll('.btn-red').forEach(function (btn) {
-          btn.addEventListener('click', function () {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var customerId = this.getAttribute('data-id');
             var email = this.getAttribute('data-email');
-            handleCustomerApproval(email, 'rejected');
+            handleCustomerApproval(customerId, email, 'rejected');
           });
         });
       }
@@ -1869,42 +2020,87 @@
       // -----------------------------------------------------------------
       // Approval / Rejection Logic
       // -----------------------------------------------------------------
-      function handleCustomerApproval(email, newStatus) {
-        var customers = getCustomersDb();
-        var idx = customers.findIndex(function (c) { return c.email.toLowerCase() === email.toLowerCase(); });
-        if (idx === -1) return;
-
-        var c = customers[idx];
-        if (!c.booking) {
-          // If customer has not booked yet, initialize a standard default 1-day booking
-          var today = new Date();
-          var tomorrow = new Date(Date.now() + 86400000);
-          var todayStr = today.toISOString().split('T')[0];
-          var tomorrowStr = tomorrow.toISOString().split('T')[0];
-          c.booking = {
-            startDate: todayStr,
-            startTime: '10:00',
-            endDate: tomorrowStr,
-            finishTime: '10:00',
-            totalDays: 1,
-            totalAmount: 20,
-            status: newStatus,
-            approvedAt: Date.now()
-          };
-        } else {
-          c.booking.status = newStatus;
-          if (newStatus === 'approved') {
-            c.booking.approvedAt = Date.now();
-          }
+      async function handleCustomerApproval(customerId, email, newStatus) {
+        // 1. Supabase Query: Filter and update rows by customer ID
+        try {
+          await updateCustomerStatusInSupabase(customerId, newStatus, email);
+        } catch (sbErr) {
+          console.warn('[Supabase] Update caught:', sbErr);
         }
 
-        saveCustomersDb(customers);
+        // 2. Update local database & cross-tab storage
+        var customers = getCustomersDb();
+        var idx = -1;
+        if (customerId) {
+          idx = customers.findIndex(function (c) { return String(c.id) === String(customerId); });
+        }
+        if (idx === -1 && email) {
+          idx = customers.findIndex(function (c) { return c.email.toLowerCase() === email.toLowerCase(); });
+        }
+
+        var candidateName = email;
+        if (idx !== -1) {
+          var c = customers[idx];
+          candidateName = c.name || c.email;
+          c.status = newStatus;
+          if (!c.booking) {
+            var today = new Date();
+            var tomorrow = new Date(Date.now() + 86400000);
+            var todayStr = today.toISOString().split('T')[0];
+            var tomorrowStr = tomorrow.toISOString().split('T')[0];
+            c.booking = {
+              startDate: todayStr,
+              startTime: '10:00',
+              endDate: tomorrowStr,
+              finishTime: '10:00',
+              totalDays: 1,
+              totalAmount: 20,
+              status: newStatus,
+              approvedAt: Date.now()
+            };
+          } else {
+            c.booking.status = newStatus;
+            if (newStatus === 'approved') {
+              c.booking.approvedAt = Date.now();
+            }
+          }
+          saveCustomersDb(customers);
+        }
+
+        // 3. Immediately re-fetch/reload candidate list
+        try {
+          var remoteCandidates = await fetchCandidatesFromSupabase();
+          if (remoteCandidates && Array.isArray(remoteCandidates)) {
+            var map = {};
+            customers.forEach(function (c) { map[c.email.toLowerCase()] = c; });
+            remoteCandidates.forEach(function (row) {
+              var em = (row.email || '').toLowerCase();
+              if (map[em]) {
+                map[em].status = row.status || map[em].status;
+                if (map[em].booking) map[em].booking.status = map[em].status;
+              }
+            });
+            saveCustomersDb(Object.keys(map).map(function (k) { return map[k]; }));
+          }
+        } catch (_) {}
+
+        // 4. Update the status badge immediately (render dashboard)
         renderDashboard();
 
-        var alertText = newStatus === 'approved'
-          ? 'Candidate ' + (c.name || c.email) + ' APPROVED! Practice portal access unlocked.'
-          : 'Candidate ' + (c.name || c.email) + ' REJECTED. Practice access revoked.';
-        alert(alertText);
+        // 5. Unlock/lock candidate practice portal via real-time broadcast sync
+        broadcastSync('CUSTOMER_STATUS_CHANGED', {
+          id: customerId,
+          email: email,
+          status: newStatus,
+          timestamp: Date.now()
+        });
+        broadcastSync('CUSTOMERS_UPDATED');
+
+        // 6. Crisp visual confirmation toast
+        var toastText = (newStatus === 'approved')
+          ? 'Candidate ' + candidateName + ' APPROVED! Practice portal access unlocked.'
+          : 'Candidate ' + candidateName + ' REJECTED. Practice access revoked.';
+        showAdminToast(toastText, newStatus === 'approved' ? 'success' : 'danger');
       }
 
       // Filter Buttons
@@ -1978,6 +2174,7 @@
 
     })();
   </script>
+  <div id="adminToastContainer" class="toast-container" aria-live="polite"></div>
 </body>
 
 </html>

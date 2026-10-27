@@ -2469,12 +2469,12 @@
           folder: 'OneWayRoadsV1',
           topic: 'Traffic Restrictions',
           topicTitle: 'One-Way Roads',
-          name: 'One-Way Roads Navigation',
+          name: 'One-Way Roads Part 1',
           instructions: 'Strictly follow the flow of traffic indicated by one-way directional indicators.',
           defaultHomeCenter: [70.25, 135.50],
           defaultHomeZoom: 9,
-          defaultStart: [70.00, 135.20],
-          defaultEnd: [70.60, 135.80],
+          defaultStart: [70.190, 135.480],
+          defaultEnd: [70.428, 135.305],
           minZoom: 4,
           maxZoom: 9,
           answer: null
@@ -2645,6 +2645,38 @@
             [98.700, 115.000], [98.620, 114.780], [98.500, 114.500], [98.380, 114.150],
             [98.245, 113.725], [98.300, 113.675], [98.475, 113.575]
           ]
+        },
+        {
+          sectionTitle: 'One-Way Roads (Part 2)',
+          id: 'OneWayRoadsV1_q2',
+          folder: 'OneWayRoadsV1',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'One-Way Roads',
+          name: 'One-Way Roads Part 2',
+          instructions: 'Strictly follow the flow of traffic indicated by one-way directional indicators.',
+          defaultHomeCenter: [70.25, 135.50],
+          defaultHomeZoom: 9,
+          defaultStart: [70.000, 135.200],
+          defaultEnd: [70.600, 135.800],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'One-Way Roads (Part 3)',
+          id: 'OneWayRoadsV1_q3',
+          folder: 'OneWayRoadsV1',
+          topic: 'Traffic Restrictions',
+          topicTitle: 'One-Way Roads',
+          name: 'One-Way Roads Part 3',
+          instructions: 'Strictly follow the flow of traffic indicated by one-way directional indicators.',
+          defaultHomeCenter: [70.25, 135.50],
+          defaultHomeZoom: 9,
+          defaultStart: [70.000, 135.200],
+          defaultEnd: [70.600, 135.800],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
         }
       ];
 
@@ -2977,9 +3009,11 @@
         {
           quizNum: 10,
           title: 'One-Way Roads',
-          subtitle: 'One-Way Roads Navigation',
+          subtitle: 'One-Way Roads Navigation (3 Parts)',
           parts: [
-            { partNum: 1, label: 'One-Way Roads Navigation', exIndex: 9 }
+            { partNum: 1, label: 'Part 1: One-Way Roads Part 1', exIndex: 9 },
+            { partNum: 2, label: 'Part 2: One-Way Roads Part 2', exIndex: 20 },
+            { partNum: 3, label: 'Part 3: One-Way Roads Part 3', exIndex: 21 }
           ]
         },
         {
@@ -3075,7 +3109,7 @@
         { label: '7. Central Reservations — Navigating Central Reservations', exIndex: 6, quizNum: 7 },
         { label: '8. Flyover Roundabouts — Navigating Flyover Roundabouts', exIndex: 7, quizNum: 8 },
         { label: '9. Roads On Top — Navigating Roads on Top (Overpasses)', exIndex: 8, quizNum: 9 },
-        { label: '10. One-Way Roads — One-Way Roads Navigation', exIndex: 9, quizNum: 10 },
+        { label: '10. One-Way Roads — Part 1: One-Way Roads Part 1', exIndex: 9, quizNum: 10 },
         { label: '11. Footbridge — Passing Footbridges', exIndex: 10, quizNum: 11 },
         { label: '12. Footpath — Passing Footpaths (Pedestrian Only)', exIndex: 11, quizNum: 12 },
         { label: '13. Railway Lines — Passing Railway Lines', exIndex: 12, quizNum: 13 },

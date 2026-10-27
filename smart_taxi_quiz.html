@@ -9,6 +9,9 @@
     content="Official TfL Topographical exam simulator for Smart Taxi Solutions Ltd training candidates. Pixel-accurate route drawing, multi-zoom continuous scaling, and keeping-left practice.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root {
       --primary-navy: #1e3a78;
@@ -4349,6 +4352,202 @@
         broadcastSync('CUSTOMERS_UPDATED');
       }
 
+      // -----------------------------------------------------------------
+      // Cloud Database & Remote Firebase Sync
+      // -----------------------------------------------------------------
+      var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a17f6b5e462e76';
+      var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5';
+
+      function initFirebaseApp() {
+        if (typeof firebase === 'undefined' || !firebase.initializeApp) return null;
+        if (firebase.apps && firebase.apps.length > 0) return firebase.apps[0];
+        try {
+          var cfg = window.FIREBASE_CONFIG || window.firebaseConfig;
+          if (!cfg) {
+            try {
+              var rawCfg = localStorage.getItem('sts_firebase_config');
+              if (rawCfg) cfg = JSON.parse(rawCfg);
+            } catch (_) {}
+          }
+          if (cfg && cfg.apiKey) {
+            return firebase.initializeApp(cfg);
+          }
+        } catch (err) {
+          console.warn('[Firebase Client] Init warning:', err);
+        }
+        return null;
+      }
+
+      async function syncCustomerToCloud(customer) {
+        if (!customer) return { success: false, error: 'No customer data' };
+        var normEmail = String(customer.email || '').trim().toLowerCase();
+        var normId = String(customer.id || '').trim().toLowerCase();
+        var normKey = normEmail || normId;
+        if (!normKey) return { success: false, error: 'No identifier' };
+
+        var syncPayload = {
+          id: customer.id || ('cust_' + Date.now()),
+          name: String(customer.name || '').trim(),
+          phone: String(customer.phone || '').trim(),
+          email: normEmail,
+          password: String(customer.password || '').trim(),
+          status: customer.status || customer.approvalStatus || 'pending',
+          approvalStatus: customer.approvalStatus || customer.status || 'pending',
+          bookingStatus: customer.bookingStatus || 'pending',
+          booking: customer.booking || null,
+          createdAt: customer.createdAt || Date.now(),
+          updatedAt: Date.now()
+        };
+
+        var fbDone = false;
+        // 1. Firebase Write (Firestore / Realtime Database)
+        try {
+          var fbApp = initFirebaseApp();
+          if (fbApp) {
+            if (typeof firebase.firestore === 'function') {
+              try {
+                await firebase.firestore().collection('customers').doc(normKey).set(syncPayload, { merge: true });
+                fbDone = true;
+                console.log('[Firebase Firestore] Customer written successfully:', normKey);
+              } catch (fErr) {
+                console.warn('[Firebase Firestore] Write warning:', fErr);
+              }
+            }
+            if (typeof firebase.database === 'function') {
+              try {
+                var safeKey = normKey.replace(/[.#$[\]]/g, '_');
+                await firebase.database().ref('customers/' + safeKey).set(syncPayload);
+                fbDone = true;
+                console.log('[Firebase RTDB] Customer written successfully:', safeKey);
+              } catch (rErr) {
+                console.warn('[Firebase RTDB] Write warning:', rErr);
+              }
+            }
+          }
+        } catch (fbErr) {
+          console.warn('[Firebase Client] Sync exception:', fbErr);
+        }
+
+        // 2. Primary Shared Cloud Registry Write (restful-api.dev)
+        var cloudDone = false;
+        try {
+          var existingMap = {};
+          try {
+            var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 4000) : null;
+            var getResp = await fetch(CLOUD_CANDIDATES_URL, {
+              cache: 'no-store',
+              signal: controller ? controller.signal : undefined
+            });
+            if (timeoutId) clearTimeout(timeoutId);
+            if (getResp && getResp.ok) {
+              var getJson = await getResp.json();
+              if (getJson && getJson.data && getJson.data.candidates) {
+                existingMap = getJson.data.candidates;
+              }
+            }
+          } catch (_) {}
+
+          existingMap[normKey] = Object.assign({}, existingMap[normKey] || {}, syncPayload);
+          if (normEmail && normKey !== normEmail) {
+            existingMap[normEmail] = existingMap[normKey];
+          }
+
+          var putResp = await fetch(CLOUD_CANDIDATES_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: 'sts_candidates_registry',
+              data: {
+                candidates: existingMap
+              }
+            })
+          });
+          if (putResp && putResp.ok) {
+            cloudDone = true;
+            console.log('[Cloud Registry] Customer synced to remote registry:', normKey);
+          }
+        } catch (cloudErr) {
+          console.warn('[Cloud Registry] Sync write warning:', cloudErr);
+        }
+
+        return { success: fbDone || cloudDone, firebase: fbDone, cloud: cloudDone };
+      }
+
+      async function fetchCandidatesFromCloud() {
+        try {
+          var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3500) : null;
+          var resp = await fetch(CLOUD_CANDIDATES_URL, {
+            cache: 'no-store',
+            signal: controller ? controller.signal : undefined
+          });
+          if (timeoutId) clearTimeout(timeoutId);
+          if (resp && resp.ok) {
+            var json = await resp.json();
+            var cloudMap = (json && json.data && json.data.candidates) || {};
+            var list = Object.keys(cloudMap).map(function (k) { return cloudMap[k]; });
+            if (list.length > 0) {
+              mergeCloudCandidatesIntoDb(list);
+            }
+            return list;
+          }
+        } catch (e) {
+          console.warn('[Cloud Registry] Candidate fetch warning:', e);
+        }
+        return null;
+      }
+
+      function mergeCloudCandidatesIntoDb(cloudList) {
+        if (!Array.isArray(cloudList) || cloudList.length === 0) return;
+        var approvedMap = getApprovedRegistry();
+        var localList = getCustomersDb();
+        var map = {};
+
+        localList.forEach(function (c) {
+          if (c && (c.email || c.id)) {
+            var em = String(c.email || c.id).trim().toLowerCase();
+            map[em] = c;
+          }
+        });
+
+        var changed = false;
+        cloudList.forEach(function (rc) {
+          if (!rc || (!rc.email && !rc.id)) return;
+          var em = String(rc.email || rc.id).trim().toLowerCase();
+          var existing = map[em];
+          if (!existing) {
+            map[em] = rc;
+            changed = true;
+          } else {
+            var rStatus = rc.status || rc.approvalStatus;
+            var eStatus = existing.status || existing.approvalStatus;
+            if (rStatus === 'approved' && eStatus !== 'approved') {
+              existing.status = 'approved';
+              existing.approvalStatus = 'approved';
+              existing.bookingStatus = 'approved';
+              changed = true;
+            } else if (rStatus === 'rejected' && eStatus !== 'rejected') {
+              existing.status = 'rejected';
+              existing.approvalStatus = 'rejected';
+              changed = true;
+            }
+            if (rc.booking && (!existing.booking || (rc.booking.bookedAt && existing.booking.bookedAt && rc.booking.bookedAt > existing.booking.bookedAt))) {
+              existing.booking = rc.booking;
+              changed = true;
+            }
+            if (rc.name && !existing.name) { existing.name = rc.name; changed = true; }
+            if (rc.phone && !existing.phone) { existing.phone = rc.phone; changed = true; }
+          }
+        });
+
+        if (changed) {
+          var merged = Object.keys(map).map(function (k) { return map[k]; });
+          _memoryDbCache = merged;
+          writeToAllStorages('sts_customers_db', JSON.stringify(merged));
+        }
+      }
+
       function getRememberedCredentials() {
         var rawList = readRawFromAllStorages('sts_remembered_credentials');
         for (var i = 0; i < rawList.length; i++) {
@@ -4527,7 +4726,7 @@
       // -----------------------------------------------------------------
       // Customer Signup (Full Name, Phone Number, Email, Password)
       // -----------------------------------------------------------------
-      formSignup.addEventListener('submit', function (e) {
+      formSignup.addEventListener('submit', async function (e) {
         e.preventDefault();
         var name = $('signupName').value.trim();
         var phone = $('signupPhone').value.trim();
@@ -4556,6 +4755,13 @@
           return;
         }
 
+        var submitBtn = formSignup.querySelector('button[type="submit"]');
+        var origBtnText = submitBtn ? submitBtn.textContent : '';
+        if (submitBtn) {
+          submitBtn.textContent = '⏳ Registering & Syncing...';
+          submitBtn.disabled = true;
+        }
+
         var db = getCustomersDb();
         var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === email; });
         var user;
@@ -4571,6 +4777,9 @@
             phone: phone,
             email: email,
             password: password,
+            status: 'pending',
+            approvalStatus: 'pending',
+            bookingStatus: 'pending',
             booking: null,
             createdAt: Date.now()
           };
@@ -4579,12 +4788,26 @@
         saveCustomersDb(db);
         saveRememberedCredentials(user.email, user.password, true);
 
-        // Store active session and switch to Booking Panel
+        // Store active session
         setSessionUser(user);
+
+        // MANDATORY AWAIT CLOUD WRITE: Ensure candidate registration is written to shared cloud DB before proceeding
+        try {
+          showAuthAlert('Saving candidate registration to cloud database...', 'info');
+          await syncCustomerToCloud(user);
+        } catch (syncErr) {
+          console.warn('[Signup] Cloud sync error:', syncErr);
+        } finally {
+          if (submitBtn) {
+            submitBtn.textContent = origBtnText;
+            submitBtn.disabled = false;
+          }
+        }
+
         showAuthAlert('Account created successfully! Please select your practice days.', 'success');
         setTimeout(function () {
           switchAuthView('booking');
-        }, 500);
+        }, 400);
       });
 
       // -----------------------------------------------------------------
@@ -4782,7 +5005,7 @@
       bookingEndDate.addEventListener('change', updateBookingCalculation);
 
       // Handle Submit Booking
-      formBooking.addEventListener('submit', function (e) {
+      formBooking.addEventListener('submit', async function (e) {
         e.preventDefault();
         var sDate = bookingStartDate.value;
         var sTime = bookingStartTime.value || '10:00';
@@ -4813,6 +5036,13 @@
           return;
         }
 
+        var submitBtn = formBooking.querySelector('button[type="submit"]');
+        var origBtnText = submitBtn ? submitBtn.textContent : '';
+        if (submitBtn) {
+          submitBtn.textContent = '⏳ Submitting Booking & Syncing...';
+          submitBtn.disabled = true;
+        }
+
         var booking = {
           startDate: sDate,
           startTime: sTime,
@@ -4821,20 +5051,41 @@
           totalDays: days,
           totalAmount: totalCost,
           status: 'pending',
+          approvalStatus: 'pending',
+          bookingStatus: 'pending',
           bookedAt: Date.now()
         };
 
         db[uIdx].booking = booking;
+        db[uIdx].status = 'pending';
+        db[uIdx].approvalStatus = 'pending';
+        db[uIdx].bookingStatus = 'pending';
         saveCustomersDb(db);
 
         // Refresh session object
         sessionUser.booking = booking;
+        sessionUser.status = 'pending';
+        sessionUser.approvalStatus = 'pending';
+        sessionUser.bookingStatus = 'pending';
         setSessionUser(sessionUser);
+
+        // MANDATORY AWAIT CLOUD WRITE: Ensure booking record is written to shared cloud DB before proceeding
+        try {
+          showAuthAlert('Transmitting booking request to cloud database...', 'info');
+          await syncCustomerToCloud(db[uIdx]);
+        } catch (syncErr) {
+          console.warn('[Booking] Cloud sync error:', syncErr);
+        } finally {
+          if (submitBtn) {
+            submitBtn.textContent = origBtnText;
+            submitBtn.disabled = false;
+          }
+        }
 
         showAuthAlert('Booking submitted successfully! Awaiting administrator confirmation.', 'success');
         setTimeout(function () {
           evaluateUserAccess(db[uIdx]);
-        }, 500);
+        }, 400);
       });
 
       // Robust booking expiry parser: handles formatted dates, ISO, timestamps and ensures valid future end time upon approval
@@ -4979,6 +5230,33 @@
                   if (normEmail) reg[normEmail] = cloudMatch;
                   if (normName) reg[normName] = cloudMatch;
                   localStorage.setItem('sts_approved_emails', JSON.stringify(reg));
+                }
+              }
+            } catch (_) {}
+          }
+
+          // If still pending, also check CLOUD_CANDIDATES_URL
+          if (result === 'pending' && typeof fetch !== 'undefined') {
+            try {
+              var controller2 = typeof AbortController !== 'undefined' ? new AbortController() : null;
+              var timeoutId2 = controller2 ? setTimeout(function () { controller2.abort(); }, 1800) : null;
+              var resp2 = await fetch(CLOUD_CANDIDATES_URL, {
+                cache: 'no-store',
+                signal: controller2 ? controller2.signal : undefined
+              });
+              if (timeoutId2) clearTimeout(timeoutId2);
+              if (resp2 && resp2.ok) {
+                var json2 = await resp2.json();
+                var cMap = (json2 && json2.data && json2.data.candidates) || {};
+                var cMatch = (normEmail && cMap[normEmail]) || (normName && cMap[normName]) || (normId && cMap[normId]);
+                if (cMatch) {
+                  var cSt = String(cMatch.status || cMatch.approvalStatus || (cMatch.booking && cMatch.booking.status) || '').toLowerCase().trim();
+                  if (cSt === 'approved' || cSt === 'rejected') {
+                    result = cSt;
+                    var reg2 = getApprovedRegistry();
+                    if (normEmail) reg2[normEmail] = { status: cSt, updatedAt: Date.now() };
+                    localStorage.setItem('sts_approved_emails', JSON.stringify(reg2));
+                  }
                 }
               }
             } catch (_) {}
@@ -5325,6 +5603,7 @@
 
       // Check Active Session on Page Load
       function checkActiveSession() {
+        try { fetchCandidatesFromCloud().catch(function () {}); } catch (_) {}
         var sessionUser = getActiveSessionUser();
         if (sessionUser && (sessionUser.email || sessionUser.name)) {
           var normEmail = String(sessionUser.email || '').trim().toLowerCase();

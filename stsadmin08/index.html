@@ -10,6 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -1379,6 +1382,241 @@
         } catch (_) {}
       }
 
+      // -----------------------------------------------------------------
+      // Cloud Candidates Registry & Remote Firebase Sync
+      // -----------------------------------------------------------------
+      var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a17f6b5e462e76';
+      var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5';
+
+      function initFirebaseApp() {
+        if (typeof firebase === 'undefined' || !firebase.initializeApp) return null;
+        if (firebase.apps && firebase.apps.length > 0) return firebase.apps[0];
+        try {
+          var cfg = window.FIREBASE_CONFIG || window.firebaseConfig;
+          if (!cfg) {
+            try {
+              var rawCfg = localStorage.getItem('sts_firebase_config');
+              if (rawCfg) cfg = JSON.parse(rawCfg);
+            } catch (_) {}
+          }
+          if (cfg && cfg.apiKey) {
+            return firebase.initializeApp(cfg);
+          }
+        } catch (err) {
+          console.warn('[Firebase Admin] Init warning:', err);
+        }
+        return null;
+      }
+
+      var _isRefreshingFromCloud = false;
+
+      async function refreshCandidatesFromCloud() {
+        if (_isRefreshingFromCloud) return;
+        _isRefreshingFromCloud = true;
+        try {
+          var cloudCandidates = [];
+
+          // 1. Fetch from Firebase if initialized
+          try {
+            var fbApp = initFirebaseApp();
+            if (fbApp) {
+              if (typeof firebase.firestore === 'function') {
+                var snap = await firebase.firestore().collection('customers').get();
+                if (snap && snap.docs) {
+                  snap.docs.forEach(function (doc) {
+                    var data = doc.data();
+                    if (data && (data.email || data.id)) cloudCandidates.push(data);
+                  });
+                }
+              }
+              if (typeof firebase.database === 'function') {
+                var rSnap = await firebase.database().ref('customers').once('value');
+                if (rSnap && rSnap.val()) {
+                  var rVal = rSnap.val();
+                  Object.keys(rVal).forEach(function (k) {
+                    var data = rVal[k];
+                    if (data && (data.email || data.id)) cloudCandidates.push(data);
+                  });
+                }
+              }
+            }
+          } catch (fbErr) {
+            console.warn('[Firebase Admin] Fetch warning:', fbErr);
+          }
+
+          // 2. Fetch from Primary Shared Cloud Registry
+          try {
+            var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 4500) : null;
+            var resp = await fetch(CLOUD_CANDIDATES_URL, {
+              cache: 'no-store',
+              signal: controller ? controller.signal : undefined
+            });
+            if (timeoutId) clearTimeout(timeoutId);
+            if (resp && resp.ok) {
+              var json = await resp.json();
+              var map = (json && json.data && json.data.candidates) || {};
+              Object.keys(map).forEach(function (k) {
+                var c = map[k];
+                if (c && (c.email || c.id)) {
+                  var exists = cloudCandidates.some(function (x) {
+                    return String(x.email || x.id).toLowerCase() === String(c.email || c.id).toLowerCase();
+                  });
+                  if (!exists) cloudCandidates.push(c);
+                }
+              });
+            }
+          } catch (cloudErr) {
+            console.warn('[Cloud Registry] Admin fetch warning:', cloudErr);
+          }
+
+          // Merge into admin localStorage DB
+          if (cloudCandidates.length > 0) {
+            var localCustomers = getCustomersDb();
+            var customerMap = {};
+            var hasUpdates = false;
+
+            localCustomers.forEach(function (c) {
+              var key = String(c.email || c.id).trim().toLowerCase();
+              customerMap[key] = c;
+            });
+
+            cloudCandidates.forEach(function (rc) {
+              var key = String(rc.email || rc.id).trim().toLowerCase();
+              if (!customerMap[key]) {
+                customerMap[key] = rc;
+                hasUpdates = true;
+              } else {
+                var loc = customerMap[key];
+                // Adopt remote updates if remote has booking that local didn't have or is newer
+                if (rc.booking && (!loc.booking || (rc.booking.bookedAt && (!loc.booking.bookedAt || rc.booking.bookedAt > loc.booking.bookedAt)))) {
+                  loc.booking = rc.booking;
+                  hasUpdates = true;
+                }
+                if (rc.name && !loc.name) { loc.name = rc.name; hasUpdates = true; }
+                if (rc.phone && !loc.phone) { loc.phone = rc.phone; hasUpdates = true; }
+                if (rc.password && !loc.password) { loc.password = rc.password; hasUpdates = true; }
+                // Adopt remote status if local is pending but remote has been approved/rejected
+                var rStatus = rc.status || rc.approvalStatus;
+                var lStatus = loc.status || loc.approvalStatus;
+                if ((rStatus === 'approved' || rStatus === 'rejected') && lStatus === 'pending') {
+                  loc.status = rStatus;
+                  loc.approvalStatus = rStatus;
+                  loc.bookingStatus = rStatus;
+                  hasUpdates = true;
+                }
+              }
+            });
+
+            if (hasUpdates) {
+              var merged = Object.keys(customerMap).map(function (k) { return customerMap[k]; });
+              merged.sort(function (a, b) {
+                return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+              });
+              saveCustomersDb(merged);
+              renderDashboard();
+            }
+          }
+        } finally {
+          _isRefreshingFromCloud = false;
+        }
+      }
+
+      async function syncCustomerStatusToCloud(customerId, email, newStatus, candidateRecord) {
+        var normEmail = String(email || '').trim().toLowerCase();
+        var normId = String(customerId || '').trim().toLowerCase();
+        var normKey = normEmail || normId;
+
+        // 1. Firebase Sync
+        try {
+          var fbApp = initFirebaseApp();
+          if (fbApp) {
+            if (typeof firebase.firestore === 'function') {
+              await firebase.firestore().collection('customers').doc(normKey).set({
+                status: newStatus,
+                approvalStatus: newStatus,
+                bookingStatus: newStatus,
+                updatedAt: Date.now()
+              }, { merge: true });
+            }
+            if (typeof firebase.database === 'function') {
+              var safeKey = normKey.replace(/[.#$[\]]/g, '_');
+              await firebase.database().ref('customers/' + safeKey).update({
+                status: newStatus,
+                approvalStatus: newStatus,
+                bookingStatus: newStatus,
+                updatedAt: Date.now()
+              });
+            }
+          }
+        } catch (fbErr) {
+          console.warn('[Firebase Admin] Status sync exception:', fbErr);
+        }
+
+        // 2. Cloud Registry Sync
+        try {
+          var getResp = await fetch(CLOUD_CANDIDATES_URL, { cache: 'no-store' });
+          if (getResp && getResp.ok) {
+            var getJson = await getResp.json();
+            var candidatesMap = (getJson && getJson.data && getJson.data.candidates) || {};
+            var target = candidatesMap[normKey] || candidatesMap[normEmail] || candidatesMap[normId] || candidateRecord;
+            if (target) {
+              target.status = newStatus;
+              target.approvalStatus = newStatus;
+              target.bookingStatus = newStatus;
+              if (target.booking) {
+                target.booking.status = newStatus;
+                target.booking.approvalStatus = newStatus;
+                target.booking.bookingStatus = newStatus;
+                if (newStatus === 'approved') {
+                  target.booking.approvedAt = Date.now();
+                  var days = Number(target.booking.totalDays) > 0 ? Number(target.booking.totalDays) : 1;
+                  target.booking.endTimestamp = Date.now() + (days * 86400000);
+                }
+              }
+              target.updatedAt = Date.now();
+              candidatesMap[normKey] = target;
+              if (normEmail && normKey !== normEmail) candidatesMap[normEmail] = target;
+
+              await fetch(CLOUD_CANDIDATES_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: 'sts_candidates_registry',
+                  data: {
+                    candidates: candidatesMap
+                  }
+                })
+              });
+              console.log('[Cloud Registry] Status update pushed successfully:', normKey, newStatus);
+            }
+          }
+        } catch (cloudErr) {
+          console.warn('[Cloud Registry] Status update exception:', cloudErr);
+        }
+      }
+
+      function setupFirebaseRealtimeListener() {
+        try {
+          var fbApp = initFirebaseApp();
+          if (!fbApp) return;
+          if (typeof firebase.firestore === 'function') {
+            firebase.firestore().collection('customers').onSnapshot(function () {
+              refreshCandidatesFromCloud();
+            }, function (err) {
+              console.warn('[Firebase Listener] Firestore warning:', err);
+            });
+          }
+          if (typeof firebase.database === 'function') {
+            firebase.database().ref('customers').on('value', function () {
+              refreshCandidatesFromCloud();
+            }, function (err) {
+              console.warn('[Firebase Listener] RTDB warning:', err);
+            });
+          }
+        } catch (_) {}
+      }
+
       // DOM Elements
       var $ = function (id) { return document.getElementById(id); };
 
@@ -1868,6 +2106,8 @@
           navAdminAvatar.textContent = initials;
 
           renderDashboard();
+          refreshCandidatesFromCloud();
+          setupFirebaseRealtimeListener();
         } else {
           authContainer.style.display = 'flex';
           dashboardContainer.style.display = 'none';
@@ -2244,6 +2484,7 @@
 
           // Cloud registry sync
           syncApprovalsToCloud(approvedMap);
+          syncCustomerStatusToCloud(customerId, email, newStatus, c);
 
           // Save the updated array immediately back to localStorage.setItem('sts_customers_db', JSON.stringify(customers))
           saveCustomersDb(customers);
@@ -2327,8 +2568,23 @@
         renderDashboard();
       });
 
-      btnRefreshData.addEventListener('click', function () {
-        renderDashboard();
+      btnRefreshData.addEventListener('click', async function () {
+        var btn = this;
+        var origHtml = btn.innerHTML;
+        btn.innerHTML = '<span>🔄</span> Syncing Cloud...';
+        btn.disabled = true;
+        try {
+          await refreshCandidatesFromCloud();
+          renderDashboard();
+          showAdminToast('Refreshed candidate data from cloud.', 'success');
+        } catch (_) {
+          renderDashboard();
+        } finally {
+          setTimeout(function () {
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+          }, 350);
+        }
       });
 
       // -----------------------------------------------------------------
@@ -2368,11 +2624,14 @@
       setInterval(function () {
         if (dashboardContainer.style.display === 'block') {
           renderDashboard();
+          refreshCandidatesFromCloud();
         }
       }, 3000);
 
       // Initialize
       checkAdminSession();
+      setupFirebaseRealtimeListener();
+      refreshCandidatesFromCloud();
 
     })();
   </script>

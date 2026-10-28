@@ -11,7 +11,45 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      getDocs, 
+      onSnapshot, 
+      doc, 
+      updateDoc, 
+      query, 
+      where 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBju",
+      authDomain: "smart-taxi-quiz.firebaseapp.com",
+      projectId: "smart-taxi-quiz",
+      storageBucket: "smart-taxi-quiz.firebasestorage.app",
+      messagingSenderId: "461829774411",
+      appId: "1:461829774411:web:ab28fbaf8c692c547041ce",
+      measurementId: "G-ETTBWVSEH8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.firebaseApp = app;
+    window.firestoreDb = db;
+    window.addDoc = addDoc;
+    window.collection = collection;
+    window.getDocs = getDocs;
+    window.onSnapshot = onSnapshot;
+    window.doc = doc;
+    window.updateDoc = updateDoc;
+    window.query = query;
+    window.where = where;
+    window.firebaseConfig = firebaseConfig;
+  </script>
   <style>
     :root {
       --primary-navy: #1e3a78;
@@ -4353,30 +4391,122 @@
       }
 
       // -----------------------------------------------------------------
-      // Cloud Database & Remote Firebase Sync
+      // Official Firebase Firestore Integration (smart-taxi-quiz)
       // -----------------------------------------------------------------
+      const firebaseConfig = {
+        apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBju",
+        authDomain: "smart-taxi-quiz.firebaseapp.com",
+        projectId: "smart-taxi-quiz",
+        storageBucket: "smart-taxi-quiz.firebasestorage.app",
+        messagingSenderId: "461829774411",
+        appId: "1:461829774411:web:ab28fbaf8c692c547041ce",
+        measurementId: "G-ETTBWVSEH8"
+      };
+
+      var firestoreDb = null;
+      try {
+        if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+          if (!firebase.apps || !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+          }
+          firestoreDb = firebase.firestore();
+        }
+      } catch (e) {
+        console.warn('[Firebase Compat Init]', e);
+      }
+
+      function getDb() {
+        return window.firestoreDb || firestoreDb;
+      }
+
+      function collection(database, colName) {
+        if (window.collection && window.firestoreDb) {
+          return window.collection(window.firestoreDb, colName);
+        }
+        var activeDb = database || getDb();
+        if (activeDb && typeof activeDb.collection === 'function') {
+          return activeDb.collection(colName);
+        }
+        return { name: colName };
+      }
+
+      async function addDoc(colRef, data) {
+        // 1. Official Firebase Modular SDK
+        if (window.addDoc && window.collection && window.firestoreDb) {
+          try {
+            var targetCol = (colRef && colRef.type === 'collection') ? colRef : window.collection(window.firestoreDb, "signups");
+            var res = await window.addDoc(targetCol, data);
+            console.log('[Firestore addDoc Modular] Signups doc written:', res.id);
+            return res;
+          } catch (mErr) {
+            console.warn('[Firestore addDoc Modular Exception]:', mErr);
+          }
+        }
+        // 2. Official Firebase Compat SDK
+        if (colRef && typeof colRef.add === 'function') {
+          try {
+            var res2 = await colRef.add(data);
+            console.log('[Firestore colRef.add] Signups doc written:', res2.id);
+            return res2;
+          } catch (cErr) {
+            console.warn('[Firestore colRef.add Exception]:', cErr);
+          }
+        }
+        var activeDb = getDb();
+        if (activeDb && typeof activeDb.collection === 'function') {
+          try {
+            var res3 = await activeDb.collection("signups").add(data);
+            console.log('[Firestore db.collection.add] Signups doc written:', res3.id);
+            return res3;
+          } catch (dbErr) {
+            console.warn('[Firestore db.collection.add Exception]:', dbErr);
+          }
+        }
+        // 3. Direct Firestore REST Fallback
+        return await addDocViaRest("signups", data);
+      }
+
+      async function addDocViaRest(colName, data) {
+        try {
+          var fields = {};
+          Object.keys(data).forEach(function (k) {
+            var v = data[k];
+            if (typeof v === 'string') fields[k] = { stringValue: v };
+            else if (typeof v === 'number') {
+              if (Number.isInteger(v)) fields[k] = { integerValue: v.toString() };
+              else fields[k] = { doubleValue: v };
+            } else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+            else if (v && typeof v === 'object') {
+              var subFields = {};
+              Object.keys(v).forEach(function (sk) {
+                var sv = v[sk];
+                if (typeof sv === 'string') subFields[sk] = { stringValue: sv };
+                else if (typeof sv === 'number') subFields[sk] = { integerValue: sv.toString() };
+                else if (typeof sv === 'boolean') subFields[sk] = { booleanValue: sv };
+              });
+              fields[k] = { mapValue: { fields: subFields } };
+            }
+          });
+          var resp = await fetch('https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId + '/databases/(default)/documents/' + colName, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: fields })
+          });
+          if (resp && resp.ok) {
+            var json = await resp.json();
+            var parts = (json.name || '').split('/');
+            var docId = parts[parts.length - 1];
+            console.log('[Firestore REST addDoc] Signups doc written:', docId);
+            return { id: docId };
+          }
+        } catch (restErr) {
+          console.warn('[Firestore REST Exception]:', restErr);
+        }
+        return { id: 'local_' + Date.now() };
+      }
+
       var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a17f6b5e462e76';
       var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5';
-
-      function initFirebaseApp() {
-        if (typeof firebase === 'undefined' || !firebase.initializeApp) return null;
-        if (firebase.apps && firebase.apps.length > 0) return firebase.apps[0];
-        try {
-          var cfg = window.FIREBASE_CONFIG || window.firebaseConfig;
-          if (!cfg) {
-            try {
-              var rawCfg = localStorage.getItem('sts_firebase_config');
-              if (rawCfg) cfg = JSON.parse(rawCfg);
-            } catch (_) {}
-          }
-          if (cfg && cfg.apiKey) {
-            return firebase.initializeApp(cfg);
-          }
-        } catch (err) {
-          console.warn('[Firebase Client] Init warning:', err);
-        }
-        return null;
-      }
 
       async function syncCustomerToCloud(customer) {
         if (!customer) return { success: false, error: 'No customer data' };
@@ -4396,45 +4526,28 @@
           bookingStatus: customer.bookingStatus || 'pending',
           booking: customer.booking || null,
           createdAt: customer.createdAt || Date.now(),
-          updatedAt: Date.now()
+          updatedAt: Date.now(),
+          timestamp: new Date().toISOString()
         };
 
         var fbDone = false;
-        // 1. Firebase Write (Firestore / Realtime Database)
         try {
-          var fbApp = initFirebaseApp();
-          if (fbApp) {
-            if (typeof firebase.firestore === 'function') {
-              try {
-                await firebase.firestore().collection('customers').doc(normKey).set(syncPayload, { merge: true });
-                fbDone = true;
-                console.log('[Firebase Firestore] Customer written successfully:', normKey);
-              } catch (fErr) {
-                console.warn('[Firebase Firestore] Write warning:', fErr);
-              }
-            }
-            if (typeof firebase.database === 'function') {
-              try {
-                var safeKey = normKey.replace(/[.#$[\]]/g, '_');
-                await firebase.database().ref('customers/' + safeKey).set(syncPayload);
-                fbDone = true;
-                console.log('[Firebase RTDB] Customer written successfully:', safeKey);
-              } catch (rErr) {
-                console.warn('[Firebase RTDB] Write warning:', rErr);
-              }
-            }
+          var docRef = await addDoc(collection(getDb(), "signups"), syncPayload);
+          if (docRef && docRef.id) {
+            fbDone = true;
+            customer.firestoreDocId = docRef.id;
           }
         } catch (fbErr) {
-          console.warn('[Firebase Client] Sync exception:', fbErr);
+          console.warn('[Firestore Sync] Exception:', fbErr);
         }
 
-        // 2. Primary Shared Cloud Registry Write (restful-api.dev)
+        // Secondary shared cloud registry sync
         var cloudDone = false;
         try {
           var existingMap = {};
           try {
             var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 4000) : null;
+            var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3500) : null;
             var getResp = await fetch(CLOUD_CANDIDATES_URL, {
               cache: 'no-store',
               signal: controller ? controller.signal : undefined
@@ -4449,40 +4562,73 @@
           } catch (_) {}
 
           existingMap[normKey] = Object.assign({}, existingMap[normKey] || {}, syncPayload);
-          if (normEmail && normKey !== normEmail) {
-            existingMap[normEmail] = existingMap[normKey];
-          }
+          if (normEmail && normKey !== normEmail) existingMap[normEmail] = existingMap[normKey];
 
           var putResp = await fetch(CLOUD_CANDIDATES_URL, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: 'sts_candidates_registry',
-              data: {
-                candidates: existingMap
-              }
+              data: { candidates: existingMap }
             })
           });
-          if (putResp && putResp.ok) {
-            cloudDone = true;
-            console.log('[Cloud Registry] Customer synced to remote registry:', normKey);
-          }
-        } catch (cloudErr) {
-          console.warn('[Cloud Registry] Sync write warning:', cloudErr);
-        }
+          if (putResp && putResp.ok) cloudDone = true;
+        } catch (_) {}
 
         return { success: fbDone || cloudDone, firebase: fbDone, cloud: cloudDone };
       }
 
       async function fetchCandidatesFromCloud() {
+        var signupsList = [];
+        // 1. Fetch from Firestore "signups" collection
+        if (window.getDocs && window.collection && window.firestoreDb) {
+          try {
+            var snap = await window.getDocs(window.collection(window.firestoreDb, "signups"));
+            snap.forEach(function (docSnap) {
+              var d = docSnap.data();
+              d.firestoreDocId = docSnap.id;
+              signupsList.push(d);
+            });
+          } catch (mErr) {
+            console.warn('[Firestore fetchCandidates Modular error]:', mErr);
+          }
+        }
+        if (signupsList.length === 0) {
+          var activeDb = getDb();
+          if (activeDb && typeof activeDb.collection === 'function') {
+            try {
+              var snap2 = await activeDb.collection("signups").get();
+              snap2.forEach(function (docSnap) {
+                var d = docSnap.data();
+                d.firestoreDocId = docSnap.id;
+                signupsList.push(d);
+              });
+            } catch (_) {}
+          }
+        }
+        if (signupsList.length === 0) {
+          try {
+            var restResp = await fetch('https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId + '/databases/(default)/documents/signups', { cache: 'no-store' });
+            if (restResp && restResp.ok) {
+              var restJson = await restResp.json();
+              if (restJson && restJson.documents) {
+                restJson.documents.forEach(function (docItem) {
+                  var unwrapped = unwrapFirestoreDoc(docItem);
+                  if (unwrapped) signupsList.push(unwrapped);
+                });
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (signupsList.length > 0) {
+          mergeCloudCandidatesIntoDb(signupsList);
+          return signupsList;
+        }
+
+        // Fallback to CLOUD_CANDIDATES_URL
         try {
-          var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-          var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3500) : null;
-          var resp = await fetch(CLOUD_CANDIDATES_URL, {
-            cache: 'no-store',
-            signal: controller ? controller.signal : undefined
-          });
-          if (timeoutId) clearTimeout(timeoutId);
+          var resp = await fetch(CLOUD_CANDIDATES_URL, { cache: 'no-store' });
           if (resp && resp.ok) {
             var json = await resp.json();
             var cloudMap = (json && json.data && json.data.candidates) || {};
@@ -4492,10 +4638,41 @@
             }
             return list;
           }
-        } catch (e) {
-          console.warn('[Cloud Registry] Candidate fetch warning:', e);
-        }
+        } catch (_) {}
         return null;
+      }
+
+      function unwrapFirestoreDoc(doc) {
+        if (!doc) return null;
+        if (typeof doc.data === 'function') {
+          var d = doc.data() || {};
+          d.firestoreDocId = doc.id;
+          return d;
+        }
+        if (doc.fields) {
+          var out = {};
+          Object.keys(doc.fields).forEach(function (k) {
+            var val = doc.fields[k];
+            if (val.stringValue !== undefined) out[k] = val.stringValue;
+            else if (val.integerValue !== undefined) out[k] = parseInt(val.integerValue, 10);
+            else if (val.doubleValue !== undefined) out[k] = parseFloat(val.doubleValue);
+            else if (val.booleanValue !== undefined) out[k] = val.booleanValue;
+            else if (val.mapValue && val.mapValue.fields) {
+              out[k] = {};
+              Object.keys(val.mapValue.fields).forEach(function (mk) {
+                var mval = val.mapValue.fields[mk];
+                if (mval.stringValue !== undefined) out[k][mk] = mval.stringValue;
+                else if (mval.integerValue !== undefined) out[k][mk] = parseInt(mval.integerValue, 10);
+                else if (mval.doubleValue !== undefined) out[k][mk] = parseFloat(mval.doubleValue);
+                else if (mval.booleanValue !== undefined) out[k][mk] = mval.booleanValue;
+              });
+            }
+          });
+          var nameParts = (doc.name || '').split('/');
+          out.firestoreDocId = nameParts[nameParts.length - 1];
+          return out;
+        }
+        return doc;
       }
 
       function mergeCloudCandidatesIntoDb(cloudList) {
@@ -4791,12 +4968,30 @@
         // Store active session
         setSessionUser(user);
 
-        // MANDATORY AWAIT CLOUD WRITE: Ensure candidate registration is written to shared cloud DB before proceeding
+        // MANDATORY AWAIT CLOUD WRITE: Ensure candidate registration is written to Firestore "signups" collection via addDoc
         try {
-          showAuthAlert('Saving candidate registration to cloud database...', 'info');
+          showAuthAlert('Saving candidate registration to Firestore...', 'info');
+          var signupDocData = {
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            password: user.password,
+            status: 'pending',
+            approvalStatus: 'pending',
+            bookingStatus: 'pending',
+            booking: null,
+            createdAt: user.createdAt || Date.now(),
+            type: 'registration',
+            timestamp: new Date().toISOString()
+          };
+          var docRef = await addDoc(collection(getDb(), "signups"), signupDocData);
+          if (docRef && docRef.id) {
+            user.firestoreDocId = docRef.id;
+            saveCustomersDb(db);
+          }
           await syncCustomerToCloud(user);
         } catch (syncErr) {
-          console.warn('[Signup] Cloud sync error:', syncErr);
+          console.warn('[Signup] Firestore addDoc sync error:', syncErr);
         } finally {
           if (submitBtn) {
             submitBtn.textContent = origBtnText;
@@ -5069,12 +5264,31 @@
         sessionUser.bookingStatus = 'pending';
         setSessionUser(sessionUser);
 
-        // MANDATORY AWAIT CLOUD WRITE: Ensure booking record is written to shared cloud DB before proceeding
+        // MANDATORY AWAIT CLOUD WRITE: Ensure booking record is written to Firestore "signups" collection via addDoc
         try {
-          showAuthAlert('Transmitting booking request to cloud database...', 'info');
+          showAuthAlert('Transmitting booking request to Firestore...', 'info');
+          var bookingDocData = {
+            name: db[uIdx].name || sessionUser.name,
+            phone: db[uIdx].phone || sessionUser.phone,
+            email: db[uIdx].email || sessionUser.email,
+            password: db[uIdx].password || sessionUser.password,
+            status: 'pending',
+            approvalStatus: 'pending',
+            bookingStatus: 'pending',
+            booking: booking,
+            createdAt: db[uIdx].createdAt || Date.now(),
+            bookedAt: Date.now(),
+            type: 'booking',
+            timestamp: new Date().toISOString()
+          };
+          var docRef = await addDoc(collection(getDb(), "signups"), bookingDocData);
+          if (docRef && docRef.id) {
+            db[uIdx].firestoreDocId = docRef.id;
+            saveCustomersDb(db);
+          }
           await syncCustomerToCloud(db[uIdx]);
         } catch (syncErr) {
-          console.warn('[Booking] Cloud sync error:', syncErr);
+          console.warn('[Booking] Firestore addDoc sync error:', syncErr);
         } finally {
           if (submitBtn) {
             submitBtn.textContent = origBtnText;

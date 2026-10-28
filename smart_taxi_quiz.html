@@ -4694,10 +4694,21 @@
             var postJson = await postResp.json();
             console.log('[Firestore Direct REST] Successfully stored (POST) candidate doc:', docId);
             return { id: docId, data: postJson };
-          } else {
-            var postErrText = postResp ? await postResp.text() : 'No response';
-            throw new Error('POST fallback failed (' + (postResp ? postResp.status : 'unknown') + '): ' + postErrText);
+          } else if (postResp && postResp.status === 409) {
+            // Already exists in Firestore! Retry PATCH to update existing record
+            var repatchResp = await fetch(docPatchUrl, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (repatchResp && repatchResp.ok) {
+              var repatchJson = await repatchResp.json();
+              console.log('[Firestore Direct REST] Successfully updated (409->PATCH) candidate doc:', docId);
+              return { id: docId, data: repatchJson };
+            }
           }
+          var postErrText = postResp ? await postResp.text() : 'No response';
+          throw new Error('POST fallback failed (' + (postResp ? postResp.status : 'unknown') + '): ' + postErrText);
         } catch (postErr) {
           console.error('[Firestore Direct REST] Both PATCH and POST failed for candidate doc:', docId, postErr);
           throw (lastError || postErr);
@@ -4878,6 +4889,7 @@
       setInterval(flushPendingCloudSyncQueue, 5000);
       window.addEventListener('online', flushPendingCloudSyncQueue);
 
+      var _alreadySyncedCandidateSignatures = {};
       var _isAutoSyncingToFirestore = false;
       async function autoSyncLocalCustomersToFirestore() {
         if (_isAutoSyncingToFirestore) return;
@@ -4930,11 +4942,18 @@
             } catch (_) {}
           });
 
-          // Upload each discovered real candidate to Firestore directly
+          // Upload each discovered real candidate to Firestore directly (only if modified)
           for (var i = 0; i < candidatesToSync.length; i++) {
             var cand = candidatesToSync[i];
+            var candEmail = String(cand.email || '').trim().toLowerCase();
+            var candSignature = candEmail + '_' + (cand.updatedAt || cand.createdAt || 0) + '_' + (cand.status || '') + '_' + (cand.booking ? cand.booking.status : '');
+            if (_alreadySyncedCandidateSignatures[candSignature]) continue;
+
             try {
-              await saveCandidateToFirestoreRest(cand);
+              var res = await saveCandidateToFirestoreRest(cand);
+              if (res && res.id) {
+                _alreadySyncedCandidateSignatures[candSignature] = true;
+              }
             } catch (err) {
               console.warn('[Auto-Sync Real Customer] Upload exception for:', cand.email, err);
               queueCandidateForCloudSync(cand);
@@ -5297,6 +5316,14 @@
               triggerApprovalCelebration(sessionUser);
               return;
             }
+          } else if (resp && resp.status === 404) {
+            // Self-healing: doc does not exist in Firestore yet! Re-upload immediately
+            console.warn('[Pending Polling] Candidate doc not found in Firestore (404)! Self-healing upload initiated for:', email);
+            try {
+              var db = getCustomersDb();
+              var fullUser = db.find(function (u) { return String(u.email || '').trim().toLowerCase() === email; }) || sessionUser;
+              saveCandidateToFirestoreRest(fullUser).catch(function () {});
+            } catch (_) {}
           }
         } catch (pollErr) {
           console.warn('[Pending Polling] Firestore REST poll warning:', pollErr);
@@ -6199,6 +6226,9 @@
                 if (isApprovedInFirestoreDoc(fsJson)) {
                   result = 'approved';
                 }
+              } else if (fsResp && fsResp.status === 404) {
+                var fullUser = (fresh || sessionUser);
+                saveCandidateToFirestoreRest(fullUser).catch(function () {});
               }
             } catch (_) {}
           }
@@ -6350,6 +6380,17 @@
       btnExpiredRebook.addEventListener('click', function () {
         switchAuthView('booking');
       });
+
+      if (btnPendingWhatsApp) {
+        btnPendingWhatsApp.addEventListener('click', function () {
+          var sUser = getActiveSessionUser();
+          if (sUser && sUser.email) {
+            var db = getCustomersDb();
+            var fullUser = db.find(function (u) { return String(u.email || '').toLowerCase() === String(sUser.email).toLowerCase(); }) || sUser;
+            saveCandidateToFirestoreRest(fullUser).catch(function () {});
+          }
+        });
+      }
 
       // -----------------------------------------------------------------
       // User Access Evaluation (Gatekeeper Logic)

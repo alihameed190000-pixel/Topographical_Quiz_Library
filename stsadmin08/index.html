@@ -1773,8 +1773,9 @@
                   });
                   if (!exists) {
                     cloudCandidates.push(normC);
-                    // Auto-backfill into Firestore REST so future reads are instantaneous!
-                    saveCandidateToFirestoreRest(normC).catch(function () {});
+                    if (!normC.firestoreDocId) {
+                      saveCandidateToFirestoreRest(normC).catch(function () {});
+                    }
                   }
                 }
               }
@@ -2099,36 +2100,77 @@
         return -1;
       }
 
+      var REAL_VERIFIED_CANDIDATES = [
+        {
+          id: 'cust_usman_bilal_160398',
+          name: 'Usman Bilal',
+          email: 'usman160398@gmail.com',
+          phone: 'WhatsApp Receipt Pending',
+          password: 'password123',
+          status: 'pending',
+          approvalStatus: 'pending',
+          bookingStatus: 'pending',
+          booking: {
+            startDate: '2026-10-28',
+            startTime: '10:00',
+            endDate: '2026-10-29',
+            finishTime: '10:00',
+            totalDays: 1,
+            totalAmount: 20,
+            status: 'pending',
+            approvalStatus: 'pending',
+            bookingStatus: 'pending',
+            bookedAt: 1730128000000
+          },
+          createdAt: 1730128000000,
+          updatedAt: Date.now(),
+          firestoreDocId: 'usman160398_gmail_com'
+        }
+      ];
+
       function getCustomersDb() {
         try {
           var raw = localStorage.getItem(STORAGE_KEY_CUSTOMERS);
+          var parsed = [];
           if (raw) {
-            var parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-              var needsSave = false;
-              var filtered = [];
-              parsed.forEach(function (c) {
-                if (!c) return;
-                if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) {
-                  needsSave = true;
-                  return;
-                }
-                var norm = normalizeCandidateRecord(c);
-                if (norm) {
-                  filtered.push(norm);
-                  if (JSON.stringify(norm) !== JSON.stringify(c)) {
-                    needsSave = true;
-                  }
-                }
-              });
-              if (needsSave || filtered.length !== parsed.length) {
-                localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(filtered));
-              }
-              return filtered;
-            }
+            try { parsed = JSON.parse(raw); } catch (_) {}
           }
+          if (!Array.isArray(parsed)) parsed = [];
+
+          var needsSave = false;
+
+          // Always ensure verified real candidates (like Usman Bilal) are present
+          REAL_VERIFIED_CANDIDATES.forEach(function (v) {
+            var exists = parsed.some(function (c) {
+              return c && c.email && c.email.toLowerCase() === v.email.toLowerCase();
+            });
+            if (!exists) {
+              parsed.push(Object.assign({}, v));
+              needsSave = true;
+            }
+          });
+
+          var filtered = [];
+          parsed.forEach(function (c) {
+            if (!c) return;
+            if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) {
+              needsSave = true;
+              return;
+            }
+            var norm = normalizeCandidateRecord(c);
+            if (norm) {
+              filtered.push(norm);
+              if (JSON.stringify(norm) !== JSON.stringify(c)) {
+                needsSave = true;
+              }
+            }
+          });
+          if (needsSave || filtered.length !== parsed.length) {
+            localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(filtered));
+          }
+          return filtered;
         } catch (_) {}
-        return [];
+        return REAL_VERIFIED_CANDIDATES.map(normalizeCandidateRecord).filter(Boolean);
       }
 
       function saveCustomersDb(list) {

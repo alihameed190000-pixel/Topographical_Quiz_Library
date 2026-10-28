@@ -4715,8 +4715,9 @@
         }
       }
 
-      var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a17f6b5e462e76';
-      var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5';
+      var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1843f54253e43';
+      var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a184455be13e5b';
+      var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/c1fcbd3639cf49d79ae4425f622f6022/candidates';
 
       async function syncCustomerToCloud(customer) {
         if (!customer) return { success: false, error: 'No customer data' };
@@ -4761,15 +4762,19 @@
           try {
             var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
             var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3500) : null;
-            var getResp = await fetch(CLOUD_CANDIDATES_URL, {
+            var getResp = await fetch(CLOUD_CANDIDATES_URL + '?_t=' + Date.now(), {
               cache: 'no-store',
               signal: controller ? controller.signal : undefined
             });
             if (timeoutId) clearTimeout(timeoutId);
             if (getResp && getResp.ok) {
               var getJson = await getResp.json();
-              if (getJson && getJson.data && getJson.data.candidates) {
-                existingMap = getJson.data.candidates;
+              if (getJson && getJson.data) {
+                if (getJson.data.registryJson) {
+                  try { existingMap = JSON.parse(getJson.data.registryJson); } catch (_) {}
+                } else if (getJson.data.candidates) {
+                  existingMap = getJson.data.candidates;
+                }
               }
             }
           } catch (_) {}
@@ -4782,7 +4787,10 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: 'sts_candidates_registry',
-              data: { candidates: existingMap }
+              data: {
+                registryJson: JSON.stringify(existingMap),
+                updatedAt: Date.now()
+              }
             })
           });
           if (putResp && putResp.ok) cloudDone = true;
@@ -5359,14 +5367,21 @@
         try {
           var appController = typeof AbortController !== 'undefined' ? new AbortController() : null;
           var appTimeout = appController ? setTimeout(function () { appController.abort(); }, 2500) : null;
-          var appResp = await fetch(CLOUD_APPROVALS_URL, {
+          var appResp = await fetch(CLOUD_APPROVALS_URL + '?_t=' + Date.now(), {
             cache: 'no-store',
             signal: appController ? appController.signal : undefined
           });
           if (appTimeout) clearTimeout(appTimeout);
           if (appResp && appResp.ok) {
             var appJson = await appResp.json();
-            var appData = (appJson && appJson.data) || {};
+            var appData = {};
+            if (appJson && appJson.data) {
+              if (appJson.data.approvalsJson) {
+                try { appData = JSON.parse(appJson.data.approvalsJson); } catch (_) {}
+              } else {
+                appData = appJson.data;
+              }
+            }
             var appMatch = appData[email] || appData[docId];
             if (appMatch && (appMatch.status === 'approved' || appMatch.approvalStatus === 'approved')) {
               console.log('[Pending Polling] Candidate approval confirmed in Secondary Cloud Approvals for:', email);
@@ -5389,14 +5404,21 @@
         try {
           var candController = typeof AbortController !== 'undefined' ? new AbortController() : null;
           var candTimeout = candController ? setTimeout(function () { candController.abort(); }, 2500) : null;
-          var candResp = await fetch(CLOUD_CANDIDATES_URL, {
+          var candResp = await fetch(CLOUD_CANDIDATES_URL + '?_t=' + Date.now(), {
             cache: 'no-store',
             signal: candController ? candController.signal : undefined
           });
           if (candTimeout) clearTimeout(candTimeout);
           if (candResp && candResp.ok) {
             var candJson = await candResp.json();
-            var cMap = (candJson && candJson.data && candJson.data.candidates) || {};
+            var cMap = {};
+            if (candJson && candJson.data) {
+              if (candJson.data.registryJson) {
+                try { cMap = JSON.parse(candJson.data.registryJson); } catch (_) {}
+              } else if (candJson.data.candidates) {
+                cMap = candJson.data.candidates;
+              }
+            }
             var cMatch = cMap[email] || cMap[docId];
             if (cMatch) {
               var cSt = String(cMatch.status || cMatch.approvalStatus || (cMatch.booking && cMatch.booking.status) || '').toLowerCase().trim();
@@ -5418,6 +5440,40 @@
         } catch (candErr) {
           console.warn('[Pending Polling] Cloud Candidates check warning:', candErr);
         }
+
+        // 5. Multi-Cloud Failover: Check Secondary Cloud Fallback (CLOUD_FALLBACK_URL)
+        try {
+          var fbController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          var fbTimeout = fbController ? setTimeout(function () { fbController.abort(); }, 2500) : null;
+          var fbResp = await fetch(CLOUD_FALLBACK_URL, {
+            cache: 'no-store',
+            signal: fbController ? fbController.signal : undefined
+          });
+          if (fbTimeout) clearTimeout(fbTimeout);
+          if (fbResp && fbResp.ok) {
+            var fbList = await fbResp.json();
+            if (Array.isArray(fbList)) {
+              var fbMatch = fbList.find(function (c) {
+                return c && String(c.email || '').toLowerCase().trim() === email;
+              });
+              if (fbMatch) {
+                var fbSt = String(fbMatch.status || fbMatch.approvalStatus || '').toLowerCase().trim();
+                if (fbSt === 'approved') {
+                  console.log('[Pending Polling] Candidate approval confirmed in Cloud Fallback for:', email);
+                  stopPendingApprovalPolling();
+                  hasShownApprovalCelebration = true;
+                  try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
+                  sessionUser.status = 'approved';
+                  sessionUser.approvalStatus = 'approved';
+                  sessionUser.bookingStatus = 'approved';
+                  setSessionUser(sessionUser);
+                  triggerApprovalCelebration(sessionUser);
+                  return;
+                }
+              }
+            }
+          }
+        } catch (_) {}
       }
 
       function triggerApprovalCelebration(user) {

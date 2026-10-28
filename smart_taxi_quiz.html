@@ -4279,6 +4279,13 @@
       var activeResetCode = '';
       var _countdownInterval = null;
       var _memoryDbCache = null;
+      var isExplicitlyLoggedOut = (function () {
+        try {
+          return sessionStorage.getItem('sts_explicit_logout') === '1' || localStorage.getItem('sts_explicit_logout') === '1';
+        } catch (_) {
+          return false;
+        }
+      })();
 
       // Seed candidate account (always accessible)
       var SEED_CANDIDATE = {
@@ -4298,6 +4305,14 @@
         syncChannel = new BroadcastChannel('sts_sync');
         syncChannel.onmessage = function (e) {
           if (e && e.data) {
+            if (e.data.type === 'USER_LOGGED_OUT') {
+              isExplicitlyLoggedOut = true;
+              try { sessionStorage.setItem('sts_explicit_logout', '1'); } catch (_) {}
+              clearAllSessionStorages();
+              switchAuthView('login');
+              return;
+            }
+            if (isExplicitlyLoggedOut) return;
             _memoryDbCache = null;
             checkActiveSession();
           }
@@ -4305,7 +4320,14 @@
       } catch (_) {}
 
       window.addEventListener('storage', function (e) {
-        if (e.key === 'sts_customers_db' || e.key === 'sts_last_sync_timestamp' || e.key === 'sts_approved_emails' || e.key === 'sts_active_session') {
+        if (e.key === 'sts_explicit_logout' && (e.newValue === '1')) {
+          isExplicitlyLoggedOut = true;
+          clearAllSessionStorages();
+          switchAuthView('login');
+          return;
+        }
+        if (isExplicitlyLoggedOut) return;
+        if (e.key === 'sts_customers_db' || e.key === 'sts_last_sync_timestamp' || e.key === 'sts_approved_emails' || e.key === 'sts_active_session' || e.key === 'sts_current_user') {
           _memoryDbCache = null;
           checkActiveSession();
         }
@@ -4324,6 +4346,11 @@
       // Multi-Storage Account Persistence
       // -----------------------------------------------------------------
       function readRawFromAllStorages(key) {
+        var isSessionKey = (key === 'sts_current_user' || key === 'sts_active_session' || key === 'sts_current_customer' || key === 'sts_active_user' || key === 'sts_session_user');
+        if (isSessionKey && isExplicitlyLoggedOut) {
+          return [];
+        }
+
         var found = [];
         try {
           var ls = localStorage.getItem(key);
@@ -4374,6 +4401,35 @@
           var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
           document.cookie = key + '=' + encodeURIComponent(valueStr) + '; expires=' + expires + '; path=/; SameSite=Lax';
         } catch (_) {}
+      }
+
+      function removeFromAllStorages(key) {
+        try { localStorage.removeItem(key); } catch (_) {}
+        try { sessionStorage.removeItem(key); } catch (_) {}
+        try {
+          var currentName = window.name || '';
+          var prefix = key + '=';
+          var parts = currentName.split(';').filter(function (p) {
+            return p.trim().indexOf(prefix) !== 0 && p.trim().length > 0;
+          });
+          window.name = parts.join(';');
+        } catch (_) {}
+        try {
+          document.cookie = key + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax';
+        } catch (_) {}
+      }
+
+      function clearAllSessionStorages() {
+        var sessionKeys = [
+          'sts_current_user',
+          'sts_active_session',
+          'sts_current_customer',
+          'sts_active_user',
+          'sts_session_user'
+        ];
+        sessionKeys.forEach(function (k) {
+          removeFromAllStorages(k);
+        });
       }
 
       function getApprovedRegistry() {
@@ -4760,7 +4816,7 @@
           if (sess) considerCandidate(sess);
 
           // 3. Inspect raw storage keys on this device/laptop
-          var storageKeys = [
+          var storageKeys = isExplicitlyLoggedOut ? ['sts_customers_db'] : [
             'sts_customers_db',
             'sts_current_user',
             'sts_active_session',
@@ -5085,6 +5141,7 @@
       }
 
       function startPendingApprovalPolling() {
+        if (isExplicitlyLoggedOut) return;
         if (_pendingPollingInterval) return;
         console.log('[Pending Polling] Starting 3-second Firestore REST polling for real-time approval...');
 
@@ -5105,7 +5162,7 @@
       }
 
       async function checkFirestoreApprovalOnce() {
-        if (_isCelebrationActive) return;
+        if (isExplicitlyLoggedOut || _isCelebrationActive) return;
         var sessionUser = getActiveSessionUser();
         if (!sessionUser || !sessionUser.email) return;
 
@@ -5135,7 +5192,8 @@
       }
 
       function triggerApprovalCelebration(user) {
-        if (_isCelebrationActive) return;
+        if (isExplicitlyLoggedOut || _isCelebrationActive) return;
+        if (!user || (!user.email && !user.id)) return;
         _isCelebrationActive = true;
         stopPendingApprovalPolling();
 
@@ -5208,6 +5266,11 @@
       }
 
       function displaySparklingCelebration(callback) {
+        if (isExplicitlyLoggedOut) {
+          if (typeof callback === 'function') callback();
+          return;
+        }
+
         var overlay = $('sts-celebration-overlay');
         var canvas = $('sts-celebration-canvas');
         var meterFill = $('stsCelebrationMeterFill');
@@ -5452,6 +5515,11 @@
       // -----------------------------------------------------------------
       formSignup.addEventListener('submit', async function (e) {
         e.preventDefault();
+        isExplicitlyLoggedOut = false;
+        try {
+          sessionStorage.removeItem('sts_explicit_logout');
+          localStorage.removeItem('sts_explicit_logout');
+        } catch (_) {}
         var name = $('signupName').value.trim();
         var phone = $('signupPhone').value.trim();
         var email = $('signupEmail').value.trim().toLowerCase();
@@ -5545,6 +5613,11 @@
       // -----------------------------------------------------------------
       formLogin.addEventListener('submit', async function (e) {
         e.preventDefault();
+        isExplicitlyLoggedOut = false;
+        try {
+          sessionStorage.removeItem('sts_explicit_logout');
+          localStorage.removeItem('sts_explicit_logout');
+        } catch (_) {}
         var email = $('loginEmail').value.trim().toLowerCase();
         var password = $('loginPassword').value.trim();
         var remember = $('loginRemember') ? $('loginRemember').checked : true;
@@ -5609,6 +5682,11 @@
 
       formReset.addEventListener('submit', function (e) {
         e.preventDefault();
+        isExplicitlyLoggedOut = false;
+        try {
+          sessionStorage.removeItem('sts_explicit_logout');
+          localStorage.removeItem('sts_explicit_logout');
+        } catch (_) {}
         var code = $('resetCode').value.trim();
         var newPass = $('resetNewPassword').value.trim();
         var confirmPass = $('resetConfirmPassword').value.trim();
@@ -6141,9 +6219,11 @@
       // User Access Evaluation (Gatekeeper Logic)
       // -----------------------------------------------------------------
       function evaluateUserAccess(user) {
-        if (!user || (!user.email && !user.id && !user.name)) {
+        if (isExplicitlyLoggedOut || !user || (!user.email && !user.id && !user.name)) {
           switchAuthView('login');
           authOverlay.style.display = 'flex';
+          authOverlay.style.visibility = 'visible';
+          authOverlay.style.pointerEvents = 'auto';
           return;
         }
 
@@ -6238,6 +6318,13 @@
       // Live Practice Countdown Clock & Simulator Unlock
       // -----------------------------------------------------------------
       function unlockPracticeSimulator(user, finishTimestamp) {
+        if (isExplicitlyLoggedOut || !user) {
+          switchAuthView('login');
+          authOverlay.style.display = 'flex';
+          authOverlay.style.visibility = 'visible';
+          authOverlay.style.pointerEvents = 'auto';
+          return;
+        }
         authOverlay.style.display = 'none';
         authOverlay.style.visibility = 'hidden';
         authOverlay.style.pointerEvents = 'none';
@@ -6337,6 +6424,11 @@
       // -----------------------------------------------------------------
       function setSessionUser(user) {
         if (!user) return;
+        isExplicitlyLoggedOut = false;
+        try {
+          sessionStorage.removeItem('sts_explicit_logout');
+          localStorage.removeItem('sts_explicit_logout');
+        } catch (_) {}
         try {
           var curStatus = user.status || user.approvalStatus || user.bookingStatus || (user.booking && (user.booking.status || user.booking.approvalStatus)) || 'pending';
           var sessionObj = {
@@ -6350,16 +6442,24 @@
             booking: user.booking || null
           };
           var str = JSON.stringify(sessionObj);
-          localStorage.setItem('sts_active_session', str);
-          localStorage.setItem('sts_current_customer', str);
-          localStorage.setItem('sts_active_user', str);
-          sessionStorage.setItem('sts_active_session', str);
-          sessionStorage.setItem('sts_current_customer', str);
+          var sessionKeys = ['sts_current_user', 'sts_active_session', 'sts_current_customer', 'sts_active_user', 'sts_session_user'];
+          sessionKeys.forEach(function (k) {
+            try { localStorage.setItem(k, str); } catch (_) {}
+            try { sessionStorage.setItem(k, str); } catch (_) {}
+          });
         } catch (_) {}
       }
 
       function getActiveSessionUser() {
-        var keys = ['sts_active_session', 'sts_current_customer', 'sts_active_user'];
+        if (isExplicitlyLoggedOut) return null;
+        try {
+          if (sessionStorage.getItem('sts_explicit_logout') === '1' || localStorage.getItem('sts_explicit_logout') === '1') {
+            isExplicitlyLoggedOut = true;
+            return null;
+          }
+        } catch (_) {}
+
+        var keys = ['sts_current_user', 'sts_active_session', 'sts_current_customer', 'sts_active_user', 'sts_session_user'];
         for (var i = 0; i < keys.length; i++) {
           try {
             var raw = localStorage.getItem(keys[i]) || sessionStorage.getItem(keys[i]);
@@ -6373,31 +6473,69 @@
         }
         return null;
       }
+      var getCurrentUser = getActiveSessionUser;
 
       function handleLogout() {
-        stopPendingApprovalPolling();
-        _isCelebrationActive = false;
+        console.log('[Auth] Explicit user logout initiated.');
+        isExplicitlyLoggedOut = true;
         try {
-          localStorage.removeItem('sts_active_session');
-          sessionStorage.removeItem('sts_active_session');
+          sessionStorage.setItem('sts_explicit_logout', '1');
+          localStorage.setItem('sts_explicit_logout', '1');
         } catch (_) {}
 
+        // Stop all timers and background polling
+        stopPendingApprovalPolling();
+        _isCelebrationActive = false;
         if (_countdownInterval) {
           clearInterval(_countdownInterval);
           _countdownInterval = null;
         }
 
+        // Wipe session from ALL storage layers (localStorage, sessionStorage, window.name, cookies)
+        clearAllSessionStorages();
+
+        var celebOverlay = $('sts-celebration-overlay');
+        if (celebOverlay) {
+          celebOverlay.style.display = 'none';
+          celebOverlay.classList.remove('active');
+        }
+
         countdownPill.style.display = 'none';
         userBadge.style.display = 'none';
+
         switchAuthView('login');
         applyRememberedCredentialsToLoginForm();
         authOverlay.style.display = 'flex';
+        authOverlay.style.visibility = 'visible';
+        authOverlay.style.pointerEvents = 'auto';
+
+        broadcastSync('USER_LOGGED_OUT');
       }
 
       btnLogout.addEventListener('click', handleLogout);
 
       // Check Active Session on Page Load
       function checkActiveSession() {
+        if (isExplicitlyLoggedOut) {
+          switchAuthView('login');
+          applyRememberedCredentialsToLoginForm();
+          authOverlay.style.display = 'flex';
+          authOverlay.style.visibility = 'visible';
+          authOverlay.style.pointerEvents = 'auto';
+          return;
+        }
+        try {
+          if (sessionStorage.getItem('sts_explicit_logout') === '1' || localStorage.getItem('sts_explicit_logout') === '1') {
+            isExplicitlyLoggedOut = true;
+            switchAuthView('login');
+            applyRememberedCredentialsToLoginForm();
+            authOverlay.style.display = 'flex';
+            authOverlay.style.visibility = 'visible';
+            authOverlay.style.pointerEvents = 'auto';
+            return;
+          }
+        } catch (_) {}
+
         try { autoSyncLocalCustomersToFirestore().catch(function () {}); } catch (_) {}
         try { fetchCandidatesFromCloud().catch(function () {}); } catch (_) {}
         var sessionUser = getActiveSessionUser();
@@ -6445,6 +6583,14 @@
 
       // Background heartbeat check (every 2.5 seconds)
       setInterval(function () {
+        if (isExplicitlyLoggedOut) return;
+        try {
+          if (sessionStorage.getItem('sts_explicit_logout') === '1' || localStorage.getItem('sts_explicit_logout') === '1') {
+            isExplicitlyLoggedOut = true;
+            return;
+          }
+        } catch (_) {}
+
         try { autoSyncLocalCustomersToFirestore(); } catch (_) {}
         var sessionUser = getActiveSessionUser();
         if (sessionUser && (sessionUser.email || sessionUser.name)) {

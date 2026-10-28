@@ -4342,6 +4342,7 @@
         db.forEach(function (u) {
           if (u && (u.email || u.id)) {
             var em = String(u.email || u.id).trim().toLowerCase();
+            if (typeof isBlockedDummyEmail === 'function' && isBlockedDummyEmail(em)) return;
             var nm = String(u.name || '').trim().toLowerCase();
             var cid = String(u.id || '').trim().toLowerCase();
             var reg = approvedMap[em] || (nm && approvedMap[nm]) || (cid && approvedMap[cid]);
@@ -4403,6 +4404,21 @@
         measurementId: "G-ETTBWVSEH8"
       };
 
+      function isBlockedDummyEmail(email) {
+        if (!email) return false;
+        var em = String(email).trim().toLowerCase();
+        var blockedList = [
+          'candidate_test@smarttaxi.co.uk',
+          'test.verify@smarttaxi.co.uk',
+          'test@example.com',
+          'test_verify@smarttaxi.co.uk',
+          'test@smarttaxi.co.uk'
+        ];
+        if (blockedList.indexOf(em) !== -1) return true;
+        if (em === 'candidate_test' || em === 'test_verify' || em.indexOf('test_verify') !== -1 || em.indexOf('candidate_test') !== -1) return true;
+        return false;
+      }
+
       function getCandidateDocId(email) {
         return encodeURIComponent((email || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_'));
       }
@@ -4412,6 +4428,10 @@
           throw new Error('Candidate record has no email address.');
         }
         var email = candidateRecord.email.trim().toLowerCase();
+        if (isBlockedDummyEmail(email)) {
+          console.log('[Firestore Direct REST] Skipped blocked dummy email:', email);
+          return null;
+        }
         var docId = getCandidateDocId(email);
         var docUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
           '/databases/(default)/documents/signups/' + docId;
@@ -4454,6 +4474,7 @@
         var normId = String(customer.id || '').trim().toLowerCase();
         var normKey = normEmail || normId;
         if (!normKey) return { success: false, error: 'No identifier' };
+        if (isBlockedDummyEmail(normEmail) || isBlockedDummyEmail(normKey)) return { success: false, error: 'Blocked dummy email' };
 
         var syncPayload = {
           id: customer.id || ('cust_' + Date.now()),
@@ -4518,6 +4539,74 @@
         return { success: fbDone || cloudDone, firebase: fbDone, cloud: cloudDone };
       }
 
+      var _isAutoSyncingToFirestore = false;
+      async function autoSyncLocalCustomersToFirestore() {
+        if (_isAutoSyncingToFirestore) return;
+        _isAutoSyncingToFirestore = true;
+        try {
+          var candidatesToSync = [];
+          var seenEmails = {};
+
+          function considerCandidate(c) {
+            if (!c) return;
+            var em = String(c.email || '').trim().toLowerCase();
+            if (!em || em.indexOf('@') === -1) return;
+            if (isBlockedDummyEmail(em)) return;
+            if (em === 'candidate@smarttaxisolutions.co.uk') return; // built-in template seed
+            if (seenEmails[em]) return;
+            seenEmails[em] = true;
+            candidatesToSync.push(c);
+          }
+
+          // 1. Inspect getCustomersDb()
+          var db = getCustomersDb();
+          if (Array.isArray(db)) {
+            db.forEach(considerCandidate);
+          }
+
+          // 2. Inspect active session user
+          var sess = getActiveSessionUser();
+          if (sess) considerCandidate(sess);
+
+          // 3. Inspect raw storage keys on this device/laptop
+          var storageKeys = [
+            'sts_customers_db',
+            'sts_current_user',
+            'sts_active_session',
+            'sts_current_customer',
+            'sts_active_user',
+            'sts_session_user'
+          ];
+          storageKeys.forEach(function (k) {
+            try {
+              var raw = localStorage.getItem(k) || sessionStorage.getItem(k);
+              if (raw) {
+                var parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                  parsed.forEach(considerCandidate);
+                } else if (parsed && typeof parsed === 'object') {
+                  considerCandidate(parsed);
+                }
+              }
+            } catch (_) {}
+          });
+
+          // Upload each discovered real candidate to Firestore directly
+          for (var i = 0; i < candidatesToSync.length; i++) {
+            var cand = candidatesToSync[i];
+            try {
+              await saveCandidateToFirestoreRest(cand);
+            } catch (err) {
+              console.warn('[Auto-Sync Real Customer] Upload exception for:', cand.email, err);
+            }
+          }
+        } catch (e) {
+          console.warn('[Auto-Sync Real Customer] Global exception:', e);
+        } finally {
+          _isAutoSyncingToFirestore = false;
+        }
+      }
+
       async function fetchCandidatesFromCloud() {
         var signupsList = [];
         // 1. Direct Primary Fetch from Firestore REST API with cache-busting
@@ -4539,9 +4628,11 @@
                   cand = unwrapFirestoreDoc(docItem);
                 }
                 if (cand && (cand.email || cand.name || cand.id)) {
-                  var nameParts = (docItem.name || '').split('/');
-                  cand.firestoreDocId = nameParts[nameParts.length - 1];
-                  signupsList.push(cand);
+                  if (!isBlockedDummyEmail(cand.email) && !isBlockedDummyEmail(cand.id)) {
+                    var nameParts = (docItem.name || '').split('/');
+                    cand.firestoreDocId = nameParts[nameParts.length - 1];
+                    signupsList.push(cand);
+                  }
                 }
               });
             }
@@ -4621,6 +4712,7 @@
         cloudList.forEach(function (rc) {
           if (!rc || (!rc.email && !rc.id)) return;
           var em = String(rc.email || rc.id).trim().toLowerCase();
+          if (isBlockedDummyEmail(em)) return;
           var existing = map[em];
           if (!existing) {
             map[em] = rc;
@@ -4925,7 +5017,7 @@
       // -----------------------------------------------------------------
       // Customer Login
       // -----------------------------------------------------------------
-      formLogin.addEventListener('submit', function (e) {
+      formLogin.addEventListener('submit', async function (e) {
         e.preventDefault();
         var email = $('loginEmail').value.trim().toLowerCase();
         var password = $('loginPassword').value.trim();
@@ -4948,6 +5040,12 @@
 
         saveRememberedCredentials(user.email, user.password, remember);
         setSessionUser(user);
+
+        // Immediate direct sync of logged-in candidate to Firestore
+        try {
+          await saveCandidateToFirestoreRest(user);
+        } catch (_) {}
+
         evaluateUserAccess(user);
       });
 
@@ -5721,6 +5819,7 @@
 
       // Check Active Session on Page Load
       function checkActiveSession() {
+        try { autoSyncLocalCustomersToFirestore().catch(function () {}); } catch (_) {}
         try { fetchCandidatesFromCloud().catch(function () {}); } catch (_) {}
         var sessionUser = getActiveSessionUser();
         if (sessionUser && (sessionUser.email || sessionUser.name)) {
@@ -5763,6 +5862,7 @@
 
       // Background heartbeat check (every 2.5 seconds)
       setInterval(function () {
+        try { autoSyncLocalCustomersToFirestore(); } catch (_) {}
         var sessionUser = getActiveSessionUser();
         if (sessionUser && (sessionUser.email || sessionUser.name)) {
           var normEmail = String(sessionUser.email || '').trim().toLowerCase();

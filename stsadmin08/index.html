@@ -1437,6 +1437,57 @@
         measurementId: "G-ETTBWVSEH8"
       };
 
+      function isBlockedDummyEmail(email) {
+        if (!email) return false;
+        var em = String(email).trim().toLowerCase();
+        var blockedList = [
+          'candidate_test@smarttaxi.co.uk',
+          'test.verify@smarttaxi.co.uk',
+          'test@example.com',
+          'test_verify@smarttaxi.co.uk',
+          'test@smarttaxi.co.uk'
+        ];
+        if (blockedList.indexOf(em) !== -1) return true;
+        if (em === 'candidate_test' || em === 'test_verify' || em.indexOf('test_verify') !== -1 || em.indexOf('candidate_test') !== -1) return true;
+        return false;
+      }
+
+      function purgeDummyRecordsFromStorage() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY_CUSTOMERS);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              var clean = parsed.filter(function (c) {
+                if (!c) return false;
+                return !isBlockedDummyEmail(c.email) && !isBlockedDummyEmail(c.id);
+              });
+              if (clean.length !== parsed.length) {
+                localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(clean));
+              }
+            }
+          }
+        } catch (_) {}
+        try {
+          var rawApp = localStorage.getItem('sts_approved_emails');
+          if (rawApp) {
+            var appMap = JSON.parse(rawApp);
+            if (appMap && typeof appMap === 'object') {
+              var appChanged = false;
+              Object.keys(appMap).forEach(function (k) {
+                if (isBlockedDummyEmail(k) || (appMap[k] && isBlockedDummyEmail(appMap[k].email))) {
+                  delete appMap[k];
+                  appChanged = true;
+                }
+              });
+              if (appChanged) {
+                localStorage.setItem('sts_approved_emails', JSON.stringify(appMap));
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
       function getCandidateDocId(email) {
         return encodeURIComponent((email || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_'));
       }
@@ -1506,9 +1557,11 @@
                   cand = unwrapFirestoreDoc(docItem);
                 }
                 if (cand && (cand.email || cand.name || cand.id)) {
-                  var nameParts = (docItem.name || '').split('/');
-                  cand.firestoreDocId = nameParts[nameParts.length - 1];
-                  results.push(cand);
+                  if (!isBlockedDummyEmail(cand.email) && !isBlockedDummyEmail(cand.id)) {
+                    var nameParts = (docItem.name || '').split('/');
+                    cand.firestoreDocId = nameParts[nameParts.length - 1];
+                    results.push(cand);
+                  }
                 }
               });
             }
@@ -1523,7 +1576,7 @@
             var snap = await window.getDocs(window.collection(window.firestoreDb, "signups"));
             snap.forEach(function (docSnap) {
               var d = docSnap.data();
-              if (d) {
+              if (d && !isBlockedDummyEmail(d.email) && !isBlockedDummyEmail(d.id)) {
                 d.firestoreDocId = docSnap.id;
                 results.push(d);
               }
@@ -1569,6 +1622,7 @@
               Object.keys(map).forEach(function (k) {
                 var c = map[k];
                 if (c && (c.email || c.id)) {
+                  if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) return;
                   var exists = cloudCandidates.some(function (x) {
                     return String(x.email || x.id).toLowerCase() === String(c.email || c.id).toLowerCase();
                   });
@@ -1592,6 +1646,7 @@
             });
 
             cloudCandidates.forEach(function (rc) {
+              if (isBlockedDummyEmail(rc.email) || isBlockedDummyEmail(rc.id)) return;
               var key = String(rc.email || rc.id).trim().toLowerCase();
               if (!customerMap[key]) {
                 customerMap[key] = rc;
@@ -1895,7 +1950,15 @@
             var parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
               var needsSave = false;
-              parsed.forEach(function (c, idx) {
+              var filtered = parsed.filter(function (c) {
+                if (!c) return false;
+                if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) {
+                  needsSave = true;
+                  return false;
+                }
+                return true;
+              });
+              filtered.forEach(function (c, idx) {
                 if (!c.id) {
                   c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
                   needsSave = true;
@@ -1909,9 +1972,9 @@
                 }
               });
               if (needsSave) {
-                localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(parsed));
+                localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(filtered));
               }
-              return parsed;
+              return filtered;
             }
           }
         } catch (_) {}
@@ -1920,8 +1983,13 @@
 
       function saveCustomersDb(list) {
         try {
+          var cleanList = [];
           if (Array.isArray(list)) {
-            list.forEach(function (c, idx) {
+            cleanList = list.filter(function (c) {
+              if (!c) return false;
+              return !isBlockedDummyEmail(c.email) && !isBlockedDummyEmail(c.id);
+            });
+            cleanList.forEach(function (c, idx) {
               if (!c.id) {
                 c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
               }
@@ -1936,7 +2004,7 @@
               }
             });
           }
-          localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(list || []));
+          localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(cleanList));
           localStorage.setItem('sts_last_sync_timestamp', Date.now().toString());
           broadcastSync('CUSTOMERS_UPDATED');
         } catch (_) {}
@@ -2299,6 +2367,7 @@
         var totalRev = 0;
 
         customers.forEach(function (c) {
+          if (!c || isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) return;
           var b = c.booking;
           var s = String(
             c.approvalStatus || 
@@ -2312,6 +2381,8 @@
             activeCount++;
             if (b) {
               totalRev += (Number(b.totalAmount) || 0);
+            } else {
+              totalRev += 20;
             }
           } else if (s === 'rejected') {
             // rejected
@@ -2331,6 +2402,7 @@
           try { approvedMap = JSON.parse(localStorage.getItem('sts_approved_emails') || '{}') || {}; } catch (_) {}
           var mapChanged = false;
           customers.forEach(function (c) {
+            if (!c || isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) return;
             var st = String(c.approvalStatus || c.status || c.bookingStatus || (c.booking && (c.booking.status || c.booking.approvalStatus)) || '').toLowerCase().trim();
             if (st === 'approved' || st === 'rejected') {
               var em = String(c.email || '').trim().toLowerCase();
@@ -2371,6 +2443,7 @@
         // Filter and Search Table Rows
         var query = (customerSearchInput.value || '').trim().toLowerCase();
         var filtered = customers.filter(function (c) {
+          if (!c || isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) return false;
           var b = c.booking;
           var rawStatus = String(
             c.approvalStatus || 
@@ -2445,6 +2518,9 @@
             var daysCount = b.totalDays || 1;
             var amount = b.totalAmount || (daysCount * 20);
             chargeHtml = '<span class="charge-pill">' + daysCount + ' Day' + (daysCount > 1 ? 's' : '') + ' • £' + amount + '</span>';
+          } else {
+            scheduleHtml = '<span style="color: #64748b; font-size: 12px; font-weight: 500;">Registered (Awaiting Booking)</span>';
+            chargeHtml = '<span class="charge-pill" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">1 Day • £20</span>';
           }
 
           var phoneDisplay = c.phone || 'Not provided';
@@ -2770,12 +2846,14 @@
       // -----------------------------------------------------------------
       setInterval(function () {
         if (dashboardContainer.style.display === 'block') {
+          purgeDummyRecordsFromStorage();
           renderDashboard();
           refreshCandidatesFromCloud();
         }
       }, 3000);
 
       // Initialize
+      purgeDummyRecordsFromStorage();
       checkAdminSession();
       setupFirebaseRealtimeListener();
       refreshCandidatesFromCloud();

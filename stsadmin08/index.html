@@ -1492,6 +1492,118 @@
         return encodeURIComponent((email || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_'));
       }
 
+      function normalizeCandidateRecord(raw) {
+        if (!raw || typeof raw !== 'object') return null;
+        var cand = Object.assign({}, raw);
+        var normEmail = String(cand.email || '').trim().toLowerCase();
+        cand.email = normEmail;
+        cand.name = cand.name || normEmail || 'Candidate';
+        cand.phone = cand.phone || '';
+        cand.id = cand.id || ('cust_' + (cand.createdAt || Date.now()));
+        cand.createdAt = cand.createdAt || Date.now();
+
+        var b = cand.booking;
+        var rawStatus = String(
+          cand.status || 
+          cand.approvalStatus || 
+          cand.bookingStatus || 
+          (b && (b.approvalStatus || b.status || b.bookingStatus)) || 
+          'pending'
+        ).toLowerCase().trim();
+
+        var displayStatus = (rawStatus === 'approved') ? 'approved' : (rawStatus === 'rejected' ? 'rejected' : 'pending');
+        cand.status = displayStatus;
+        cand.approvalStatus = displayStatus;
+        cand.bookingStatus = displayStatus;
+
+        if (!cand.booking) {
+          var today = new Date();
+          var tomorrow = new Date(Date.now() + 86400000);
+          var todayStr = today.toISOString().split('T')[0];
+          var tomorrowStr = tomorrow.toISOString().split('T')[0];
+          cand.booking = {
+            startDate: todayStr,
+            startTime: '10:00',
+            endDate: tomorrowStr,
+            finishTime: '10:00',
+            totalDays: 1,
+            totalAmount: 20,
+            status: displayStatus,
+            approvalStatus: displayStatus,
+            bookingStatus: displayStatus
+          };
+        } else {
+          cand.booking = Object.assign({}, cand.booking);
+          cand.booking.startDate = cand.booking.startDate || new Date().toISOString().split('T')[0];
+          cand.booking.startTime = cand.booking.startTime || '10:00';
+          cand.booking.endDate = cand.booking.endDate || cand.booking.startDate;
+          cand.booking.finishTime = cand.booking.finishTime || '10:00';
+          cand.booking.totalDays = Number(cand.booking.totalDays) > 0 ? Number(cand.booking.totalDays) : 1;
+          cand.booking.totalAmount = Number(cand.booking.totalAmount) > 0 ? Number(cand.booking.totalAmount) : (cand.booking.totalDays * 20);
+          cand.booking.status = displayStatus;
+          cand.booking.approvalStatus = displayStatus;
+          cand.booking.bookingStatus = displayStatus;
+        }
+
+        return cand;
+      }
+
+      async function saveCandidateToFirestoreRest(candidateRecord) {
+        if (!candidateRecord) return false;
+        var norm = normalizeCandidateRecord(candidateRecord);
+        if (!norm) return false;
+        var email = norm.email || '';
+        var docId = getCandidateDocId(email || norm.id);
+        if (!docId) return false;
+
+        var firestoreUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+          '/databases/(default)/documents/signups/' + docId;
+        var fallbackPostUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+          '/databases/(default)/documents/signups?documentId=' + docId;
+
+        var payload = {
+          fields: {
+            payloadJson: { stringValue: JSON.stringify(norm) },
+            email: { stringValue: String(norm.email || '') },
+            name: { stringValue: String(norm.name || '') },
+            phone: { stringValue: String(norm.phone || '') },
+            status: { stringValue: String(norm.status || 'pending') },
+            approvalStatus: { stringValue: String(norm.approvalStatus || 'pending') },
+            bookingStatus: { stringValue: String(norm.bookingStatus || 'pending') },
+            updatedAt: { integerValue: String(Date.now()) }
+          }
+        };
+
+        try {
+          var resp = await fetch(firestoreUrl, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (resp && resp.ok) {
+            console.log('[Firestore Admin REST PATCH OK]:', docId);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[Firestore Admin REST PATCH failed, trying POST]:', e);
+        }
+
+        try {
+          var postResp = await fetch(fallbackPostUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (postResp && postResp.ok) {
+            console.log('[Firestore Admin REST POST fallback OK]:', docId);
+            return true;
+          }
+        } catch (e2) {
+          console.warn('[Firestore Admin REST POST fallback failed]:', e2);
+        }
+        return false;
+      }
+
       function initFirebaseApp() {
         if (typeof firebase === 'undefined' || !firebase.initializeApp) return null;
         if (firebase.apps && firebase.apps.length > 0) return firebase.apps[0];
@@ -1558,9 +1670,12 @@
                 }
                 if (cand && (cand.email || cand.name || cand.id)) {
                   if (!isBlockedDummyEmail(cand.email) && !isBlockedDummyEmail(cand.id)) {
-                    var nameParts = (docItem.name || '').split('/');
-                    cand.firestoreDocId = nameParts[nameParts.length - 1];
-                    results.push(cand);
+                    var norm = normalizeCandidateRecord(cand);
+                    if (norm) {
+                      var nameParts = (docItem.name || '').split('/');
+                      norm.firestoreDocId = nameParts[nameParts.length - 1];
+                      results.push(norm);
+                    }
                   }
                 }
               });
@@ -1577,14 +1692,40 @@
             snap.forEach(function (docSnap) {
               var d = docSnap.data();
               if (d && !isBlockedDummyEmail(d.email) && !isBlockedDummyEmail(d.id)) {
-                d.firestoreDocId = docSnap.id;
-                results.push(d);
+                var norm = normalizeCandidateRecord(d);
+                if (norm) {
+                  norm.firestoreDocId = docSnap.id;
+                  results.push(norm);
+                }
               }
             });
           } catch (_) {}
         }
 
-        return results;
+        // Deduplicate results by normalized email
+        var deduped = [];
+        var seenEmails = {};
+        results.forEach(function (cand) {
+          var key = String(cand.email || cand.id).trim().toLowerCase();
+          if (!seenEmails[key]) {
+            seenEmails[key] = true;
+            deduped.push(cand);
+          } else {
+            var existing = deduped.find(function (x) {
+              return String(x.email || x.id).trim().toLowerCase() === key;
+            });
+            if (existing) {
+              if (cand.status === 'approved' && existing.status !== 'approved') {
+                existing.status = 'approved';
+                existing.approvalStatus = 'approved';
+              }
+              if (cand.booking && !existing.booking) existing.booking = cand.booking;
+              if (cand.firestoreDocId && !existing.firestoreDocId) existing.firestoreDocId = cand.firestoreDocId;
+            }
+          }
+        });
+
+        return deduped;
       }
 
       var _isRefreshingFromCloud = false;
@@ -1600,7 +1741,8 @@
             var firestoreSignups = await fetchSignupsFromFirestore();
             if (Array.isArray(firestoreSignups) && firestoreSignups.length > 0) {
               firestoreSignups.forEach(function (s) {
-                if (s && (s.email || s.name || s.id)) cloudCandidates.push(s);
+                var norm = normalizeCandidateRecord(s);
+                if (norm && (norm.email || norm.name || norm.id)) cloudCandidates.push(norm);
               });
             }
           } catch (fsErr) {
@@ -1619,16 +1761,23 @@
             if (resp && resp.ok) {
               var json = await resp.json();
               var map = (json && json.data && json.data.candidates) || {};
-              Object.keys(map).forEach(function (k) {
+              var mapKeys = Object.keys(map);
+              for (var i = 0; i < mapKeys.length; i++) {
+                var k = mapKeys[i];
                 var c = map[k];
                 if (c && (c.email || c.id)) {
-                  if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) return;
+                  if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) continue;
+                  var normC = normalizeCandidateRecord(c);
                   var exists = cloudCandidates.some(function (x) {
-                    return String(x.email || x.id).toLowerCase() === String(c.email || c.id).toLowerCase();
+                    return String(x.email || x.id).toLowerCase() === String(normC.email || normC.id).toLowerCase();
                   });
-                  if (!exists) cloudCandidates.push(c);
+                  if (!exists) {
+                    cloudCandidates.push(normC);
+                    // Auto-backfill into Firestore REST so future reads are instantaneous!
+                    saveCandidateToFirestoreRest(normC).catch(function () {});
+                  }
                 }
-              });
+              }
             }
           } catch (cloudErr) {
             console.warn('[Cloud Registry] Admin fetch warning:', cloudErr);
@@ -1647,26 +1796,27 @@
 
             cloudCandidates.forEach(function (rc) {
               if (isBlockedDummyEmail(rc.email) || isBlockedDummyEmail(rc.id)) return;
-              var key = String(rc.email || rc.id).trim().toLowerCase();
+              var normRc = normalizeCandidateRecord(rc);
+              var key = String(normRc.email || normRc.id).trim().toLowerCase();
               if (!customerMap[key]) {
-                customerMap[key] = rc;
+                customerMap[key] = normRc;
                 hasUpdates = true;
               } else {
                 var loc = customerMap[key];
-                if (rc.firestoreDocId && !loc.firestoreDocId) {
-                  loc.firestoreDocId = rc.firestoreDocId;
+                if (normRc.firestoreDocId && !loc.firestoreDocId) {
+                  loc.firestoreDocId = normRc.firestoreDocId;
                   hasUpdates = true;
                 }
                 // Adopt remote updates if remote has booking that local didn't have or is newer
-                if (rc.booking && (!loc.booking || (rc.booking.bookedAt && (!loc.booking.bookedAt || rc.booking.bookedAt > loc.booking.bookedAt)))) {
-                  loc.booking = rc.booking;
+                if (normRc.booking && (!loc.booking || (normRc.booking.bookedAt && (!loc.booking.bookedAt || normRc.booking.bookedAt > loc.booking.bookedAt)))) {
+                  loc.booking = normRc.booking;
                   hasUpdates = true;
                 }
-                if (rc.name && !loc.name) { loc.name = rc.name; hasUpdates = true; }
-                if (rc.phone && !loc.phone) { loc.phone = rc.phone; hasUpdates = true; }
-                if (rc.password && !loc.password) { loc.password = rc.password; hasUpdates = true; }
+                if (normRc.name && !loc.name) { loc.name = normRc.name; hasUpdates = true; }
+                if (normRc.phone && !loc.phone) { loc.phone = normRc.phone; hasUpdates = true; }
+                if (normRc.password && !loc.password) { loc.password = normRc.password; hasUpdates = true; }
                 // Adopt remote status if local is pending but remote has been approved/rejected
-                var rStatus = rc.status || rc.approvalStatus;
+                var rStatus = normRc.status || normRc.approvalStatus;
                 var lStatus = loc.status || loc.approvalStatus;
                 if ((rStatus === 'approved' || rStatus === 'rejected') && lStatus === 'pending') {
                   loc.status = rStatus;
@@ -1713,10 +1863,12 @@
           }
         }
 
-        // 1. Direct Primary PATCH to Firestore REST API
+        // 1. Direct Primary PATCH to Firestore REST API with POST fallback
         try {
           var docUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
             '/databases/(default)/documents/signups/' + docId;
+          var docPostUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+            '/databases/(default)/documents/signups?documentId=' + docId;
 
           var payload = {
             fields: {
@@ -1737,8 +1889,12 @@
             body: JSON.stringify(payload)
           });
 
-          if (patchResp && patchResp.ok) {
-            console.log('[Firestore Direct REST] Status updated successfully for docId:', docId, newStatus);
+          if (!patchResp || !patchResp.ok) {
+            await fetch(docPostUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
           }
 
           // Also if candidateRecord.firestoreDocId exists and is different from docId, patch that too
@@ -1950,28 +2106,22 @@
             var parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
               var needsSave = false;
-              var filtered = parsed.filter(function (c) {
-                if (!c) return false;
+              var filtered = [];
+              parsed.forEach(function (c) {
+                if (!c) return;
                 if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) {
                   needsSave = true;
-                  return false;
+                  return;
                 }
-                return true;
-              });
-              filtered.forEach(function (c, idx) {
-                if (!c.id) {
-                  c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
-                  needsSave = true;
-                }
-                var curStatus = c.status || c.approvalStatus || c.bookingStatus || (c.booking && (c.booking.status || c.booking.approvalStatus)) || 'pending';
-                if (!c.status || !c.approvalStatus) {
-                  c.status = curStatus;
-                  c.approvalStatus = curStatus;
-                  c.bookingStatus = curStatus;
-                  needsSave = true;
+                var norm = normalizeCandidateRecord(c);
+                if (norm) {
+                  filtered.push(norm);
+                  if (JSON.stringify(norm) !== JSON.stringify(c)) {
+                    needsSave = true;
+                  }
                 }
               });
-              if (needsSave) {
+              if (needsSave || filtered.length !== parsed.length) {
                 localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(filtered));
               }
               return filtered;
@@ -1985,23 +2135,11 @@
         try {
           var cleanList = [];
           if (Array.isArray(list)) {
-            cleanList = list.filter(function (c) {
-              if (!c) return false;
-              return !isBlockedDummyEmail(c.email) && !isBlockedDummyEmail(c.id);
-            });
-            cleanList.forEach(function (c, idx) {
-              if (!c.id) {
-                c.id = 'cust_' + (c.createdAt || (Date.now() - idx * 1000));
-              }
-              var curStatus = c.status || c.approvalStatus || c.bookingStatus || (c.booking && (c.booking.status || c.booking.approvalStatus)) || 'pending';
-              c.status = curStatus;
-              c.approvalStatus = curStatus;
-              c.bookingStatus = curStatus;
-              if (c.booking) {
-                c.booking.status = curStatus;
-                c.booking.approvalStatus = curStatus;
-                c.booking.bookingStatus = curStatus;
-              }
+            list.forEach(function (c) {
+              if (!c) return;
+              if (isBlockedDummyEmail(c.email) || isBlockedDummyEmail(c.id)) return;
+              var norm = normalizeCandidateRecord(c);
+              if (norm) cleanList.push(norm);
             });
           }
           localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(cleanList));

@@ -1789,6 +1789,132 @@
       border: 1px solid #e2e8f0;
       color: #334155;
     }
+
+    /* Real-Time Approval Celebration & Sparkling Success Modal */
+    .sts-celebration-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: auto;
+    }
+
+    .sts-celebration-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .sts-celebration-card {
+      position: relative;
+      z-index: 2;
+      background: linear-gradient(145deg, #0f172a 0%, #1e293b 60%, #064e3b 100%);
+      border: 2px solid #10b981;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65), 0 0 50px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 38px 32px 32px;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      color: #ffffff;
+      transform: scale(0.92);
+      transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .sts-celebration-overlay.active .sts-celebration-card {
+      transform: scale(1);
+    }
+
+    .sts-celebration-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, rgba(16, 185, 129, 0.05) 70%);
+      border: 2px solid #34d399;
+      box-shadow: 0 0 25px rgba(52, 211, 153, 0.6), inset 0 0 15px rgba(52, 211, 153, 0.3);
+      margin-bottom: 18px;
+      font-size: 28px;
+      animation: stsBadgePulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes stsBadgePulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(52, 211, 153, 0.6); }
+      50% { transform: scale(1.08); box-shadow: 0 0 40px rgba(52, 211, 153, 0.85); }
+    }
+
+    .sts-celebration-title {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      margin: 0 0 8px;
+      background: linear-gradient(135deg, #ffffff 30%, #6ee7b7 75%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .sts-celebration-subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.55;
+      margin: 0 0 22px;
+    }
+
+    .sts-celebration-meter {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .sts-celebration-meter-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #34d399, #f59e0b);
+      border-radius: 999px;
+      box-shadow: 0 0 12px rgba(52, 211, 153, 0.8);
+      transition: width 1.8s linear;
+    }
+
+    .sts-celebration-proceed-btn {
+      width: 100%;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .sts-celebration-proceed-btn:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(16, 185, 129, 0.55);
+    }
   </style>
 </head>
 
@@ -2171,10 +2297,35 @@
         </div>
 
       </div>
+  </div>
+
+  <!-- Sparkles & Celebration Overlay for Real-Time Approval -->
+  <div id="sts-celebration-overlay" class="sts-celebration-overlay" style="display: none;" aria-live="assertive">
+    <canvas id="sts-celebration-canvas" class="sts-celebration-canvas"></canvas>
+    <div class="sts-celebration-card">
+      <div class="sts-celebration-badge">
+        <span>✨</span>
+        <span>🎉</span>
+        <span>✨</span>
+      </div>
+      <h2 class="sts-celebration-title">Your request is approved!</h2>
+      <p class="sts-celebration-subtitle">
+        Your payment and booking have been verified by our team.<br>
+        Redirecting you to your Topographical practice simulator now...
+      </p>
+      <div class="sts-celebration-meter">
+        <div id="stsCelebrationMeterFill" class="sts-celebration-meter-fill"></div>
+      </div>
+      <button type="button" id="btnCelebrationProceed" class="sts-celebration-proceed-btn">
+        <span>Start Practice Now</span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
     </div>
   </div>
 
-    <div id="appContainer">
+  <div id="appContainer">
 
     <!-- 1. Top Breadcrumb & Exercise Selector Bar -->
     <header id="topBar">
@@ -4154,7 +4305,7 @@
       } catch (_) {}
 
       window.addEventListener('storage', function (e) {
-        if (e.key === 'sts_customers_db' || e.key === 'sts_last_sync_timestamp') {
+        if (e.key === 'sts_customers_db' || e.key === 'sts_last_sync_timestamp' || e.key === 'sts_approved_emails' || e.key === 'sts_active_session') {
           _memoryDbCache = null;
           checkActiveSession();
         }
@@ -4433,8 +4584,10 @@
           return null;
         }
         var docId = getCandidateDocId(email);
-        var docUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+        var docPatchUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
           '/databases/(default)/documents/signups/' + docId;
+        var docPostUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+          '/databases/(default)/documents/signups?documentId=' + docId;
 
         var payload = {
           fields: {
@@ -4450,19 +4603,48 @@
           }
         };
 
-        var resp = await fetch(docUrl, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        var lastError = null;
 
-        if (!resp.ok) {
-          var errText = await resp.text();
-          throw new Error('Firestore REST write failed (' + resp.status + '): ' + errText);
+        // Try 1: Direct PATCH to docUrl
+        try {
+          var resp = await fetch(docPatchUrl, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (resp && resp.ok) {
+            var json = await resp.json();
+            console.log('[Firestore Direct REST] Successfully stored (PATCH) candidate doc:', docId);
+            return { id: docId, data: json };
+          } else {
+            var patchErrText = resp ? await resp.text() : 'No response';
+            lastError = new Error('PATCH write failed (' + (resp ? resp.status : 'unknown') + '): ' + patchErrText);
+            console.warn('[Firestore Direct REST] PATCH rejected, trying POST fallback...', lastError);
+          }
+        } catch (patchErr) {
+          lastError = patchErr;
+          console.warn('[Firestore Direct REST] PATCH exception, trying POST fallback...', patchErr);
         }
-        var json = await resp.json();
-        console.log('[Firestore Direct REST] Successfully stored candidate doc:', docId);
-        return { id: docId, data: json };
+
+        // Try 2: Direct POST fallback with ?documentId=docId
+        try {
+          var postResp = await fetch(docPostUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (postResp && postResp.ok) {
+            var postJson = await postResp.json();
+            console.log('[Firestore Direct REST] Successfully stored (POST) candidate doc:', docId);
+            return { id: docId, data: postJson };
+          } else {
+            var postErrText = postResp ? await postResp.text() : 'No response';
+            throw new Error('POST fallback failed (' + (postResp ? postResp.status : 'unknown') + '): ' + postErrText);
+          }
+        } catch (postErr) {
+          console.error('[Firestore Direct REST] Both PATCH and POST failed for candidate doc:', docId, postErr);
+          throw (lastError || postErr);
+        }
       }
 
       var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a17f6b5e462e76';
@@ -4492,6 +4674,7 @@
         };
 
         var fbDone = false;
+        var fbErrorMsg = '';
         try {
           var res = await saveCandidateToFirestoreRest(syncPayload);
           if (res && res.id) {
@@ -4499,6 +4682,7 @@
             customer.firestoreDocId = res.id;
           }
         } catch (fbErr) {
+          fbErrorMsg = fbErr ? (fbErr.message || String(fbErr)) : 'Unknown Firestore error';
           console.warn('[Firestore Sync] Exception:', fbErr);
         }
 
@@ -4536,7 +4720,14 @@
           if (putResp && putResp.ok) cloudDone = true;
         } catch (_) {}
 
-        return { success: fbDone || cloudDone, firebase: fbDone, cloud: cloudDone };
+        var overallSuccess = fbDone || cloudDone;
+        if (overallSuccess) {
+          showAuthAlert('✅ Cloud Synced: Candidate account successfully stored.', 'success');
+        } else {
+          showAuthAlert('❌ Cloud Sync Warning: ' + (fbErrorMsg || 'Unable to reach cloud servers'), 'error');
+        }
+
+        return { success: overallSuccess, firebase: fbDone, cloud: cloudDone, error: fbErrorMsg };
       }
 
       var _isAutoSyncingToFirestore = false;
@@ -4862,9 +5053,337 @@
       }
 
       // -----------------------------------------------------------------
+      // Real-Time Approval Polling & Sparkling Celebration System
+      // -----------------------------------------------------------------
+      var _pendingPollingInterval = null;
+      var _isCelebrationActive = false;
+
+      function isApprovedInFirestoreDoc(docJson) {
+        if (!docJson) return false;
+        // Direct field inspection
+        if (docJson.fields) {
+          var f = docJson.fields;
+          if (f.status && f.status.stringValue && f.status.stringValue.toLowerCase() === 'approved') return true;
+          if (f.approvalStatus && f.approvalStatus.stringValue && f.approvalStatus.stringValue.toLowerCase() === 'approved') return true;
+          if (f.bookingStatus && f.bookingStatus.stringValue && f.bookingStatus.stringValue.toLowerCase() === 'approved') return true;
+          if (f.payloadJson && f.payloadJson.stringValue) {
+            try {
+              var p = JSON.parse(f.payloadJson.stringValue);
+              if (p) {
+                var pStatus = String(p.status || p.approvalStatus || (p.booking && p.booking.status) || '').toLowerCase().trim();
+                if (pStatus === 'approved') return true;
+              }
+            } catch (_) {}
+          }
+        }
+        var unwrapped = unwrapFirestoreDoc(docJson);
+        if (unwrapped) {
+          var uStatus = String(unwrapped.status || unwrapped.approvalStatus || unwrapped.bookingStatus || (unwrapped.booking && unwrapped.booking.status) || '').toLowerCase().trim();
+          if (uStatus === 'approved') return true;
+        }
+        return false;
+      }
+
+      function startPendingApprovalPolling() {
+        if (_pendingPollingInterval) return;
+        console.log('[Pending Polling] Starting 3-second Firestore REST polling for real-time approval...');
+
+        // Immediate single check on start
+        checkFirestoreApprovalOnce();
+
+        _pendingPollingInterval = setInterval(function () {
+          checkFirestoreApprovalOnce();
+        }, 3000);
+      }
+
+      function stopPendingApprovalPolling() {
+        if (_pendingPollingInterval) {
+          clearInterval(_pendingPollingInterval);
+          _pendingPollingInterval = null;
+          console.log('[Pending Polling] Stopped polling.');
+        }
+      }
+
+      async function checkFirestoreApprovalOnce() {
+        if (_isCelebrationActive) return;
+        var sessionUser = getActiveSessionUser();
+        if (!sessionUser || !sessionUser.email) return;
+
+        var email = String(sessionUser.email).trim().toLowerCase();
+        if (isBlockedDummyEmail(email)) return;
+        var docId = getCandidateDocId(email);
+
+        var pollUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+          '/databases/(default)/documents/signups/' + docId + '?t=' + Date.now();
+
+        try {
+          var resp = await fetch(pollUrl, { cache: 'no-store' });
+          if (resp && resp.ok) {
+            var docJson = await resp.json();
+            if (isApprovedInFirestoreDoc(docJson)) {
+              console.log('[Pending Polling] Candidate approval confirmed in Firestore for:', email);
+              var unwrapped = unwrapFirestoreDoc(docJson);
+              if (unwrapped && unwrapped.booking) {
+                sessionUser.booking = unwrapped.booking;
+              }
+              triggerApprovalCelebration(sessionUser);
+            }
+          }
+        } catch (pollErr) {
+          console.warn('[Pending Polling] Firestore REST poll warning:', pollErr);
+        }
+      }
+
+      function triggerApprovalCelebration(user) {
+        if (_isCelebrationActive) return;
+        _isCelebrationActive = true;
+        stopPendingApprovalPolling();
+
+        console.log('[Celebration] Approval confirmed! Showing sparkling celebration effect...');
+
+        user.status = 'approved';
+        user.approvalStatus = 'approved';
+        user.bookingStatus = 'approved';
+        if (!user.booking) {
+          user.booking = {
+            startDate: new Date().toISOString().split('T')[0],
+            startTime: '10:00',
+            endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+            finishTime: '10:00',
+            totalDays: 1,
+            totalAmount: 20
+          };
+        }
+        user.booking.status = 'approved';
+        user.booking.approvalStatus = 'approved';
+        user.booking.bookingStatus = 'approved';
+        var finishTimestamp = parseBookingExpiry(user.booking);
+        user.booking.endTimestamp = finishTimestamp;
+
+        // Persist to all session and customer storages
+        setSessionUser(user);
+
+        var normEmail = String(user.email || '').trim().toLowerCase();
+        var normName = String(user.name || '').trim().toLowerCase();
+        var normId = String(user.id || '').trim().toLowerCase();
+
+        var approvedMap = getApprovedRegistry();
+        var days = Number(user.booking.totalDays) > 0 ? Number(user.booking.totalDays) : 1;
+        if (normEmail) approvedMap[normEmail] = { status: 'approved', updatedAt: Date.now(), days: days, name: normName, email: normEmail };
+        if (normName) approvedMap[normName] = { status: 'approved', updatedAt: Date.now(), days: days, email: normEmail, name: normName };
+        if (normId) approvedMap[normId] = { status: 'approved', updatedAt: Date.now(), days: days, email: normEmail, name: normName };
+        localStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap));
+        try { sessionStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap)); } catch (_) {}
+        try {
+          var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+          document.cookie = 'sts_approved_emails=' + encodeURIComponent(JSON.stringify(approvedMap)) + '; expires=' + expires + '; path=/; SameSite=Lax';
+        } catch (_) {}
+
+        var db = getCustomersDb();
+        for (var i = 0; i < db.length; i++) {
+          var c = db[i];
+          if (!c) continue;
+          var cEm = String(c.email || '').trim().toLowerCase();
+          var cNm = String(c.name || '').trim().toLowerCase();
+          if ((normEmail && cEm === normEmail) || (normName && cNm === normName)) {
+            c.status = 'approved';
+            c.approvalStatus = 'approved';
+            c.bookingStatus = 'approved';
+            if (c.booking) {
+              c.booking.status = 'approved';
+              c.booking.approvalStatus = 'approved';
+              c.booking.bookingStatus = 'approved';
+              c.booking.endTimestamp = finishTimestamp;
+            }
+          }
+        }
+        saveCustomersDb(db);
+
+        // Display Sparkling Celebration Effect & Banner
+        displaySparklingCelebration(function () {
+          _isCelebrationActive = false;
+          // Seamlessly transition / land directly into main drawing / quiz section
+          unlockPracticeSimulator(user, finishTimestamp);
+        });
+      }
+
+      function displaySparklingCelebration(callback) {
+        var overlay = $('sts-celebration-overlay');
+        var canvas = $('sts-celebration-canvas');
+        var meterFill = $('stsCelebrationMeterFill');
+        var btnProceed = $('btnCelebrationProceed');
+
+        if (!overlay || !canvas) {
+          if (typeof callback === 'function') callback();
+          return;
+        }
+
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '0';
+        overlay.classList.remove('active');
+        if (meterFill) meterFill.style.width = '0%';
+
+        // Trigger reflow for transition
+        void overlay.offsetHeight;
+        overlay.style.opacity = '1';
+        overlay.classList.add('active');
+
+        setTimeout(function () {
+          if (meterFill) meterFill.style.width = '100%';
+        }, 60);
+
+        // Canvas particle explosion
+        var ctx = canvas.getContext('2d');
+        var width = (canvas.width = window.innerWidth);
+        var height = (canvas.height = window.innerHeight);
+
+        var resizeHandler = function () {
+          width = canvas.width = window.innerWidth;
+          height = canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', resizeHandler);
+
+        var particles = [];
+        var colors = ['#fbbf24', '#f59e0b', '#10b981', '#34d399', '#6ee7b7', '#fde047', '#ffffff', '#60a5fa', '#a78bfa'];
+        var cx = width / 2;
+        var cy = height / 2;
+
+        for (var i = 0; i < 120; i++) {
+          var angle = (Math.PI * 2 * i) / 120 + (Math.random() - 0.5) * 0.4;
+          var speed = Math.random() * 9 + 4;
+          particles.push({
+            x: cx + (Math.random() - 0.5) * 40,
+            y: cy + (Math.random() - 0.5) * 40,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - Math.random() * 3,
+            gravity: 0.12,
+            drag: 0.985,
+            size: Math.random() * 7 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 1.0,
+            decay: Math.random() * 0.008 + 0.006,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.18,
+            type: Math.random() > 0.45 ? 'star4' : (Math.random() > 0.4 ? 'star5' : 'circle'),
+            twinkleOffset: Math.random() * Math.PI * 2
+          });
+        }
+
+        var animId = null;
+        var startTime = Date.now();
+
+        function drawStarShape(c, cx, cy, spikes, outerRadius, innerRadius, fill, rot) {
+          c.save();
+          c.beginPath();
+          c.translate(cx, cy);
+          c.rotate(rot || 0);
+          var step = Math.PI / spikes;
+          c.moveTo(0, -outerRadius);
+          for (var s = 0; s < spikes; s++) {
+            c.lineTo(Math.cos(s * 2 * step - Math.PI / 2) * outerRadius, Math.sin(s * 2 * step - Math.PI / 2) * outerRadius);
+            c.lineTo(Math.cos((s * 2 + 1) * step - Math.PI / 2) * innerRadius, Math.sin((s * 2 + 1) * step - Math.PI / 2) * innerRadius);
+          }
+          c.closePath();
+          c.fillStyle = fill;
+          c.fill();
+          c.restore();
+        }
+
+        function animateSparkles() {
+          ctx.clearRect(0, 0, width, height);
+          var now = Date.now();
+          var elapsed = (now - startTime) / 1000;
+          var alive = 0;
+
+          for (var p = 0; p < particles.length; p++) {
+            var pt = particles[p];
+            if (pt.alpha <= 0.01) continue;
+            alive++;
+
+            pt.x += pt.vx;
+            pt.y += pt.vy;
+            pt.vy += pt.gravity;
+            pt.vx *= pt.drag;
+            pt.vy *= pt.drag;
+            pt.alpha -= pt.decay;
+            pt.rot += pt.rotSpeed;
+
+            var twinkle = Math.sin(elapsed * 10 + pt.twinkleOffset) * 0.25 + 0.75;
+            var currentAlpha = Math.max(0, Math.min(1, pt.alpha * twinkle));
+
+            ctx.save();
+            ctx.globalAlpha = currentAlpha;
+
+            if (pt.type === 'star4') {
+              drawStarShape(ctx, pt.x, pt.y, 4, pt.size, pt.size * 0.35, pt.color, pt.rot);
+            } else if (pt.type === 'star5') {
+              drawStarShape(ctx, pt.x, pt.y, 5, pt.size, pt.size * 0.45, pt.color, pt.rot);
+            } else {
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, pt.size * 0.6, 0, Math.PI * 2);
+              ctx.fillStyle = pt.color;
+              ctx.shadowColor = pt.color;
+              ctx.shadowBlur = 8;
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+
+          if (alive > 0 && elapsed < 3.8) {
+            animId = requestAnimationFrame(animateSparkles);
+          } else {
+            ctx.clearRect(0, 0, width, height);
+            window.removeEventListener('resize', resizeHandler);
+          }
+        }
+
+        animId = requestAnimationFrame(animateSparkles);
+
+        var completed = false;
+        function finishCelebration() {
+          if (completed) return;
+          completed = true;
+          overlay.style.opacity = '0';
+          setTimeout(function () {
+            overlay.style.display = 'none';
+            overlay.classList.remove('active');
+            if (animId) cancelAnimationFrame(animId);
+            window.removeEventListener('resize', resizeHandler);
+            if (typeof callback === 'function') callback();
+          }, 320);
+        }
+
+        var autoTimer = setTimeout(finishCelebration, 1800);
+
+        if (btnProceed) {
+          btnProceed.onclick = function (e) {
+            e.preventDefault();
+            clearTimeout(autoTimer);
+            finishCelebration();
+          };
+        }
+      }
+
+      // -----------------------------------------------------------------
       // Switch Authentication & Booking Views
       // -----------------------------------------------------------------
       function switchAuthView(viewName) {
+        // Prevent Duplicate Submission Requests:
+        // When already pending, block entering booking view
+        if (viewName === 'booking') {
+          var sUser = getActiveSessionUser();
+          if (sUser && sUser.email) {
+            var dbCheck = getCustomersDb();
+            var matchedUser = dbCheck.find(function (u) { return u.email.toLowerCase() === sUser.email.toLowerCase(); }) || sUser;
+            var exBooking = matchedUser.booking || sUser.booking;
+            var effSt = String(matchedUser.approvalStatus || matchedUser.status || (exBooking && (exBooking.status || exBooking.approvalStatus)) || '').toLowerCase().trim();
+            if (effSt === 'pending' && exBooking && (exBooking.startDate || exBooking.bookedAt)) {
+              showAuthAlert('Your request for approval is already submitted, please wait.', 'error');
+              viewName = 'pending';
+            }
+          }
+        }
+
         showAuthAlert('', '');
         codeNotification.style.display = 'none';
         authOverlay.style.visibility = 'visible';
@@ -4878,6 +5397,13 @@
         viewPending.style.display = (viewName === 'pending') ? 'block' : 'none';
         viewRejected.style.display = (viewName === 'rejected') ? 'block' : 'none';
         viewExpired.style.display = (viewName === 'expired') ? 'block' : 'none';
+
+        // Background 3-second Firestore REST polling control
+        if (viewName === 'pending') {
+          startPendingApprovalPolling();
+        } else {
+          stopPendingApprovalPolling();
+        }
 
         if (viewName === 'login') {
           authTitle.textContent = 'Candidate Practice Portal';
@@ -5246,6 +5772,32 @@
           return;
         }
 
+        var curCandidate = db[uIdx];
+        var curBooking = curCandidate.booking || sessionUser.booking;
+        var curEffectiveSt = String(
+          curCandidate.approvalStatus || 
+          curCandidate.status || 
+          curCandidate.bookingStatus || 
+          (curBooking && (curBooking.approvalStatus || curBooking.status || curBooking.bookingStatus)) ||
+          (sessionUser && (sessionUser.approvalStatus || sessionUser.status || sessionUser.bookingStatus)) ||
+          ''
+        ).toLowerCase().trim();
+
+        // 1. Prevent Duplicate Submission Requests:
+        // When a logged-in user or customer tries to submit a new practice booking request while an existing request is already marked as pending (or awaiting approval), block the submission immediately.
+        var hasPendingBookingRequest = false;
+        if (curEffectiveSt === 'pending' && curBooking && (curBooking.status === 'pending' || curBooking.approvalStatus === 'pending' || curBooking.startDate || curBooking.bookedAt)) {
+          hasPendingBookingRequest = true;
+        }
+
+        if (hasPendingBookingRequest) {
+          showAuthAlert('Your request for approval is already submitted, please wait.', 'error');
+          alert('Your request for approval is already submitted, please wait.');
+          switchAuthView('pending');
+          evaluateUserAccess(curCandidate);
+          return;
+        }
+
         var submitBtn = formBooking.querySelector('button[type="submit"]');
         var origBtnText = submitBtn ? submitBtn.textContent : '';
         if (submitBtn) {
@@ -5426,6 +5978,22 @@
 
           var result = inspectApprovalState();
 
+          // Primary Direct Check against Firestore REST API
+          if (result === 'pending' && normEmail && typeof fetch !== 'undefined') {
+            try {
+              var docId = getCandidateDocId(normEmail);
+              var fsUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+                '/databases/(default)/documents/signups/' + docId + '?t=' + Date.now();
+              var fsResp = await fetch(fsUrl, { cache: 'no-store' });
+              if (fsResp && fsResp.ok) {
+                var fsJson = await fsResp.json();
+                if (isApprovedInFirestoreDoc(fsJson)) {
+                  result = 'approved';
+                }
+              }
+            } catch (_) {}
+          }
+
           // If still pending, attempt fast cloud fetch (timeout 1800ms)
           if (result === 'pending' && typeof fetch !== 'undefined') {
             try {
@@ -5522,7 +6090,7 @@
               saveCustomersDb(dbList);
             } catch (_) {}
 
-            evaluateUserAccess(sessionUser);
+            triggerApprovalCelebration(sessionUser);
             return;
           } else if (result === 'rejected') {
             sessionUser.status = 'rejected';
@@ -5544,6 +6112,15 @@
       });
 
       btnPendingModify.addEventListener('click', function () {
+        var sUser = getActiveSessionUser();
+        var db = getCustomersDb();
+        var cur = (sUser && sUser.email) ? (db.find(function(u){ return u.email.toLowerCase() === sUser.email.toLowerCase(); }) || sUser) : sUser;
+        var curSt = String((cur && (cur.status || cur.approvalStatus)) || (cur && cur.booking && (cur.booking.status || cur.booking.approvalStatus)) || '').toLowerCase().trim();
+        if (curSt === 'pending') {
+          showAuthAlert('Your request for approval is already submitted, please wait.', 'error');
+          alert('Your request for approval is already submitted, please wait.');
+          return;
+        }
         switchAuthView('booking');
       });
 
@@ -5798,6 +6375,8 @@
       }
 
       function handleLogout() {
+        stopPendingApprovalPolling();
+        _isCelebrationActive = false;
         try {
           localStorage.removeItem('sts_active_session');
           sessionStorage.removeItem('sts_active_session');
@@ -5837,7 +6416,11 @@
             sessionUser.approvalStatus = 'approved';
             if (sessionUser.booking) sessionUser.booking.status = 'approved';
             setSessionUser(sessionUser);
-            evaluateUserAccess(sessionUser);
+            if (viewPending && viewPending.style.display !== 'none') {
+              triggerApprovalCelebration(sessionUser);
+            } else {
+              evaluateUserAccess(sessionUser);
+            }
             return;
           }
 
@@ -5879,7 +6462,11 @@
             sessionUser.approvalStatus = 'approved';
             if (sessionUser.booking) sessionUser.booking.status = 'approved';
             setSessionUser(sessionUser);
-            evaluateUserAccess(sessionUser);
+            if (viewPending && viewPending.style.display !== 'none') {
+              triggerApprovalCelebration(sessionUser);
+            } else {
+              evaluateUserAccess(sessionUser);
+            }
             return;
           }
 
@@ -5896,13 +6483,26 @@
 
             if (curStatus !== newStatus || JSON.stringify(sessionUser.booking) !== JSON.stringify(fresh.booking)) {
               setSessionUser(fresh);
-              evaluateUserAccess(fresh);
+              if (newStatus === 'approved' && viewPending && viewPending.style.display !== 'none') {
+                triggerApprovalCelebration(fresh);
+              } else {
+                evaluateUserAccess(fresh);
+              }
             }
           }
         }
       }, 2500);
 
       checkActiveSession();
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+          checkActiveSession();
+          try { autoSyncLocalCustomersToFirestore(); } catch (_) {}
+        });
+      } else {
+        try { autoSyncLocalCustomersToFirestore(); } catch (_) {}
+      }
 
     })();
   </script>

@@ -5206,6 +5206,13 @@
       // -----------------------------------------------------------------
       var _pendingPollingInterval = null;
       var _isCelebrationActive = false;
+      var hasShownApprovalCelebration = (function () {
+        try {
+          return sessionStorage.getItem('sts_celebration_shown') === '1';
+        } catch (_) {
+          return false;
+        }
+      })();
 
       function isApprovedInFirestoreDoc(docJson) {
         if (!docJson) return false;
@@ -5235,6 +5242,12 @@
 
       function startPendingApprovalPolling() {
         if (isExplicitlyLoggedOut) return;
+        var sUser = getActiveSessionUser();
+        var st = sUser ? String(sUser.status || sUser.approvalStatus || (sUser.booking && sUser.booking.status) || '').toLowerCase() : '';
+        if (st === 'approved' || hasShownApprovalCelebration) {
+          stopPendingApprovalPolling();
+          return;
+        }
         if (_pendingPollingInterval) return;
         console.log('[Pending Polling] Starting 3-second Firestore REST polling for real-time approval...');
 
@@ -5255,7 +5268,10 @@
       }
 
       async function checkFirestoreApprovalOnce() {
-        if (isExplicitlyLoggedOut || _isCelebrationActive) return;
+        if (isExplicitlyLoggedOut || _isCelebrationActive || hasShownApprovalCelebration) {
+          stopPendingApprovalPolling();
+          return;
+        }
         var sessionUser = getActiveSessionUser();
         if (!sessionUser || !sessionUser.email) return;
 
@@ -5272,11 +5288,14 @@
             var docJson = await resp.json();
             if (isApprovedInFirestoreDoc(docJson)) {
               console.log('[Pending Polling] Candidate approval confirmed in Firestore for:', email);
+              // KILL POLLING IMMEDIATELY
+              stopPendingApprovalPolling();
               var unwrapped = unwrapFirestoreDoc(docJson);
               if (unwrapped && unwrapped.booking) {
                 sessionUser.booking = unwrapped.booking;
               }
               triggerApprovalCelebration(sessionUser);
+              return;
             }
           }
         } catch (pollErr) {
@@ -5285,9 +5304,23 @@
       }
 
       function triggerApprovalCelebration(user) {
-        if (isExplicitlyLoggedOut || _isCelebrationActive) return;
+        // KILL POLLING IMMEDIATELY
+        stopPendingApprovalPolling();
+
+        if (isExplicitlyLoggedOut) return;
         if (!user || (!user.email && !user.id)) return;
+
+        var finishTimestamp = parseBookingExpiry(user.booking);
+
+        if (hasShownApprovalCelebration || _isCelebrationActive) {
+          // Already shown during this session! Unlock simulator directly without looping
+          unlockPracticeSimulator(user, finishTimestamp);
+          return;
+        }
+
         _isCelebrationActive = true;
+        hasShownApprovalCelebration = true;
+        try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
         stopPendingApprovalPolling();
 
         console.log('[Celebration] Approval confirmed! Showing sparkling celebration effect...');
@@ -5308,7 +5341,6 @@
         user.booking.status = 'approved';
         user.booking.approvalStatus = 'approved';
         user.booking.bookingStatus = 'approved';
-        var finishTimestamp = parseBookingExpiry(user.booking);
         user.booking.endTimestamp = finishTimestamp;
 
         // Persist to all session and customer storages
@@ -5976,6 +6008,9 @@
           submitBtn.disabled = true;
         }
 
+        hasShownApprovalCelebration = false;
+        try { sessionStorage.removeItem('sts_celebration_shown'); } catch (_) {}
+
         var booking = {
           startDate: sDate,
           startTime: sTime,
@@ -6261,7 +6296,12 @@
               saveCustomersDb(dbList);
             } catch (_) {}
 
-            triggerApprovalCelebration(sessionUser);
+            stopPendingApprovalPolling();
+            if (!hasShownApprovalCelebration) {
+              triggerApprovalCelebration(sessionUser);
+            } else {
+              evaluateUserAccess(sessionUser);
+            }
             return;
           } else if (result === 'rejected') {
             sessionUser.status = 'rejected';
@@ -6411,6 +6451,7 @@
       // Live Practice Countdown Clock & Simulator Unlock
       // -----------------------------------------------------------------
       function unlockPracticeSimulator(user, finishTimestamp) {
+        stopPendingApprovalPolling();
         if (isExplicitlyLoggedOut || !user) {
           switchAuthView('login');
           authOverlay.style.display = 'flex';
@@ -6421,6 +6462,7 @@
         authOverlay.style.display = 'none';
         authOverlay.style.visibility = 'hidden';
         authOverlay.style.pointerEvents = 'none';
+        if (viewPending) viewPending.style.display = 'none';
 
         // Populate User Header Badge
         userNameEl.textContent = user.name || user.email;
@@ -6571,7 +6613,9 @@
       function handleLogout() {
         console.log('[Auth] Explicit user logout initiated.');
         isExplicitlyLoggedOut = true;
+        hasShownApprovalCelebration = false;
         try {
+          sessionStorage.removeItem('sts_celebration_shown');
           sessionStorage.setItem('sts_explicit_logout', '1');
           localStorage.setItem('sts_explicit_logout', '1');
         } catch (_) {}
@@ -6643,11 +6687,12 @@
                     (normId && approvedMap[normId]);
 
           if (reg && reg.status === 'approved') {
+            stopPendingApprovalPolling();
             sessionUser.status = 'approved';
             sessionUser.approvalStatus = 'approved';
             if (sessionUser.booking) sessionUser.booking.status = 'approved';
             setSessionUser(sessionUser);
-            if (viewPending && viewPending.style.display !== 'none') {
+            if (!hasShownApprovalCelebration && viewPending && viewPending.style.display !== 'none') {
               triggerApprovalCelebration(sessionUser);
             } else {
               evaluateUserAccess(sessionUser);
@@ -6697,11 +6742,12 @@
                     (normId && approvedMap[normId]);
 
           if (reg && reg.status === 'approved' && sessionUser.status !== 'approved') {
+            stopPendingApprovalPolling();
             sessionUser.status = 'approved';
             sessionUser.approvalStatus = 'approved';
             if (sessionUser.booking) sessionUser.booking.status = 'approved';
             setSessionUser(sessionUser);
-            if (viewPending && viewPending.style.display !== 'none') {
+            if (!hasShownApprovalCelebration && viewPending && viewPending.style.display !== 'none') {
               triggerApprovalCelebration(sessionUser);
             } else {
               evaluateUserAccess(sessionUser);
@@ -6722,10 +6768,13 @@
 
             if (curStatus !== newStatus || JSON.stringify(sessionUser.booking) !== JSON.stringify(fresh.booking)) {
               setSessionUser(fresh);
-              if (newStatus === 'approved' && viewPending && viewPending.style.display !== 'none') {
-                triggerApprovalCelebration(fresh);
-              } else {
-                evaluateUserAccess(fresh);
+              if (newStatus === 'approved') {
+                stopPendingApprovalPolling();
+                if (!hasShownApprovalCelebration && viewPending && viewPending.style.display !== 'none') {
+                  triggerApprovalCelebration(fresh);
+                } else {
+                  evaluateUserAccess(fresh);
+                }
               }
             }
           }

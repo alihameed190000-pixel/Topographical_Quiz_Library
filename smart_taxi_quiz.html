@@ -5298,6 +5298,27 @@
         if (isBlockedDummyEmail(email)) return;
         var docId = getCandidateDocId(email);
 
+        // 1. Instant check against local/cross-tab approved registry
+        try {
+          var localReg = getApprovedRegistry();
+          if (localReg && (localReg[email] || localReg[docId])) {
+            var localMatch = localReg[email] || localReg[docId];
+            if (localMatch && (localMatch.status === 'approved' || localMatch.approvalStatus === 'approved')) {
+              console.log('[Pending Polling] Candidate approval confirmed in local registry for:', email);
+              stopPendingApprovalPolling();
+              hasShownApprovalCelebration = true;
+              try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
+              sessionUser.status = 'approved';
+              sessionUser.approvalStatus = 'approved';
+              sessionUser.bookingStatus = 'approved';
+              setSessionUser(sessionUser);
+              triggerApprovalCelebration(sessionUser);
+              return;
+            }
+          }
+        } catch (_) {}
+
+        // 2. Direct Firestore REST Check (GET is fully operational HTTP 200 OK)
         var pollUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
           '/databases/(default)/documents/signups/' + docId + '?t=' + Date.now();
 
@@ -5307,12 +5328,17 @@
             var docJson = await resp.json();
             if (isApprovedInFirestoreDoc(docJson)) {
               console.log('[Pending Polling] Candidate approval confirmed in Firestore for:', email);
-              // KILL POLLING IMMEDIATELY
               stopPendingApprovalPolling();
+              hasShownApprovalCelebration = true;
+              try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
               var unwrapped = unwrapFirestoreDoc(docJson);
               if (unwrapped && unwrapped.booking) {
                 sessionUser.booking = unwrapped.booking;
               }
+              sessionUser.status = 'approved';
+              sessionUser.approvalStatus = 'approved';
+              sessionUser.bookingStatus = 'approved';
+              setSessionUser(sessionUser);
               triggerApprovalCelebration(sessionUser);
               return;
             }
@@ -5327,6 +5353,70 @@
           }
         } catch (pollErr) {
           console.warn('[Pending Polling] Firestore REST poll warning:', pollErr);
+        }
+
+        // 3. Multi-Cloud Failover: Check Secondary Cloud Approvals Registry (CLOUD_APPROVALS_URL)
+        try {
+          var appController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          var appTimeout = appController ? setTimeout(function () { appController.abort(); }, 2500) : null;
+          var appResp = await fetch(CLOUD_APPROVALS_URL, {
+            cache: 'no-store',
+            signal: appController ? appController.signal : undefined
+          });
+          if (appTimeout) clearTimeout(appTimeout);
+          if (appResp && appResp.ok) {
+            var appJson = await appResp.json();
+            var appData = (appJson && appJson.data) || {};
+            var appMatch = appData[email] || appData[docId];
+            if (appMatch && (appMatch.status === 'approved' || appMatch.approvalStatus === 'approved')) {
+              console.log('[Pending Polling] Candidate approval confirmed in Secondary Cloud Approvals for:', email);
+              stopPendingApprovalPolling();
+              hasShownApprovalCelebration = true;
+              try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
+              sessionUser.status = 'approved';
+              sessionUser.approvalStatus = 'approved';
+              sessionUser.bookingStatus = 'approved';
+              setSessionUser(sessionUser);
+              triggerApprovalCelebration(sessionUser);
+              return;
+            }
+          }
+        } catch (appErr) {
+          console.warn('[Pending Polling] Cloud Approvals check warning:', appErr);
+        }
+
+        // 4. Multi-Cloud Failover: Check Secondary Cloud Candidates Registry (CLOUD_CANDIDATES_URL)
+        try {
+          var candController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          var candTimeout = candController ? setTimeout(function () { candController.abort(); }, 2500) : null;
+          var candResp = await fetch(CLOUD_CANDIDATES_URL, {
+            cache: 'no-store',
+            signal: candController ? candController.signal : undefined
+          });
+          if (candTimeout) clearTimeout(candTimeout);
+          if (candResp && candResp.ok) {
+            var candJson = await candResp.json();
+            var cMap = (candJson && candJson.data && candJson.data.candidates) || {};
+            var cMatch = cMap[email] || cMap[docId];
+            if (cMatch) {
+              var cSt = String(cMatch.status || cMatch.approvalStatus || (cMatch.booking && cMatch.booking.status) || '').toLowerCase().trim();
+              if (cSt === 'approved') {
+                console.log('[Pending Polling] Candidate approval confirmed in Cloud Candidates Registry for:', email);
+                stopPendingApprovalPolling();
+                hasShownApprovalCelebration = true;
+                try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
+                if (cMatch.booking) sessionUser.booking = cMatch.booking;
+                sessionUser.status = 'approved';
+                sessionUser.approvalStatus = 'approved';
+                sessionUser.bookingStatus = 'approved';
+                setSessionUser(sessionUser);
+                triggerApprovalCelebration(sessionUser);
+                return;
+              }
+            }
+          }
+        } catch (candErr) {
+          console.warn('[Pending Polling] Cloud Candidates check warning:', candErr);
         }
       }
 
@@ -5738,17 +5828,23 @@
         // Store active session
         setSessionUser(user);
 
-        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API with automatic offline retry queue
+        // 1. Direct Primary Firestore REST (gracefully catches 429 quota exhaustion)
         try {
-          showAuthAlert('Saving candidate registration to Firestore cloud database...', 'info');
+          showAuthAlert('Saving candidate registration to cloud database...', 'info');
           var fsRes = await saveCandidateToFirestoreRest(user);
           if (fsRes && fsRes.id) {
             user.firestoreDocId = fsRes.id;
             saveCustomersDb(db);
           }
+        } catch (fsErr) {
+          console.warn('[Signup] Firestore direct REST warning (429/quota):', fsErr);
+        }
+
+        // 2. Dual-Cloud Failover: Secondary Shared Cloud Registry (ALWAYS runs even if Firestore 429!)
+        try {
           await syncCustomerToCloud(user);
-        } catch (syncErr) {
-          console.warn('[Signup] Firestore direct REST warning (queued for automatic retry):', syncErr);
+        } catch (cloudErr) {
+          console.warn('[Signup] Secondary Cloud Registry sync warning:', cloudErr);
           queueCandidateForCloudSync(user);
         } finally {
           if (submitBtn) {
@@ -6067,17 +6163,23 @@
         sessionUser.bookingStatus = 'pending';
         setSessionUser(sessionUser);
 
-        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API with automatic offline retry queue
+        // 1. Direct Primary Firestore REST (gracefully catches 429 quota exhaustion)
         try {
-          showAuthAlert('Transmitting booking request to Firestore cloud database...', 'info');
+          showAuthAlert('Transmitting booking request to cloud database...', 'info');
           var fsRes = await saveCandidateToFirestoreRest(db[uIdx]);
           if (fsRes && fsRes.id) {
             db[uIdx].firestoreDocId = fsRes.id;
             saveCustomersDb(db);
           }
+        } catch (fsErr) {
+          console.warn('[Booking] Firestore direct REST warning (429/quota):', fsErr);
+        }
+
+        // 2. Dual-Cloud Failover: Secondary Shared Cloud Registry (ALWAYS runs even if Firestore 429!)
+        try {
           await syncCustomerToCloud(db[uIdx]);
-        } catch (syncErr) {
-          console.warn('[Booking] Firestore direct REST warning (queued for automatic retry):', syncErr);
+        } catch (cloudErr) {
+          console.warn('[Booking] Secondary Cloud Registry sync warning:', cloudErr);
           queueCandidateForCloudSync(db[uIdx]);
         } finally {
           if (submitBtn) {

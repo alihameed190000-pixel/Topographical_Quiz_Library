@@ -4778,14 +4778,105 @@
         } catch (_) {}
 
         var overallSuccess = fbDone || cloudDone;
-        if (overallSuccess) {
-          showAuthAlert('✅ Cloud Synced: Candidate account successfully stored.', 'success');
+        if (fbDone) {
+          try {
+            var q = getPendingSyncQueue();
+            var filtered = q.filter(function (item) {
+              return String(item.email || '').trim().toLowerCase() !== normEmail;
+            });
+            if (filtered.length !== q.length) {
+              if (filtered.length === 0) localStorage.removeItem(QUEUE_STORAGE_KEY);
+              else localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(filtered));
+            }
+          } catch (_) {}
+          showAuthAlert('✅ Cloud Synced: Candidate account successfully stored in cloud.', 'success');
         } else {
-          showAuthAlert('❌ Cloud Sync Warning: ' + (fbErrorMsg || 'Unable to reach cloud servers'), 'error');
+          queueCandidateForCloudSync(syncPayload);
+          showAuthAlert('⏳ Queued: Candidate recorded locally; syncing to cloud...', 'info');
         }
 
         return { success: overallSuccess, firebase: fbDone, cloud: cloudDone, error: fbErrorMsg };
       }
+
+      // -----------------------------------------------------------------
+      // Bulletproof Offline Sync Queue with 5-Second Automatic Retries
+      // -----------------------------------------------------------------
+      var QUEUE_STORAGE_KEY = 'sts_pending_sync_queue';
+      var _isFlushingSyncQueue = false;
+
+      function getPendingSyncQueue() {
+        try {
+          var raw = localStorage.getItem(QUEUE_STORAGE_KEY);
+          if (raw) {
+            var arr = JSON.parse(raw);
+            if (Array.isArray(arr)) return arr;
+          }
+        } catch (_) {}
+        return [];
+      }
+
+      function queueCandidateForCloudSync(candidateRecord) {
+        if (!candidateRecord || !candidateRecord.email) return;
+        var email = String(candidateRecord.email).trim().toLowerCase();
+        if (isBlockedDummyEmail(email)) return;
+        try {
+          var queue = getPendingSyncQueue();
+          var existingIdx = queue.findIndex(function (item) {
+            return String(item.email || '').trim().toLowerCase() === email;
+          });
+          if (existingIdx !== -1) {
+            queue[existingIdx] = Object.assign({}, queue[existingIdx], candidateRecord, { updatedAt: Date.now() });
+          } else {
+            queue.push(Object.assign({}, candidateRecord, { queuedAt: Date.now() }));
+          }
+          localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(queue));
+          console.log('[Sync Queue] Queued candidate for retry:', email, 'Queue length:', queue.length);
+        } catch (e) {
+          console.warn('[Sync Queue] Failed to queue candidate:', e);
+        }
+      }
+
+      async function flushPendingCloudSyncQueue() {
+        if (_isFlushingSyncQueue) return;
+        var queue = getPendingSyncQueue();
+        if (!queue || queue.length === 0) return;
+
+        _isFlushingSyncQueue = true;
+        console.log('[Sync Queue] Attempting to flush pending queue of ' + queue.length + ' item(s)...');
+        var remaining = [];
+
+        for (var i = 0; i < queue.length; i++) {
+          var cand = queue[i];
+          if (!cand || !cand.email) continue;
+          try {
+            var res = await saveCandidateToFirestoreRest(cand);
+            if (res && res.id) {
+              console.log('[Sync Queue] Successfully synced queued candidate to Firestore:', cand.email);
+              try { await syncCustomerToCloud(cand); } catch (_) {}
+            } else {
+              remaining.push(cand);
+            }
+          } catch (err) {
+            console.warn('[Sync Queue] Retry failed for ' + cand.email + ', will retry in 5s:', err);
+            remaining.push(cand);
+          }
+        }
+
+        try {
+          if (remaining.length === 0) {
+            localStorage.removeItem(QUEUE_STORAGE_KEY);
+            console.log('[Sync Queue] All pending items successfully synchronized to cloud!');
+          } else {
+            localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(remaining));
+          }
+        } catch (_) {}
+
+        _isFlushingSyncQueue = false;
+      }
+
+      // Automatically retry every 5 seconds until confirmed successful
+      setInterval(flushPendingCloudSyncQueue, 5000);
+      window.addEventListener('online', flushPendingCloudSyncQueue);
 
       var _isAutoSyncingToFirestore = false;
       async function autoSyncLocalCustomersToFirestore() {
@@ -4846,6 +4937,7 @@
               await saveCandidateToFirestoreRest(cand);
             } catch (err) {
               console.warn('[Auto-Sync Real Customer] Upload exception for:', cand.email, err);
+              queueCandidateForCloudSync(cand);
             }
           }
         } catch (e) {
@@ -5584,7 +5676,7 @@
         // Store active session
         setSessionUser(user);
 
-        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API (guaranteed write with explicit error alerting)
+        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API with automatic offline retry queue
         try {
           showAuthAlert('Saving candidate registration to Firestore cloud database...', 'info');
           var fsRes = await saveCandidateToFirestoreRest(user);
@@ -5594,8 +5686,8 @@
           }
           await syncCustomerToCloud(user);
         } catch (syncErr) {
-          console.error('[Signup] Firestore direct REST error:', syncErr);
-          alert('Unable to sync registration to cloud: ' + (syncErr.message || syncErr) + '\nPlease check your internet connection.');
+          console.warn('[Signup] Firestore direct REST warning (queued for automatic retry):', syncErr);
+          queueCandidateForCloudSync(user);
         } finally {
           if (submitBtn) {
             submitBtn.textContent = origBtnText;
@@ -5910,7 +6002,7 @@
         sessionUser.bookingStatus = 'pending';
         setSessionUser(sessionUser);
 
-        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API (guaranteed write with explicit error alerting)
+        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API with automatic offline retry queue
         try {
           showAuthAlert('Transmitting booking request to Firestore cloud database...', 'info');
           var fsRes = await saveCandidateToFirestoreRest(db[uIdx]);
@@ -5920,8 +6012,8 @@
           }
           await syncCustomerToCloud(db[uIdx]);
         } catch (syncErr) {
-          console.error('[Booking] Firestore direct REST error:', syncErr);
-          alert('Unable to sync booking to cloud: ' + (syncErr.message || syncErr) + '\nPlease check your internet connection.');
+          console.warn('[Booking] Firestore direct REST warning (queued for automatic retry):', syncErr);
+          queueCandidateForCloudSync(db[uIdx]);
         } finally {
           if (submitBtn) {
             submitBtn.textContent = origBtnText;

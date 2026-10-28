@@ -26,7 +26,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBju",
+      apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBjU",
       authDomain: "smart-taxi-quiz.firebaseapp.com",
       projectId: "smart-taxi-quiz",
       storageBucket: "smart-taxi-quiz.firebasestorage.app",
@@ -4394,7 +4394,7 @@
       // Official Firebase Firestore Integration (smart-taxi-quiz)
       // -----------------------------------------------------------------
       const firebaseConfig = {
-        apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBju",
+        apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBjU",
         authDomain: "smart-taxi-quiz.firebaseapp.com",
         projectId: "smart-taxi-quiz",
         storageBucket: "smart-taxi-quiz.firebasestorage.app",
@@ -4403,106 +4403,46 @@
         measurementId: "G-ETTBWVSEH8"
       };
 
-      var firestoreDb = null;
-      try {
-        if (typeof firebase !== 'undefined' && firebase.initializeApp) {
-          if (!firebase.apps || !firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-          }
-          firestoreDb = firebase.firestore();
-        }
-      } catch (e) {
-        console.warn('[Firebase Compat Init]', e);
+      function getCandidateDocId(email) {
+        return encodeURIComponent((email || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_'));
       }
 
-      function getDb() {
-        return window.firestoreDb || firestoreDb;
-      }
+      async function saveCandidateToFirestoreRest(candidateRecord) {
+        if (!candidateRecord || !candidateRecord.email) {
+          throw new Error('Candidate record has no email address.');
+        }
+        var email = candidateRecord.email.trim().toLowerCase();
+        var docId = getCandidateDocId(email);
+        var docUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+          '/databases/(default)/documents/signups/' + docId;
 
-      function collection(database, colName) {
-        if (window.collection && window.firestoreDb) {
-          return window.collection(window.firestoreDb, colName);
-        }
-        var activeDb = database || getDb();
-        if (activeDb && typeof activeDb.collection === 'function') {
-          return activeDb.collection(colName);
-        }
-        return { name: colName };
-      }
+        var payload = {
+          fields: {
+            payloadJson: { stringValue: JSON.stringify(candidateRecord) },
+            email: { stringValue: email },
+            name: { stringValue: candidateRecord.name || '' },
+            phone: { stringValue: candidateRecord.phone || '' },
+            status: { stringValue: candidateRecord.status || candidateRecord.approvalStatus || 'pending' },
+            approvalStatus: { stringValue: candidateRecord.approvalStatus || candidateRecord.status || 'pending' },
+            bookingStatus: { stringValue: candidateRecord.bookingStatus || 'pending' },
+            createdAt: { integerValue: String(candidateRecord.createdAt || Date.now()) },
+            updatedAt: { integerValue: String(Date.now()) }
+          }
+        };
 
-      async function addDoc(colRef, data) {
-        // 1. Official Firebase Modular SDK
-        if (window.addDoc && window.collection && window.firestoreDb) {
-          try {
-            var targetCol = (colRef && colRef.type === 'collection') ? colRef : window.collection(window.firestoreDb, "signups");
-            var res = await window.addDoc(targetCol, data);
-            console.log('[Firestore addDoc Modular] Signups doc written:', res.id);
-            return res;
-          } catch (mErr) {
-            console.warn('[Firestore addDoc Modular Exception]:', mErr);
-          }
-        }
-        // 2. Official Firebase Compat SDK
-        if (colRef && typeof colRef.add === 'function') {
-          try {
-            var res2 = await colRef.add(data);
-            console.log('[Firestore colRef.add] Signups doc written:', res2.id);
-            return res2;
-          } catch (cErr) {
-            console.warn('[Firestore colRef.add Exception]:', cErr);
-          }
-        }
-        var activeDb = getDb();
-        if (activeDb && typeof activeDb.collection === 'function') {
-          try {
-            var res3 = await activeDb.collection("signups").add(data);
-            console.log('[Firestore db.collection.add] Signups doc written:', res3.id);
-            return res3;
-          } catch (dbErr) {
-            console.warn('[Firestore db.collection.add Exception]:', dbErr);
-          }
-        }
-        // 3. Direct Firestore REST Fallback
-        return await addDocViaRest("signups", data);
-      }
+        var resp = await fetch(docUrl, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-      async function addDocViaRest(colName, data) {
-        try {
-          var fields = {};
-          Object.keys(data).forEach(function (k) {
-            var v = data[k];
-            if (typeof v === 'string') fields[k] = { stringValue: v };
-            else if (typeof v === 'number') {
-              if (Number.isInteger(v)) fields[k] = { integerValue: v.toString() };
-              else fields[k] = { doubleValue: v };
-            } else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
-            else if (v && typeof v === 'object') {
-              var subFields = {};
-              Object.keys(v).forEach(function (sk) {
-                var sv = v[sk];
-                if (typeof sv === 'string') subFields[sk] = { stringValue: sv };
-                else if (typeof sv === 'number') subFields[sk] = { integerValue: sv.toString() };
-                else if (typeof sv === 'boolean') subFields[sk] = { booleanValue: sv };
-              });
-              fields[k] = { mapValue: { fields: subFields } };
-            }
-          });
-          var resp = await fetch('https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId + '/databases/(default)/documents/' + colName, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fields: fields })
-          });
-          if (resp && resp.ok) {
-            var json = await resp.json();
-            var parts = (json.name || '').split('/');
-            var docId = parts[parts.length - 1];
-            console.log('[Firestore REST addDoc] Signups doc written:', docId);
-            return { id: docId };
-          }
-        } catch (restErr) {
-          console.warn('[Firestore REST Exception]:', restErr);
+        if (!resp.ok) {
+          var errText = await resp.text();
+          throw new Error('Firestore REST write failed (' + resp.status + '): ' + errText);
         }
-        return { id: 'local_' + Date.now() };
+        var json = await resp.json();
+        console.log('[Firestore Direct REST] Successfully stored candidate doc:', docId);
+        return { id: docId, data: json };
       }
 
       var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a17f6b5e462e76';
@@ -4532,10 +4472,10 @@
 
         var fbDone = false;
         try {
-          var docRef = await addDoc(collection(getDb(), "signups"), syncPayload);
-          if (docRef && docRef.id) {
+          var res = await saveCandidateToFirestoreRest(syncPayload);
+          if (res && res.id) {
             fbDone = true;
-            customer.firestoreDocId = docRef.id;
+            customer.firestoreDocId = res.id;
           }
         } catch (fbErr) {
           console.warn('[Firestore Sync] Exception:', fbErr);
@@ -4580,45 +4520,34 @@
 
       async function fetchCandidatesFromCloud() {
         var signupsList = [];
-        // 1. Fetch from Firestore "signups" collection
-        if (window.getDocs && window.collection && window.firestoreDb) {
-          try {
-            var snap = await window.getDocs(window.collection(window.firestoreDb, "signups"));
-            snap.forEach(function (docSnap) {
-              var d = docSnap.data();
-              d.firestoreDocId = docSnap.id;
-              signupsList.push(d);
-            });
-          } catch (mErr) {
-            console.warn('[Firestore fetchCandidates Modular error]:', mErr);
-          }
-        }
-        if (signupsList.length === 0) {
-          var activeDb = getDb();
-          if (activeDb && typeof activeDb.collection === 'function') {
-            try {
-              var snap2 = await activeDb.collection("signups").get();
-              snap2.forEach(function (docSnap) {
-                var d = docSnap.data();
-                d.firestoreDocId = docSnap.id;
-                signupsList.push(d);
+        // 1. Direct Primary Fetch from Firestore REST API with cache-busting
+        try {
+          var restUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+            '/databases/(default)/documents/signups?pageSize=300&t=' + Date.now();
+          var resp = await fetch(restUrl, { cache: 'no-store' });
+          if (resp && resp.ok) {
+            var json = await resp.json();
+            if (json.documents && Array.isArray(json.documents)) {
+              json.documents.forEach(function (docItem) {
+                var cand = null;
+                if (docItem.fields && docItem.fields.payloadJson && docItem.fields.payloadJson.stringValue) {
+                  try {
+                    cand = JSON.parse(docItem.fields.payloadJson.stringValue);
+                  } catch (_) {}
+                }
+                if (!cand) {
+                  cand = unwrapFirestoreDoc(docItem);
+                }
+                if (cand && (cand.email || cand.name || cand.id)) {
+                  var nameParts = (docItem.name || '').split('/');
+                  cand.firestoreDocId = nameParts[nameParts.length - 1];
+                  signupsList.push(cand);
+                }
               });
-            } catch (_) {}
-          }
-        }
-        if (signupsList.length === 0) {
-          try {
-            var restResp = await fetch('https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId + '/databases/(default)/documents/signups', { cache: 'no-store' });
-            if (restResp && restResp.ok) {
-              var restJson = await restResp.json();
-              if (restJson && restJson.documents) {
-                restJson.documents.forEach(function (docItem) {
-                  var unwrapped = unwrapFirestoreDoc(docItem);
-                  if (unwrapped) signupsList.push(unwrapped);
-                });
-              }
             }
-          } catch (_) {}
+          }
+        } catch (rErr) {
+          console.warn('[Firestore Direct REST fetchCandidates error]:', rErr);
         }
 
         if (signupsList.length > 0) {
@@ -4626,12 +4555,12 @@
           return signupsList;
         }
 
-        // Fallback to CLOUD_CANDIDATES_URL
+        // Secondary fallback to CLOUD_CANDIDATES_URL
         try {
-          var resp = await fetch(CLOUD_CANDIDATES_URL, { cache: 'no-store' });
-          if (resp && resp.ok) {
-            var json = await resp.json();
-            var cloudMap = (json && json.data && json.data.candidates) || {};
+          var sResp = await fetch(CLOUD_CANDIDATES_URL, { cache: 'no-store' });
+          if (sResp && sResp.ok) {
+            var sJson = await sResp.json();
+            var cloudMap = (sJson && sJson.data && sJson.data.candidates) || {};
             var list = Object.keys(cloudMap).map(function (k) { return cloudMap[k]; });
             if (list.length > 0) {
               mergeCloudCandidatesIntoDb(list);
@@ -4968,30 +4897,18 @@
         // Store active session
         setSessionUser(user);
 
-        // MANDATORY AWAIT CLOUD WRITE: Ensure candidate registration is written to Firestore "signups" collection via addDoc
+        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API (guaranteed write with explicit error alerting)
         try {
-          showAuthAlert('Saving candidate registration to Firestore...', 'info');
-          var signupDocData = {
-            name: user.name,
-            phone: user.phone,
-            email: user.email,
-            password: user.password,
-            status: 'pending',
-            approvalStatus: 'pending',
-            bookingStatus: 'pending',
-            booking: null,
-            createdAt: user.createdAt || Date.now(),
-            type: 'registration',
-            timestamp: new Date().toISOString()
-          };
-          var docRef = await addDoc(collection(getDb(), "signups"), signupDocData);
-          if (docRef && docRef.id) {
-            user.firestoreDocId = docRef.id;
+          showAuthAlert('Saving candidate registration to Firestore cloud database...', 'info');
+          var fsRes = await saveCandidateToFirestoreRest(user);
+          if (fsRes && fsRes.id) {
+            user.firestoreDocId = fsRes.id;
             saveCustomersDb(db);
           }
           await syncCustomerToCloud(user);
         } catch (syncErr) {
-          console.warn('[Signup] Firestore addDoc sync error:', syncErr);
+          console.error('[Signup] Firestore direct REST error:', syncErr);
+          alert('Unable to sync registration to cloud: ' + (syncErr.message || syncErr) + '\nPlease check your internet connection.');
         } finally {
           if (submitBtn) {
             submitBtn.textContent = origBtnText;
@@ -5264,31 +5181,18 @@
         sessionUser.bookingStatus = 'pending';
         setSessionUser(sessionUser);
 
-        // MANDATORY AWAIT CLOUD WRITE: Ensure booking record is written to Firestore "signups" collection via addDoc
+        // MANDATORY AWAIT CLOUD WRITE: Direct Firestore REST API (guaranteed write with explicit error alerting)
         try {
-          showAuthAlert('Transmitting booking request to Firestore...', 'info');
-          var bookingDocData = {
-            name: db[uIdx].name || sessionUser.name,
-            phone: db[uIdx].phone || sessionUser.phone,
-            email: db[uIdx].email || sessionUser.email,
-            password: db[uIdx].password || sessionUser.password,
-            status: 'pending',
-            approvalStatus: 'pending',
-            bookingStatus: 'pending',
-            booking: booking,
-            createdAt: db[uIdx].createdAt || Date.now(),
-            bookedAt: Date.now(),
-            type: 'booking',
-            timestamp: new Date().toISOString()
-          };
-          var docRef = await addDoc(collection(getDb(), "signups"), bookingDocData);
-          if (docRef && docRef.id) {
-            db[uIdx].firestoreDocId = docRef.id;
+          showAuthAlert('Transmitting booking request to Firestore cloud database...', 'info');
+          var fsRes = await saveCandidateToFirestoreRest(db[uIdx]);
+          if (fsRes && fsRes.id) {
+            db[uIdx].firestoreDocId = fsRes.id;
             saveCustomersDb(db);
           }
           await syncCustomerToCloud(db[uIdx]);
         } catch (syncErr) {
-          console.warn('[Booking] Firestore addDoc sync error:', syncErr);
+          console.error('[Booking] Firestore direct REST error:', syncErr);
+          alert('Unable to sync booking to cloud: ' + (syncErr.message || syncErr) + '\nPlease check your internet connection.');
         } finally {
           if (submitBtn) {
             submitBtn.textContent = origBtnText;

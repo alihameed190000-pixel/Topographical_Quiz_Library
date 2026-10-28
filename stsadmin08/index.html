@@ -28,7 +28,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBju",
+      apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBjU",
       authDomain: "smart-taxi-quiz.firebaseapp.com",
       projectId: "smart-taxi-quiz",
       storageBucket: "smart-taxi-quiz.firebasestorage.app",
@@ -1428,7 +1428,7 @@
       var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5';
 
       const firebaseConfig = {
-        apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBju",
+        apiKey: "AIzaSyCDCZG43FSOykF0yElpBqAu_cnMruZBjU",
         authDomain: "smart-taxi-quiz.firebaseapp.com",
         projectId: "smart-taxi-quiz",
         storageBucket: "smart-taxi-quiz.firebasestorage.app",
@@ -1436,6 +1436,10 @@
         appId: "1:461829774411:web:ab28fbaf8c692c547041ce",
         measurementId: "G-ETTBWVSEH8"
       };
+
+      function getCandidateDocId(email) {
+        return encodeURIComponent((email || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_'));
+      }
 
       function initFirebaseApp() {
         if (typeof firebase === 'undefined' || !firebase.initializeApp) return null;
@@ -1483,8 +1487,38 @@
 
       async function fetchSignupsFromFirestore() {
         var results = [];
-        // A. Modular SDK getDocs
-        if (window.getDocs && window.collection && window.firestoreDb) {
+        // 1. Direct Primary Fetch from Firestore REST API with cache-busting
+        try {
+          var restUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+            '/databases/(default)/documents/signups?pageSize=300&t=' + Date.now();
+          var resp = await fetch(restUrl, { cache: 'no-store' });
+          if (resp && resp.ok) {
+            var json = await resp.json();
+            if (json.documents && Array.isArray(json.documents)) {
+              json.documents.forEach(function (docItem) {
+                var cand = null;
+                if (docItem.fields && docItem.fields.payloadJson && docItem.fields.payloadJson.stringValue) {
+                  try {
+                    cand = JSON.parse(docItem.fields.payloadJson.stringValue);
+                  } catch (_) {}
+                }
+                if (!cand) {
+                  cand = unwrapFirestoreDoc(docItem);
+                }
+                if (cand && (cand.email || cand.name || cand.id)) {
+                  var nameParts = (docItem.name || '').split('/');
+                  cand.firestoreDocId = nameParts[nameParts.length - 1];
+                  results.push(cand);
+                }
+              });
+            }
+          }
+        } catch (rErr) {
+          console.warn('[Firestore Admin REST get error]:', rErr);
+        }
+
+        // 2. Modular SDK fallback
+        if (results.length === 0 && window.getDocs && window.collection && window.firestoreDb) {
           try {
             var snap = await window.getDocs(window.collection(window.firestoreDb, "signups"));
             snap.forEach(function (docSnap) {
@@ -1494,46 +1528,7 @@
                 results.push(d);
               }
             });
-            if (results.length > 0) return results;
-          } catch (mErr) {
-            console.warn('[Firestore Admin Modular getDocs error]:', mErr);
-          }
-        }
-
-        // B. Compat SDK get
-        var fbApp = initFirebaseApp();
-        if (fbApp && typeof firebase.firestore === 'function') {
-          try {
-            var snap2 = await firebase.firestore().collection('signups').get();
-            if (snap2 && snap2.docs) {
-              snap2.docs.forEach(function (docSnap) {
-                var d = docSnap.data();
-                if (d) {
-                  d.firestoreDocId = docSnap.id;
-                  results.push(d);
-                }
-              });
-              if (results.length > 0) return results;
-            }
-          } catch (cErr) {
-            console.warn('[Firestore Admin Compat get error]:', cErr);
-          }
-        }
-
-        // C. Direct REST API fallback
-        try {
-          var restResp = await fetch('https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId + '/databases/(default)/documents/signups', { cache: 'no-store' });
-          if (restResp && restResp.ok) {
-            var restJson = await restResp.json();
-            if (restJson && restJson.documents) {
-              restJson.documents.forEach(function (docItem) {
-                var unwrapped = unwrapFirestoreDoc(docItem);
-                if (unwrapped) results.push(unwrapped);
-              });
-            }
-          }
-        } catch (rErr) {
-          console.warn('[Firestore Admin REST get error]:', rErr);
+          } catch (_) {}
         }
 
         return results;
@@ -1559,27 +1554,10 @@
             console.warn('[Firestore Signups fetch error]:', fsErr);
           }
 
-          // 2. Fetch from legacy Firebase RTDB if needed
-          try {
-            var fbApp = initFirebaseApp();
-            if (fbApp && typeof firebase.database === 'function') {
-              var rSnap = await firebase.database().ref('customers').once('value');
-              if (rSnap && rSnap.val()) {
-                var rVal = rSnap.val();
-                Object.keys(rVal).forEach(function (k) {
-                  var data = rVal[k];
-                  if (data && (data.email || data.id)) cloudCandidates.push(data);
-                });
-              }
-            }
-          } catch (fbErr) {
-            console.warn('[Firebase Admin RTDB Fetch warning]:', fbErr);
-          }
-
-          // 3. Fallback to Primary Shared Cloud Registry (api.restful-api.dev)
+          // 2. Fallback to Primary Shared Cloud Registry (api.restful-api.dev)
           try {
             var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 4500) : null;
+            var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3500) : null;
             var resp = await fetch(CLOUD_CANDIDATES_URL, {
               cache: 'no-store',
               signal: controller ? controller.signal : undefined
@@ -1602,7 +1580,7 @@
             console.warn('[Cloud Registry] Admin fetch warning:', cloudErr);
           }
 
-          // Merge into admin localStorage DB
+          // Merge into admin localStorage DB and re-render
           if (cloudCandidates.length > 0) {
             var localCustomers = getCustomersDb();
             var customerMap = {};
@@ -1644,7 +1622,7 @@
               }
             });
 
-            if (hasUpdates) {
+            if (hasUpdates || localCustomers.length !== Object.keys(customerMap).length) {
               var merged = Object.keys(customerMap).map(function (k) { return customerMap[k]; });
               merged.sort(function (a, b) {
                 return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
@@ -1659,91 +1637,69 @@
       }
 
       async function syncCustomerStatusToCloud(customerId, email, newStatus, candidateRecord) {
-        var normEmail = String(email || '').trim().toLowerCase();
-        var normId = String(customerId || '').trim().toLowerCase();
-        var normKey = normEmail || normId;
-        var docId = candidateRecord && candidateRecord.firestoreDocId;
+        var normEmail = String(email || (candidateRecord && candidateRecord.email) || '').trim().toLowerCase();
+        var docId = getCandidateDocId(normEmail || customerId);
 
-        // 1. Firestore "signups" sync
-        try {
-          // A. Modular updateDoc by document ID
-          if (window.updateDoc && window.doc && window.firestoreDb && docId) {
-            try {
-              await window.updateDoc(window.doc(window.firestoreDb, "signups", docId), {
-                status: newStatus,
-                approvalStatus: newStatus,
-                bookingStatus: newStatus,
-                updatedAt: Date.now()
-              });
-              console.log('[Firestore Admin] Updated signups doc via modular SDK:', docId, newStatus);
-            } catch (uErr) {
-              console.warn('[Firestore Admin] modular updateDoc error:', uErr);
+        // Ensure candidateRecord has all updated statuses and timestamps
+        if (candidateRecord) {
+          candidateRecord.status = newStatus;
+          candidateRecord.approvalStatus = newStatus;
+          candidateRecord.bookingStatus = newStatus;
+          candidateRecord.updatedAt = Date.now();
+          if (candidateRecord.booking) {
+            candidateRecord.booking.status = newStatus;
+            candidateRecord.booking.approvalStatus = newStatus;
+            candidateRecord.booking.bookingStatus = newStatus;
+            if (newStatus === 'approved') {
+              candidateRecord.booking.approvedAt = Date.now();
+              var days = Number(candidateRecord.booking.totalDays) > 0 ? Number(candidateRecord.booking.totalDays) : 1;
+              candidateRecord.booking.endTimestamp = Date.now() + (days * 86400000);
             }
           }
-          // B. Compat firestore update by document ID
-          var fbApp = initFirebaseApp();
-          if (fbApp && typeof firebase.firestore === 'function' && docId) {
-            try {
-              await firebase.firestore().collection('signups').doc(docId).update({
-                status: newStatus,
-                approvalStatus: newStatus,
-                bookingStatus: newStatus,
-                updatedAt: Date.now()
-              });
-              console.log('[Firestore Admin] Updated signups doc via compat SDK:', docId, newStatus);
-            } catch (_) {}
+        }
+
+        // 1. Direct Primary PATCH to Firestore REST API
+        try {
+          var docUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+            '/databases/(default)/documents/signups/' + docId;
+
+          var payload = {
+            fields: {
+              payloadJson: { stringValue: JSON.stringify(candidateRecord || { email: normEmail, status: newStatus }) },
+              email: { stringValue: normEmail },
+              name: { stringValue: (candidateRecord && candidateRecord.name) || '' },
+              phone: { stringValue: (candidateRecord && candidateRecord.phone) || '' },
+              status: { stringValue: newStatus },
+              approvalStatus: { stringValue: newStatus },
+              bookingStatus: { stringValue: newStatus },
+              updatedAt: { integerValue: String(Date.now()) }
+            }
+          };
+
+          var patchResp = await fetch(docUrl, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (patchResp && patchResp.ok) {
+            console.log('[Firestore Direct REST] Status updated successfully for docId:', docId, newStatus);
           }
-          // C. Query by email in "signups" to ensure matching docs are updated
-          if (window.getDocs && window.query && window.collection && window.where && window.firestoreDb && normEmail) {
+
+          // Also if candidateRecord.firestoreDocId exists and is different from docId, patch that too
+          if (candidateRecord && candidateRecord.firestoreDocId && candidateRecord.firestoreDocId !== docId) {
             try {
-              var q = window.query(window.collection(window.firestoreDb, "signups"), window.where("email", "==", normEmail));
-              var qSnap = await window.getDocs(q);
-              qSnap.forEach(async function(docSnap) {
-                try {
-                  await window.updateDoc(docSnap.ref, {
-                    status: newStatus,
-                    approvalStatus: newStatus,
-                    bookingStatus: newStatus,
-                    updatedAt: Date.now()
-                  });
-                } catch (_) {}
-              });
-            } catch (_) {}
-          }
-          // D. Direct REST PATCH fallback
-          if (docId) {
-            try {
-              var patchUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
-                '/databases/(default)/documents/signups/' + docId +
-                '?updateMask.fieldPaths=status&updateMask.fieldPaths=approvalStatus&updateMask.fieldPaths=bookingStatus&updateMask.fieldPaths=updatedAt';
-              await fetch(patchUrl, {
+              var docUrlAlt = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+                '/databases/(default)/documents/signups/' + candidateRecord.firestoreDocId;
+              await fetch(docUrlAlt, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  fields: {
-                    status: { stringValue: newStatus },
-                    approvalStatus: { stringValue: newStatus },
-                    bookingStatus: { stringValue: newStatus },
-                    updatedAt: { integerValue: String(Date.now()) }
-                  }
-                })
+                body: JSON.stringify(payload)
               });
             } catch (_) {}
           }
-          // E. RTDB fallback
-          if (fbApp && typeof firebase.database === 'function') {
-            try {
-              var safeKey = normKey.replace(/[.#$[\]]/g, '_');
-              await firebase.database().ref('customers/' + safeKey).update({
-                status: newStatus,
-                approvalStatus: newStatus,
-                bookingStatus: newStatus,
-                updatedAt: Date.now()
-              });
-            } catch (_) {}
-          }
-        } catch (fbErr) {
-          console.warn('[Firebase Admin] Status sync exception:', fbErr);
+        } catch (fsErr) {
+          console.warn('[Firestore Direct REST] Status sync exception:', fsErr);
         }
 
         // 2. Cloud Registry Sync (api.restful-api.dev fallback)
@@ -1752,11 +1708,13 @@
           if (getResp && getResp.ok) {
             var getJson = await getResp.json();
             var candidatesMap = (getJson && getJson.data && getJson.data.candidates) || {};
-            var target = candidatesMap[normKey] || candidatesMap[normEmail] || candidatesMap[normId] || candidateRecord;
+            var normKey = normEmail || String(customerId || '').trim().toLowerCase();
+            var target = candidatesMap[normKey] || candidatesMap[normEmail] || candidateRecord;
             if (target) {
               target.status = newStatus;
               target.approvalStatus = newStatus;
               target.bookingStatus = newStatus;
+              target.updatedAt = Date.now();
               if (target.booking) {
                 target.booking.status = newStatus;
                 target.booking.approvalStatus = newStatus;
@@ -1767,7 +1725,6 @@
                   target.booking.endTimestamp = Date.now() + (days * 86400000);
                 }
               }
-              target.updatedAt = Date.now();
               candidatesMap[normKey] = target;
               if (normEmail && normKey !== normEmail) candidatesMap[normEmail] = target;
 
@@ -1776,9 +1733,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   name: 'sts_candidates_registry',
-                  data: {
-                    candidates: candidatesMap
-                  }
+                  data: { candidates: candidatesMap }
                 })
               });
               console.log('[Cloud Registry] Status update pushed successfully:', normKey, newStatus);
@@ -1792,7 +1747,6 @@
       var _firestoreUnsubscribe = null;
       function setupFirebaseRealtimeListener() {
         try {
-          // Modular onSnapshot on "signups" collection
           if (window.onSnapshot && window.collection && window.firestoreDb) {
             if (!_firestoreUnsubscribe) {
               _firestoreUnsubscribe = window.onSnapshot(
@@ -1805,22 +1759,6 @@
                   console.warn('[Firestore Admin Listener] onSnapshot error:', err);
                 }
               );
-            }
-          } else {
-            var fbApp = initFirebaseApp();
-            if (fbApp && typeof firebase.firestore === 'function') {
-              firebase.firestore().collection('signups').onSnapshot(function () {
-                refreshCandidatesFromCloud();
-              }, function (err) {
-                console.warn('[Firebase Listener] Firestore signups error:', err);
-              });
-            }
-            if (fbApp && typeof firebase.database === 'function') {
-              firebase.database().ref('customers').on('value', function () {
-                refreshCandidatesFromCloud();
-              }, function (err) {
-                console.warn('[Firebase Listener] RTDB error:', err);
-              });
             }
           }
         } catch (_) {}

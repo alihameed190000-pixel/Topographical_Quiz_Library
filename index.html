@@ -5531,6 +5531,9 @@
         function finishCelebration() {
           if (completed) return;
           completed = true;
+          stopPendingApprovalPolling();
+          hasShownApprovalCelebration = true;
+          try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
           overlay.style.opacity = '0';
           setTimeout(function () {
             overlay.style.display = 'none';
@@ -6452,6 +6455,8 @@
       // -----------------------------------------------------------------
       function unlockPracticeSimulator(user, finishTimestamp) {
         stopPendingApprovalPolling();
+        hasShownApprovalCelebration = true;
+        try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
         if (isExplicitlyLoggedOut || !user) {
           switchAuthView('login');
           authOverlay.style.display = 'flex';

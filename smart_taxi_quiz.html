@@ -4447,21 +4447,6 @@
           }
         } catch (_) {}
 
-        // Enforce verified candidate approvals
-        map['usman160398@gmail.com'] = {
-          status: 'approved',
-          days: 2,
-          name: 'Usman Bilal',
-          email: 'usman160398@gmail.com',
-          updatedAt: Date.now()
-        };
-        map['sahibbuttsahib00@gmail.com'] = {
-          status: 'approved',
-          days: 2,
-          name: 'buttsahib',
-          email: 'sahibbuttsahib00@gmail.com',
-          updatedAt: Date.now()
-        };
         return map;
       }
 
@@ -4472,59 +4457,6 @@
 
         // Always register the seed candidate first
         userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
-
-        // Pre-register verified real candidates as approved
-        userMap['usman160398@gmail.com'] = {
-          id: 'cust_usman_bilal_160398',
-          name: 'Usman Bilal',
-          phone: 'WhatsApp Receipt Verified',
-          email: 'usman160398@gmail.com',
-          password: 'password123',
-          status: 'approved',
-          approvalStatus: 'approved',
-          bookingStatus: 'approved',
-          booking: {
-            startDate: '2026-10-28',
-            startTime: '00:01',
-            endDate: '2026-10-30',
-            finishTime: '23:59',
-            totalDays: 2,
-            totalAmount: 20,
-            status: 'approved',
-            approvalStatus: 'approved',
-            bookingStatus: 'approved',
-            approvedAt: Date.now(),
-            endTimestamp: Date.now() + (2 * 86400000)
-          },
-          createdAt: 1730128000000,
-          updatedAt: Date.now()
-        };
-
-        userMap['sahibbuttsahib00@gmail.com'] = {
-          id: 'cust_sahibbuttsahib00',
-          name: 'buttsahib',
-          phone: 'WhatsApp Receipt Verified',
-          email: 'sahibbuttsahib00@gmail.com',
-          password: 'password123',
-          status: 'approved',
-          approvalStatus: 'approved',
-          bookingStatus: 'approved',
-          booking: {
-            startDate: '2026-10-28',
-            startTime: '00:01',
-            endDate: '2026-10-30',
-            finishTime: '23:59',
-            totalDays: 2,
-            totalAmount: 20,
-            status: 'approved',
-            approvalStatus: 'approved',
-            bookingStatus: 'approved',
-            approvedAt: Date.now(),
-            endTimestamp: Date.now() + (2 * 86400000)
-          },
-          createdAt: 1730128000000,
-          updatedAt: Date.now()
-        };
 
         rawList.forEach(function (raw) {
           try {
@@ -4544,9 +4476,7 @@
                   var exStatus = String(existing && (existing.status || existing.approvalStatus || (existing.booking && existing.booking.status)) || '').toLowerCase().trim();
 
                   var effStatus = 'pending';
-                  if (em === 'usman160398@gmail.com' || em === 'sahibbuttsahib00@gmail.com') {
-                    effStatus = 'approved';
-                  } else if (reg && (reg.status === 'approved' || reg.status === 'rejected')) {
+                  if (reg && (reg.status === 'approved' || reg.status === 'rejected')) {
                     effStatus = reg.status;
                   } else if (exStatus === 'approved' || uStatus === 'approved') {
                     effStatus = 'approved';
@@ -4566,7 +4496,8 @@
                     approvalStatus: effStatus,
                     bookingStatus: effStatus,
                     booking: u.booking || (existing && existing.booking) || null,
-                    createdAt: u.createdAt || (existing && existing.createdAt) || Date.now()
+                    createdAt: u.createdAt || (existing && existing.createdAt) || Date.now(),
+                    updatedAt: u.updatedAt || (existing && existing.updatedAt) || Date.now()
                   };
                   if (userMap[em].booking) {
                     userMap[em].booking.status = effStatus;
@@ -4576,13 +4507,6 @@
                       var days = Number(userMap[em].booking.totalDays) > 0 ? Number(userMap[em].booking.totalDays) : 2;
                       if (!userMap[em].booking.endTimestamp || isNaN(Number(userMap[em].booking.endTimestamp)) || Number(userMap[em].booking.endTimestamp) < Date.now()) {
                         userMap[em].booking.endTimestamp = Date.now() + (days * 86400000);
-                      }
-                      if (em === 'usman160398@gmail.com') {
-                        userMap[em].booking.startDate = '2026-10-28';
-                        userMap[em].booking.startTime = '00:01';
-                        userMap[em].booking.endDate = '2026-10-30';
-                        userMap[em].booking.finishTime = '23:59';
-                        userMap[em].booking.totalDays = 2;
                       }
                     }
                   }
@@ -4797,6 +4721,24 @@
       var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a184455be13e5b';
       var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/5d3b63b585dc4524a0ae800307b78acf/candidates';
 
+      async function cloudPutWithRetry(url, payload, maxAttempts) {
+        maxAttempts = maxAttempts || 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            var resp = await fetch(url, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (resp && resp.ok) return true;
+          } catch (_) {}
+          if (attempt < maxAttempts) {
+            await new Promise(function (resolve) { setTimeout(resolve, 350); });
+          }
+        }
+        return false;
+      }
+
       async function syncCustomerToCloud(customer) {
         if (!customer) return { success: false, error: 'No customer data' };
         var normEmail = String(customer.email || '').trim().toLowerCase();
@@ -4820,21 +4762,9 @@
           timestamp: new Date().toISOString()
         };
 
-        var fbDone = false;
-        var fbErrorMsg = '';
-        try {
-          var res = await saveCandidateToFirestoreRest(syncPayload);
-          if (res && res.id) {
-            fbDone = true;
-            customer.firestoreDocId = res.id;
-          }
-        } catch (fbErr) {
-          fbErrorMsg = fbErr ? (fbErr.message || String(fbErr)) : 'Unknown Firestore error';
-          console.warn('[Firestore Sync] Exception:', fbErr);
-        }
-
-        // Secondary shared cloud registry sync
         var cloudDone = false;
+
+        // 1. Secondary shared cloud candidates registry sync (CLOUD_CANDIDATES_URL)
         try {
           var existingMap = {};
           try {
@@ -4860,21 +4790,49 @@
           existingMap[normKey] = Object.assign({}, existingMap[normKey] || {}, syncPayload);
           if (normEmail && normKey !== normEmail) existingMap[normEmail] = existingMap[normKey];
 
-          var putResp = await fetch(CLOUD_CANDIDATES_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: 'sts_candidates_registry',
-              data: {
-                registryJson: JSON.stringify(existingMap),
-                updatedAt: Date.now()
-              }
-            })
-          });
-          if (putResp && putResp.ok) cloudDone = true;
+          var putOk = await cloudPutWithRetry(CLOUD_CANDIDATES_URL, {
+            name: 'sts_candidates_registry',
+            data: {
+              registryJson: JSON.stringify(existingMap),
+              updatedAt: Date.now()
+            }
+          }, 3);
+          if (putOk) cloudDone = true;
         } catch (_) {}
 
-        // Fallback shared cloud sync (crudcrud.com)
+        // 2. Secondary shared cloud approvals registry sync (CLOUD_APPROVALS_URL)
+        try {
+          var aResp = await fetch(CLOUD_APPROVALS_URL + '?_t=' + Date.now(), { cache: 'no-store' });
+          if (aResp && aResp.ok) {
+            var aJson = await aResp.json();
+            var aMap = {};
+            if (aJson && aJson.data) {
+              if (aJson.data.approvalsJson) {
+                try { aMap = JSON.parse(aJson.data.approvalsJson); } catch (_) {}
+              } else {
+                aMap = aJson.data;
+              }
+            }
+            if (!aMap[normEmail] || syncPayload.status === 'approved' || syncPayload.status === 'rejected') {
+              aMap[normEmail] = {
+                name: syncPayload.name,
+                email: normEmail,
+                status: syncPayload.status || 'pending',
+                updatedAt: Date.now()
+              };
+              var putAOk = await cloudPutWithRetry(CLOUD_APPROVALS_URL, {
+                name: 'sts_approvals_registry',
+                data: {
+                  approvalsJson: JSON.stringify(aMap),
+                  updatedAt: Date.now()
+                }
+              }, 3);
+              if (putAOk) cloudDone = true;
+            }
+          }
+        } catch (_) {}
+
+        // 3. Fallback shared cloud sync (crudcrud.com)
         try {
           var fbGet = await fetch(CLOUD_FALLBACK_URL, { cache: 'no-store' });
           if (fbGet && fbGet.ok) {
@@ -4916,182 +4874,57 @@
           }
         } catch (_) {}
 
-        var overallSuccess = fbDone || cloudDone;
-        if (fbDone) {
-          try {
-            var q = getPendingSyncQueue();
-            var filtered = q.filter(function (item) {
-              return String(item.email || '').trim().toLowerCase() !== normEmail;
-            });
-            if (filtered.length !== q.length) {
-              if (filtered.length === 0) localStorage.removeItem(QUEUE_STORAGE_KEY);
-              else localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(filtered));
-            }
-          } catch (_) {}
-          showAuthAlert('✅ Cloud Synced: Candidate account successfully stored in cloud.', 'success');
-        } else {
-          queueCandidateForCloudSync(syncPayload);
-          showAuthAlert('⏳ Queued: Candidate recorded locally; syncing to cloud...', 'info');
-        }
-
-        return { success: overallSuccess, firebase: fbDone, cloud: cloudDone, error: fbErrorMsg };
+        return { success: cloudDone, cloud: cloudDone };
       }
 
       // -----------------------------------------------------------------
-      // Bulletproof Offline Sync Queue with 5-Second Automatic Retries
+      // Guaranteed Cloud Upload with Automatic 3-Attempt Retry (500ms Apart)
       // -----------------------------------------------------------------
-      var QUEUE_STORAGE_KEY = 'sts_pending_sync_queue';
-      var _isFlushingSyncQueue = false;
+      async function uploadCustomerToCloudWithRetry(candidateRecord, maxAttempts) {
+        maxAttempts = maxAttempts || 3;
+        var normEmail = String((candidateRecord && candidateRecord.email) || '').trim().toLowerCase();
+        if (!normEmail) return { success: false, error: 'No email provided' };
 
-      function getPendingSyncQueue() {
-        try {
-          var raw = localStorage.getItem(QUEUE_STORAGE_KEY);
-          if (raw) {
-            var arr = JSON.parse(raw);
-            if (Array.isArray(arr)) return arr;
-          }
-        } catch (_) {}
-        return [];
-      }
+        for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+          var primaryOk = false;
+          var secondaryOk = false;
 
-      function queueCandidateForCloudSync(candidateRecord) {
-        if (!candidateRecord || !candidateRecord.email) return;
-        var email = String(candidateRecord.email).trim().toLowerCase();
-        if (isBlockedDummyEmail(email)) return;
-        try {
-          var queue = getPendingSyncQueue();
-          var existingIdx = queue.findIndex(function (item) {
-            return String(item.email || '').trim().toLowerCase() === email;
-          });
-          if (existingIdx !== -1) {
-            queue[existingIdx] = Object.assign({}, queue[existingIdx], candidateRecord, { updatedAt: Date.now() });
-          } else {
-            queue.push(Object.assign({}, candidateRecord, { queuedAt: Date.now() }));
-          }
-          localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(queue));
-          console.log('[Sync Queue] Queued candidate for retry:', email, 'Queue length:', queue.length);
-        } catch (e) {
-          console.warn('[Sync Queue] Failed to queue candidate:', e);
-        }
-      }
-
-      async function flushPendingCloudSyncQueue() {
-        if (_isFlushingSyncQueue) return;
-        var queue = getPendingSyncQueue();
-        if (!queue || queue.length === 0) return;
-
-        _isFlushingSyncQueue = true;
-        console.log('[Sync Queue] Attempting to flush pending queue of ' + queue.length + ' item(s)...');
-        var remaining = [];
-
-        for (var i = 0; i < queue.length; i++) {
-          var cand = queue[i];
-          if (!cand || !cand.email) continue;
+          // 1. Primary Firestore REST write attempt
           try {
-            var res = await saveCandidateToFirestoreRest(cand);
-            if (res && res.id) {
-              console.log('[Sync Queue] Successfully synced queued candidate to Firestore:', cand.email);
-              try { await syncCustomerToCloud(cand); } catch (_) {}
-            } else {
-              remaining.push(cand);
+            var fsRes = await saveCandidateToFirestoreRest(candidateRecord);
+            if (fsRes && fsRes.id) {
+              primaryOk = true;
+              candidateRecord.firestoreDocId = fsRes.id;
             }
-          } catch (err) {
-            console.warn('[Sync Queue] Retry failed for ' + cand.email + ', will retry in 5s:', err);
-            remaining.push(cand);
+          } catch (fsErr) {
+            console.warn('[Cloud Upload] Primary Firestore REST attempt ' + attempt + ':', fsErr);
+          }
+
+          // 2. Secondary Cloud write attempt (CLOUD_CANDIDATES_URL & CLOUD_APPROVALS_URL & CLOUD_FALLBACK_URL)
+          try {
+            var secRes = await syncCustomerToCloud(candidateRecord);
+            if (secRes && (secRes.cloud || secRes.success)) {
+              secondaryOk = true;
+            }
+          } catch (secErr) {
+            console.warn('[Cloud Upload] Secondary Cloud attempt ' + attempt + ':', secErr);
+          }
+
+          if (primaryOk || secondaryOk) {
+            console.log('[Cloud Upload] Delivery confirmed on attempt ' + attempt + ' (Firestore: ' + primaryOk + ', Secondary: ' + secondaryOk + ')');
+            return { success: true, primaryOk: primaryOk, secondaryOk: secondaryOk };
+          }
+
+          if (attempt < maxAttempts) {
+            await new Promise(function (resolve) { setTimeout(resolve, 500); });
           }
         }
-
-        try {
-          if (remaining.length === 0) {
-            localStorage.removeItem(QUEUE_STORAGE_KEY);
-            console.log('[Sync Queue] All pending items successfully synchronized to cloud!');
-          } else {
-            localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(remaining));
-          }
-        } catch (_) {}
-
-        _isFlushingSyncQueue = false;
+        return { success: false, error: 'Cloud servers unreachable after ' + maxAttempts + ' attempts' };
       }
 
-      // Automatically retry every 5 seconds until confirmed successful
-      setInterval(flushPendingCloudSyncQueue, 5000);
-      window.addEventListener('online', flushPendingCloudSyncQueue);
-
-      var _alreadySyncedCandidateSignatures = {};
-      var _isAutoSyncingToFirestore = false;
+      // Background write loops are permanently disabled to prevent quota exhaustion
       async function autoSyncLocalCustomersToFirestore() {
-        if (_isAutoSyncingToFirestore) return;
-        _isAutoSyncingToFirestore = true;
-        try {
-          var candidatesToSync = [];
-          var seenEmails = {};
-
-          function considerCandidate(c) {
-            if (!c) return;
-            var em = String(c.email || '').trim().toLowerCase();
-            if (!em || em.indexOf('@') === -1) return;
-            if (isBlockedDummyEmail(em)) return;
-            if (em === 'candidate@smarttaxisolutions.co.uk') return; // built-in template seed
-            if (seenEmails[em]) return;
-            seenEmails[em] = true;
-            candidatesToSync.push(c);
-          }
-
-          // 1. Inspect getCustomersDb()
-          var db = getCustomersDb();
-          if (Array.isArray(db)) {
-            db.forEach(considerCandidate);
-          }
-
-          // 2. Inspect active session user
-          var sess = getActiveSessionUser();
-          if (sess) considerCandidate(sess);
-
-          // 3. Inspect raw storage keys on this device/laptop
-          var storageKeys = isExplicitlyLoggedOut ? ['sts_customers_db'] : [
-            'sts_customers_db',
-            'sts_current_user',
-            'sts_active_session',
-            'sts_current_customer',
-            'sts_active_user',
-            'sts_session_user'
-          ];
-          storageKeys.forEach(function (k) {
-            try {
-              var raw = localStorage.getItem(k) || sessionStorage.getItem(k);
-              if (raw) {
-                var parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                  parsed.forEach(considerCandidate);
-                } else if (parsed && typeof parsed === 'object') {
-                  considerCandidate(parsed);
-                }
-              }
-            } catch (_) {}
-          });
-
-          // Upload each discovered real candidate to Firestore directly (only if modified)
-          for (var i = 0; i < candidatesToSync.length; i++) {
-            var cand = candidatesToSync[i];
-            var candEmail = String(cand.email || '').trim().toLowerCase();
-            var candSignature = candEmail + '_' + (cand.updatedAt || cand.createdAt || 0) + '_' + (cand.status || '') + '_' + (cand.booking ? cand.booking.status : '');
-            if (_alreadySyncedCandidateSignatures[candSignature]) continue;
-
-            try {
-              var res = await saveCandidateToFirestoreRest(cand);
-              if (res && res.id) {
-                _alreadySyncedCandidateSignatures[candSignature] = true;
-              }
-            } catch (err) {
-              console.warn('[Auto-Sync Real Customer] Upload exception for:', cand.email, err);
-              queueCandidateForCloudSync(cand);
-            }
-          }
-        } catch (e) {
-          console.warn('[Auto-Sync Real Customer] Global exception:', e);
-        } finally {
-          _isAutoSyncingToFirestore = false;
-        }
+        return;
       }
 
       async function fetchCandidatesFromCloud() {
@@ -5414,6 +5247,8 @@
         }
       }
 
+      var _lastSelfHealAttempt = 0;
+
       async function checkFirestoreApprovalOnce() {
         if (isExplicitlyLoggedOut || _isCelebrationActive || hasShownApprovalCelebration) {
           stopPendingApprovalPolling();
@@ -5426,30 +5261,18 @@
         if (isBlockedDummyEmail(email)) return;
         var docId = getCandidateDocId(email);
 
-        // 1. Instant check against local/cross-tab approved registry or verified approval
+        // 1. Instant check against local/cross-tab approved registry
         try {
           var localReg = getApprovedRegistry();
           var localMatch = localReg && (localReg[email] || localReg[docId]);
-          if ((localMatch && (localMatch.status === 'approved' || localMatch.approvalStatus === 'approved')) || email === 'usman160398@gmail.com') {
-            console.log('[Pending Polling] Candidate approval confirmed for:', email);
+          if (localMatch && (localMatch.status === 'approved' || localMatch.approvalStatus === 'approved')) {
+            console.log('[Pending Polling] Candidate approval confirmed locally for:', email);
             stopPendingApprovalPolling();
             hasShownApprovalCelebration = true;
             try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
             sessionUser.status = 'approved';
             sessionUser.approvalStatus = 'approved';
             sessionUser.bookingStatus = 'approved';
-            if (!sessionUser.booking) sessionUser.booking = {};
-            sessionUser.booking.startDate = '2026-10-28';
-            sessionUser.booking.startTime = '00:01';
-            sessionUser.booking.endDate = '2026-10-30';
-            sessionUser.booking.finishTime = '23:59';
-            sessionUser.booking.totalDays = 2;
-            sessionUser.booking.totalAmount = 20;
-            sessionUser.booking.status = 'approved';
-            sessionUser.booking.approvalStatus = 'approved';
-            sessionUser.booking.bookingStatus = 'approved';
-            sessionUser.booking.approvedAt = Date.now();
-            sessionUser.booking.endTimestamp = Date.now() + (2 * 86400000);
             setSessionUser(sessionUser);
             triggerApprovalCelebration(sessionUser);
             return;
@@ -5481,13 +5304,17 @@
               return;
             }
           } else if (resp && resp.status === 404) {
-            // Self-healing: doc does not exist in Firestore yet! Re-upload immediately
-            console.warn('[Pending Polling] Candidate doc not found in Firestore (404)! Self-healing upload initiated for:', email);
-            try {
-              var db = getCustomersDb();
-              var fullUser = db.find(function (u) { return String(u.email || '').trim().toLowerCase() === email; }) || sessionUser;
-              saveCandidateToFirestoreRest(fullUser).catch(function () {});
-            } catch (_) {}
+            // Self-healing: doc does not exist in Firestore yet! Re-upload throttled to 1 write per 60s
+            var now = Date.now();
+            if (now - _lastSelfHealAttempt > 60000) {
+              _lastSelfHealAttempt = now;
+              console.warn('[Pending Polling] Candidate doc not found in Firestore (404)! Throttled self-healing upload initiated for:', email);
+              try {
+                var db = getCustomersDb();
+                var fullUser = db.find(function (u) { return String(u.email || '').trim().toLowerCase() === email; }) || sessionUser;
+                uploadCustomerToCloudWithRetry(fullUser, 1).catch(function () {});
+              } catch (_) {}
+            }
           }
         } catch (pollErr) {
           console.warn('[Pending Polling] Firestore REST poll warning:', pollErr);
@@ -5981,7 +5808,7 @@
         var submitBtn = formSignup.querySelector('button[type="submit"]');
         var origBtnText = submitBtn ? submitBtn.textContent : '';
         if (submitBtn) {
-          submitBtn.textContent = '⏳ Registering & Syncing...';
+          submitBtn.textContent = 'Submitting to server...';
           submitBtn.disabled = true;
         }
 
@@ -5992,6 +5819,7 @@
           db[userIdx].name = name;
           db[userIdx].phone = phone;
           db[userIdx].password = password;
+          db[userIdx].updatedAt = Date.now();
           user = db[userIdx];
         } else {
           user = {
@@ -6004,7 +5832,8 @@
             approvalStatus: 'pending',
             bookingStatus: 'pending',
             booking: null,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            updatedAt: Date.now()
           };
           db.push(user);
         }
@@ -6014,29 +5843,17 @@
         // Store active session
         setSessionUser(user);
 
-        // 1. Direct Primary Firestore REST (gracefully catches 429 quota exhaustion)
-        try {
-          showAuthAlert('Saving candidate registration to cloud database...', 'info');
-          var fsRes = await saveCandidateToFirestoreRest(user);
-          if (fsRes && fsRes.id) {
-            user.firestoreDocId = fsRes.id;
-            saveCustomersDb(db);
-          }
-        } catch (fsErr) {
-          console.warn('[Signup] Firestore direct REST warning (429/quota):', fsErr);
+        // Guaranteed Cloud Upload with Automatic 3-Attempt Retry
+        showAuthAlert('Submitting to server...', 'info');
+        var upRes = await uploadCustomerToCloudWithRetry(user, 3);
+        if (submitBtn) {
+          submitBtn.textContent = origBtnText;
+          submitBtn.disabled = false;
         }
 
-        // 2. Dual-Cloud Failover: Secondary Shared Cloud Registry (ALWAYS runs even if Firestore 429!)
-        try {
-          await syncCustomerToCloud(user);
-        } catch (cloudErr) {
-          console.warn('[Signup] Secondary Cloud Registry sync warning:', cloudErr);
-          queueCandidateForCloudSync(user);
-        } finally {
-          if (submitBtn) {
-            submitBtn.textContent = origBtnText;
-            submitBtn.disabled = false;
-          }
+        if (!upRes.success) {
+          showAuthAlert('Unable to reach cloud servers. Please check your internet connection and try again.', 'error');
+          return;
         }
 
         showAuthAlert('Account created successfully! Please select your practice days.', 'success');
@@ -6316,7 +6133,7 @@
         var submitBtn = formBooking.querySelector('button[type="submit"]');
         var origBtnText = submitBtn ? submitBtn.textContent : '';
         if (submitBtn) {
-          submitBtn.textContent = '⏳ Submitting Booking & Syncing...';
+          submitBtn.textContent = 'Submitting to server...';
           submitBtn.disabled = true;
         }
 
@@ -6340,6 +6157,7 @@
         db[uIdx].status = 'pending';
         db[uIdx].approvalStatus = 'pending';
         db[uIdx].bookingStatus = 'pending';
+        db[uIdx].updatedAt = Date.now();
         saveCustomersDb(db);
 
         // Refresh session object
@@ -6347,31 +6165,20 @@
         sessionUser.status = 'pending';
         sessionUser.approvalStatus = 'pending';
         sessionUser.bookingStatus = 'pending';
+        sessionUser.updatedAt = Date.now();
         setSessionUser(sessionUser);
 
-        // 1. Direct Primary Firestore REST (gracefully catches 429 quota exhaustion)
-        try {
-          showAuthAlert('Transmitting booking request to cloud database...', 'info');
-          var fsRes = await saveCandidateToFirestoreRest(db[uIdx]);
-          if (fsRes && fsRes.id) {
-            db[uIdx].firestoreDocId = fsRes.id;
-            saveCustomersDb(db);
-          }
-        } catch (fsErr) {
-          console.warn('[Booking] Firestore direct REST warning (429/quota):', fsErr);
+        // Guaranteed Cloud Upload with Automatic 3-Attempt Retry
+        showAuthAlert('Submitting to server...', 'info');
+        var upRes = await uploadCustomerToCloudWithRetry(db[uIdx], 3);
+        if (submitBtn) {
+          submitBtn.textContent = origBtnText;
+          submitBtn.disabled = false;
         }
 
-        // 2. Dual-Cloud Failover: Secondary Shared Cloud Registry (ALWAYS runs even if Firestore 429!)
-        try {
-          await syncCustomerToCloud(db[uIdx]);
-        } catch (cloudErr) {
-          console.warn('[Booking] Secondary Cloud Registry sync warning:', cloudErr);
-          queueCandidateForCloudSync(db[uIdx]);
-        } finally {
-          if (submitBtn) {
-            submitBtn.textContent = origBtnText;
-            submitBtn.disabled = false;
-          }
+        if (!upRes.success) {
+          showAuthAlert('Unable to reach cloud servers to submit your booking. Please try again.', 'error');
+          return;
         }
 
         showAuthAlert('Booking submitted successfully! Awaiting administrator confirmation.', 'success');
@@ -6515,24 +6322,36 @@
                   result = 'approved';
                 }
               } else if (fsResp && fsResp.status === 404) {
-                var fullUser = (fresh || sessionUser);
-                saveCandidateToFirestoreRest(fullUser).catch(function () {});
+                var now = Date.now();
+                if (now - _lastSelfHealAttempt > 60000) {
+                  _lastSelfHealAttempt = now;
+                  var fullUser = (fresh || sessionUser);
+                  uploadCustomerToCloudWithRetry(fullUser, 1).catch(function () {});
+                }
               }
             } catch (_) {}
           }
 
-          // If still pending, attempt fast cloud fetch (timeout 1800ms)
+          // If still pending, attempt fast cloud fetch against CLOUD_APPROVALS_URL (timeout 2500ms)
           if (result === 'pending' && typeof fetch !== 'undefined') {
             try {
               var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-              var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 1800) : null;
-              var resp = await fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a16e5be03d7de5', {
+              var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 2500) : null;
+              var resp = await fetch(CLOUD_APPROVALS_URL + '?_t=' + Date.now(), {
+                cache: 'no-store',
                 signal: controller ? controller.signal : undefined
               });
               if (timeoutId) clearTimeout(timeoutId);
               if (resp && resp.ok) {
                 var json = await resp.json();
-                var data = (json && json.data) || {};
+                var data = {};
+                if (json && json.data) {
+                  if (json.data.approvalsJson) {
+                    try { data = JSON.parse(json.data.approvalsJson); } catch (_) {}
+                  } else {
+                    data = json.data;
+                  }
+                }
                 var cloudMatch = (normEmail && data[normEmail]) || (normName && data[normName]) || (normId && data[normId]);
                 if (cloudMatch && (cloudMatch.status === 'approved' || cloudMatch.status === 'rejected')) {
                   result = cloudMatch.status;
@@ -6550,15 +6369,22 @@
           if (result === 'pending' && typeof fetch !== 'undefined') {
             try {
               var controller2 = typeof AbortController !== 'undefined' ? new AbortController() : null;
-              var timeoutId2 = controller2 ? setTimeout(function () { controller2.abort(); }, 1800) : null;
-              var resp2 = await fetch(CLOUD_CANDIDATES_URL, {
+              var timeoutId2 = controller2 ? setTimeout(function () { controller2.abort(); }, 2500) : null;
+              var resp2 = await fetch(CLOUD_CANDIDATES_URL + '?_t=' + Date.now(), {
                 cache: 'no-store',
                 signal: controller2 ? controller2.signal : undefined
               });
               if (timeoutId2) clearTimeout(timeoutId2);
               if (resp2 && resp2.ok) {
                 var json2 = await resp2.json();
-                var cMap = (json2 && json2.data && json2.data.candidates) || {};
+                var cMap = {};
+                if (json2 && json2.data) {
+                  if (json2.data.registryJson) {
+                    try { cMap = JSON.parse(json2.data.registryJson); } catch (_) {}
+                  } else if (json2.data.candidates) {
+                    cMap = json2.data.candidates;
+                  }
+                }
                 var cMatch = (normEmail && cMap[normEmail]) || (normName && cMap[normName]) || (normId && cMap[normId]);
                 if (cMatch) {
                   var cSt = String(cMatch.status || cMatch.approvalStatus || (cMatch.booking && cMatch.booking.status) || '').toLowerCase().trim();
@@ -6675,7 +6501,7 @@
           if (sUser && sUser.email) {
             var db = getCustomersDb();
             var fullUser = db.find(function (u) { return String(u.email || '').toLowerCase() === String(sUser.email).toLowerCase(); }) || sUser;
-            saveCandidateToFirestoreRest(fullUser).catch(function () {});
+            uploadCustomerToCloudWithRetry(fullUser, 1).catch(function () {});
           }
         });
       }
@@ -7103,10 +6929,9 @@
             return;
           }
         } catch (_) {}
-
-        try { autoSyncLocalCustomersToFirestore(); } catch (_) {}
-        var sessionUser = getActiveSessionUser();
-        if (sessionUser && (sessionUser.email || sessionUser.name)) {
+ 
+         var sessionUser = getActiveSessionUser();
+         if (sessionUser && (sessionUser.email || sessionUser.name)) {
           var normEmail = String(sessionUser.email || '').trim().toLowerCase();
           var normName = String(sessionUser.name || '').trim().toLowerCase();
           var normId = String(sessionUser.id || '').trim().toLowerCase();
@@ -7161,10 +6986,9 @@
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
           checkActiveSession();
-          try { autoSyncLocalCustomersToFirestore(); } catch (_) {}
         });
       } else {
-        try { autoSyncLocalCustomersToFirestore(); } catch (_) {}
+        checkActiveSession();
       }
 
     })();

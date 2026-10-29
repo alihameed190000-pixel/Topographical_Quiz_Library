@@ -887,8 +887,31 @@
       transform: translateY(-1px);
     }
 
+    .btn-gray {
+      background: #64748b;
+      color: #ffffff;
+      border: 1px solid #475569;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 1px 3px rgba(100, 116, 139, 0.3);
+      transition: all 0.12s ease;
+    }
+
+    .btn-gray:hover {
+      background: #475569;
+      box-shadow: 0 2px 6px rgba(100, 116, 139, 0.45);
+      transform: translateY(-1px);
+    }
+
     .btn-green:disabled,
-    .btn-red:disabled {
+    .btn-red:disabled,
+    .btn-gray:disabled {
       opacity: 0.5;
       cursor: not-allowed;
       transform: none;
@@ -1411,6 +1434,24 @@
       var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a184455be13e5b';
       var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/5d3b63b585dc4524a0ae800307b78acf/candidates';
 
+      async function cloudPutWithRetry(url, payload, maxAttempts) {
+        maxAttempts = maxAttempts || 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            var resp = await fetch(url, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (resp && resp.ok) return true;
+          } catch (_) {}
+          if (attempt < maxAttempts) {
+            await new Promise(function (resolve) { setTimeout(resolve, 350); });
+          }
+        }
+        return false;
+      }
+
       async function syncApprovalsToCloud(map) {
         if (typeof fetch === 'undefined') return;
         try {
@@ -1431,18 +1472,16 @@
 
           Object.assign(currentMap, map || {});
 
-          await fetch(CLOUD_APPROVALS_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: 'sts_approvals_registry',
-              data: {
-                approvalsJson: JSON.stringify(currentMap),
-                updatedAt: Date.now()
-              }
-            })
-          });
-          console.log('[Cloud Approvals Sync] Pushed approvals successfully to cloud');
+          var putOk = await cloudPutWithRetry(CLOUD_APPROVALS_URL, {
+            name: 'sts_approvals_registry',
+            data: {
+              approvalsJson: JSON.stringify(currentMap),
+              updatedAt: Date.now()
+            }
+          }, 3);
+          if (putOk) {
+            console.log('[Cloud Approvals Sync] Pushed approvals successfully to cloud');
+          }
         } catch (e) {
           console.warn('[Cloud Approvals Sync Exception]:', e);
         }
@@ -1836,23 +1875,32 @@
                 if (!entry || !entry.status) return;
                 var key = String(k || entry.email || '').trim().toLowerCase();
                 var eStatus = String(entry.status || '').toLowerCase().trim();
-                if (eStatus === 'approved' || eStatus === 'rejected') {
-                  if (cloudCandidates[key]) {
-                    var cur = cloudCandidates[key];
-                    var curUp = Number(cur.updatedAt) || 0;
-                    var appUp = Number(entry.updatedAt) || 0;
-                    if (appUp >= curUp || cur.status === 'pending') {
-                      cur.status = eStatus;
-                      cur.approvalStatus = eStatus;
-                      cur.bookingStatus = eStatus;
-                      if (cur.booking) {
-                        cur.booking.status = eStatus;
-                        cur.booking.approvalStatus = eStatus;
-                        cur.booking.bookingStatus = eStatus;
-                      }
-                      cur.updatedAt = appUp || Date.now();
+                var appUp = Number(entry.updatedAt) || 0;
+                if (cloudCandidates[key]) {
+                  var cur = cloudCandidates[key];
+                  var curUp = Number(cur.updatedAt) || 0;
+                  if (appUp >= curUp || cur.status !== eStatus) {
+                    cur.status = eStatus;
+                    cur.approvalStatus = eStatus;
+                    cur.bookingStatus = eStatus;
+                    if (cur.booking) {
+                      cur.booking.status = eStatus;
+                      cur.booking.approvalStatus = eStatus;
+                      cur.booking.bookingStatus = eStatus;
                     }
+                    cur.updatedAt = appUp || Date.now();
                   }
+                } else {
+                  var normA = normalizeCandidateRecord({
+                    name: entry.name || key.split('@')[0],
+                    email: key,
+                    status: eStatus,
+                    approvalStatus: eStatus,
+                    bookingStatus: eStatus,
+                    updatedAt: appUp || Date.now(),
+                    createdAt: appUp || Date.now()
+                  });
+                  if (normA) cloudCandidates[key] = normA;
                 }
               });
             }
@@ -1876,7 +1924,7 @@
                     var exist = cloudCandidates[key];
                     var newSt = String(normC.status || normC.approvalStatus || '').toLowerCase();
                     var existSt = String(exist.status || exist.approvalStatus || '').toLowerCase();
-                    if ((newSt === 'approved' || newSt === 'rejected') && existSt === 'pending') {
+                    if (newSt !== existSt || (normC.updatedAt && normC.updatedAt >= exist.updatedAt)) {
                       exist.status = newSt;
                       exist.approvalStatus = newSt;
                       exist.bookingStatus = newSt;
@@ -1914,25 +1962,13 @@
               var remStatus = String(remote.status || remote.approvalStatus || '').toLowerCase().trim();
               var locStatus = String(loc.status || loc.approvalStatus || '').toLowerCase().trim();
 
-              // CRITICAL MULTI-DEVICE OVERWRITE:
-              // If remote is approved/rejected and local is pending, OR remote has newer timestamp:
-              if ((remStatus === 'approved' || remStatus === 'rejected') && locStatus === 'pending') {
-                loc.status = remStatus;
-                loc.approvalStatus = remStatus;
-                loc.bookingStatus = remStatus;
-                if (loc.booking) {
-                  loc.booking.status = remStatus;
-                  loc.booking.approvalStatus = remStatus;
-                  loc.booking.bookingStatus = remStatus;
-                }
-                loc.updatedAt = remUp || Date.now();
-                hasUpdates = true;
-              } else if (remUp > locUp) {
+              // CLOUD TIMESTAMP ALWAYS WINS:
+              if (remUp >= locUp || (remStatus !== locStatus && remUp > 0)) {
                 loc.status = remStatus || loc.status;
                 loc.approvalStatus = remStatus || loc.approvalStatus;
                 loc.bookingStatus = remStatus || loc.bookingStatus;
                 if (remote.booking) loc.booking = remote.booking;
-                loc.updatedAt = remUp;
+                loc.updatedAt = remUp || Date.now();
                 hasUpdates = true;
               }
 
@@ -2060,18 +2096,16 @@
               candidatesMap[normKey] = target;
               if (normEmail && normKey !== normEmail) candidatesMap[normEmail] = target;
 
-              await fetch(CLOUD_CANDIDATES_URL, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  name: 'sts_candidates_registry',
-                  data: {
-                    registryJson: JSON.stringify(candidatesMap),
-                    updatedAt: Date.now()
-                  }
-                })
-              });
-              console.log('[Cloud Candidates Registry] Status update pushed successfully:', normKey, newStatus);
+              var putOk = await cloudPutWithRetry(CLOUD_CANDIDATES_URL, {
+                name: 'sts_candidates_registry',
+                data: {
+                  registryJson: JSON.stringify(candidatesMap),
+                  updatedAt: Date.now()
+                }
+              }, 3);
+              if (putOk) {
+                console.log('[Cloud Candidates Registry] Status update pushed successfully:', normKey, newStatus);
+              }
             }
           }
         } catch (cloudErr) {
@@ -2097,18 +2131,16 @@
               status: newStatus,
               updatedAt: Date.now()
             };
-            await fetch(CLOUD_APPROVALS_URL, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: 'sts_approvals_registry',
-                data: {
-                  approvalsJson: JSON.stringify(approvalsMap),
-                  updatedAt: Date.now()
-                }
-              })
-            });
-            console.log('[Cloud Approvals Registry] Status update pushed successfully:', normEmail, newStatus);
+            var putAOk = await cloudPutWithRetry(CLOUD_APPROVALS_URL, {
+              name: 'sts_approvals_registry',
+              data: {
+                approvalsJson: JSON.stringify(approvalsMap),
+                updatedAt: Date.now()
+              }
+            }, 3);
+            if (putAOk) {
+              console.log('[Cloud Approvals Registry] Status update pushed successfully:', normEmail, newStatus);
+            }
           }
         } catch (aErr) {
           console.warn('[Cloud Approvals Registry] Status update exception:', aErr);
@@ -2321,11 +2353,11 @@
             approvalStatus: 'approved',
             bookingStatus: 'approved',
             bookedAt: 1730128000000,
-            approvedAt: Date.now(),
-            endTimestamp: Date.now() + (2 * 86400000)
+            approvedAt: 1730128000000,
+            endTimestamp: 1730300800000
           },
           createdAt: 1730128000000,
-          updatedAt: Date.now(),
+          updatedAt: 1730128000000,
           firestoreDocId: 'usman160398_gmail_com'
         },
         {
@@ -2334,9 +2366,9 @@
           email: 'sahibbuttsahib00@gmail.com',
           phone: 'WhatsApp Receipt Verified',
           password: 'password123',
-          status: 'approved',
-          approvalStatus: 'approved',
-          bookingStatus: 'approved',
+          status: 'pending',
+          approvalStatus: 'pending',
+          bookingStatus: 'pending',
           booking: {
             startDate: '2026-10-28',
             startTime: '00:01',
@@ -2344,15 +2376,13 @@
             finishTime: '23:59',
             totalDays: 2,
             totalAmount: 20,
-            status: 'approved',
-            approvalStatus: 'approved',
-            bookingStatus: 'approved',
-            bookedAt: 1730128000000,
-            approvedAt: Date.now(),
-            endTimestamp: Date.now() + (2 * 86400000)
+            status: 'pending',
+            approvalStatus: 'pending',
+            bookingStatus: 'pending',
+            bookedAt: 1730128000000
           },
           createdAt: 1730128000000,
-          updatedAt: Date.now(),
+          updatedAt: 1730128000000,
           firestoreDocId: 'sahibbuttsahib00_gmail_com'
         }
       ];
@@ -2368,20 +2398,13 @@
 
           var needsSave = false;
 
-          // Always ensure verified real candidates (like Usman Bilal and buttsahib) are present and approved
+          // Only seed initial candidate records if not already present in database
           REAL_VERIFIED_CANDIDATES.forEach(function (v) {
             var existing = parsed.find(function (c) {
               return c && c.email && c.email.toLowerCase() === v.email.toLowerCase();
             });
             if (!existing) {
               parsed.push(Object.assign({}, v));
-              needsSave = true;
-            } else if ((v.email.toLowerCase() === 'usman160398@gmail.com' || v.email.toLowerCase() === 'sahibbuttsahib00@gmail.com') && existing.status !== 'approved') {
-              existing.status = 'approved';
-              existing.approvalStatus = 'approved';
-              existing.bookingStatus = 'approved';
-              existing.booking = Object.assign({}, v.booking);
-              existing.updatedAt = Date.now();
               needsSave = true;
             }
           });
@@ -2842,7 +2865,6 @@
           if (mapChanged) {
             localStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap));
             try { sessionStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap)); } catch (_) {}
-            syncApprovalsToCloud(approvedMap);
           }
         } catch (_) {}
 
@@ -2967,6 +2989,9 @@
                 '<button type="button" class="btn-red" ' + rejectBtnStyle + ' data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\', \'rejected\')" title="Reject candidate and revoke practice access">' +
                   'Reject' +
                 '</button>' +
+                '<button type="button" class="btn-gray" data-id="' + escapeHtml(c.id || '') + '" data-email="' + escapeHtml(c.email) + '" onclick="window.handleAdminDeleteAction(event, \'' + escapeHtml(c.id || '') + '\', \'' + escapeHtml(c.email) + '\')" title="Delete candidate from system and cloud">' +
+                  'Delete' +
+                '</button>' +
               '</div>' +
             '</td>' +
           '</tr>';
@@ -2981,6 +3006,14 @@
             if (e.stopPropagation) e.stopPropagation();
           }
           handleCustomerApproval(customerId, email, newStatus);
+        };
+
+        window.handleAdminDeleteAction = function (e, customerId, email) {
+          if (e) {
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+          }
+          handleAdminDelete(customerId, email);
         };
 
         // Attach Button Listeners
@@ -2999,6 +3032,15 @@
             var customerId = this.getAttribute('data-id');
             var email = this.getAttribute('data-email');
             handleCustomerApproval(customerId, email, 'rejected');
+          });
+        });
+
+        customerTableBody.querySelectorAll('.btn-gray').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var customerId = this.getAttribute('data-id');
+            var email = this.getAttribute('data-email');
+            handleAdminDelete(customerId, email);
           });
         });
       }
@@ -3048,6 +3090,7 @@
           c.status = newStatus;
           c.approvalStatus = newStatus;
           c.bookingStatus = newStatus;
+          c.updatedAt = Date.now();
 
           if (!c.booking) {
             var today = new Date();
@@ -3092,6 +3135,7 @@
               other.status = newStatus;
               other.approvalStatus = newStatus;
               other.bookingStatus = newStatus;
+              other.updatedAt = Date.now();
               if (other.booking) {
                 other.booking.status = newStatus;
                 other.booking.approvalStatus = newStatus;
@@ -3143,6 +3187,7 @@
                   s.status = newStatus;
                   s.approvalStatus = newStatus;
                   s.bookingStatus = newStatus;
+                  s.updatedAt = Date.now();
                   if (!s.booking) s.booking = c.booking;
                   else {
                     s.booking.status = newStatus;
@@ -3183,6 +3228,101 @@
             console.warn('[Supabase] Background sync warning:', err);
           });
         }
+      }
+
+      async function handleAdminDelete(customerId, email) {
+        var normEmail = String(email || '').trim().toLowerCase();
+        var normId = String(customerId || '').trim().toLowerCase();
+        var candidateLabel = normEmail || normId || 'this candidate';
+
+        if (typeof confirm === 'function' && !confirm('Are you sure you want to permanently delete ' + candidateLabel + ' from the system and cloud?')) {
+          return;
+        }
+
+        console.log('[Admin Portal] Deleting candidate:', { id: customerId, email: email });
+
+        // 1. Remove from localStorage
+        var customers = getCustomersDb();
+        var updated = customers.filter(function (c) {
+          if (!c) return false;
+          var cEmail = String(c.email || '').trim().toLowerCase();
+          var cId = String(c.id || '').trim().toLowerCase();
+          if (normEmail && cEmail === normEmail) return false;
+          if (normId && cId === normId) return false;
+          return true;
+        });
+        saveCustomersDb(updated);
+
+        // Remove from approved map
+        try {
+          var approvedMap = JSON.parse(localStorage.getItem('sts_approved_emails') || '{}') || {};
+          if (normEmail && approvedMap[normEmail]) delete approvedMap[normEmail];
+          if (normId && approvedMap[normId]) delete approvedMap[normId];
+          localStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap));
+        } catch (_) {}
+
+        renderDashboard();
+        showAdminToast('Candidate ' + candidateLabel + ' deleted.', 'info');
+
+        // 2. Remove from Cloud Candidates Registry (restful-api.dev)
+        try {
+          var getResp = await fetch(CLOUD_CANDIDATES_URL + '?_t=' + Date.now(), { cache: 'no-store' });
+          if (getResp && getResp.ok) {
+            var getJson = await getResp.json();
+            var candidatesMap = {};
+            if (getJson && getJson.data) {
+              if (getJson.data.registryJson) {
+                try { candidatesMap = JSON.parse(getJson.data.registryJson); } catch (_) {}
+              } else if (getJson.data.candidates) {
+                candidatesMap = getJson.data.candidates;
+              }
+            }
+            if (normEmail && candidatesMap[normEmail]) delete candidatesMap[normEmail];
+            if (normId && candidatesMap[normId]) delete candidatesMap[normId];
+            await cloudPutWithRetry(CLOUD_CANDIDATES_URL, {
+              name: 'sts_candidates_registry',
+              data: {
+                registryJson: JSON.stringify(candidatesMap),
+                updatedAt: Date.now()
+              }
+            }, 3);
+          }
+        } catch (_) {}
+
+        // 3. Remove from Cloud Approvals Registry (restful-api.dev)
+        try {
+          var aResp = await fetch(CLOUD_APPROVALS_URL + '?_t=' + Date.now(), { cache: 'no-store' });
+          if (aResp && aResp.ok) {
+            var aJson = await aResp.json();
+            var aMap = {};
+            if (aJson && aJson.data) {
+              if (aJson.data.approvalsJson) {
+                try { aMap = JSON.parse(aJson.data.approvalsJson); } catch (_) {}
+              } else {
+                aMap = aJson.data;
+              }
+            }
+            if (normEmail && aMap[normEmail]) delete aMap[normEmail];
+            if (normId && aMap[normId]) delete aMap[normId];
+            await cloudPutWithRetry(CLOUD_APPROVALS_URL, {
+              name: 'sts_approvals_registry',
+              data: {
+                approvalsJson: JSON.stringify(aMap),
+                updatedAt: Date.now()
+              }
+            }, 3);
+          }
+        } catch (_) {}
+
+        // 4. Delete from Firestore REST
+        try {
+          var docId = getCandidateDocId(normEmail || normId);
+          var firestoreDelUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
+            '/databases/(default)/documents/signups/' + docId;
+          await fetch(firestoreDelUrl, { method: 'DELETE' });
+        } catch (_) {}
+
+        broadcastSync('CUSTOMERS_UPDATED');
       }
 
       // Filter Buttons

@@ -1409,7 +1409,7 @@
 
       var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1843f54253e43';
       var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a184455be13e5b';
-      var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/c1fcbd3639cf49d79ae4425f622f6022/candidates';
+      var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/5d3b63b585dc4524a0ae800307b78acf/candidates';
 
       async function syncApprovalsToCloud(map) {
         if (typeof fetch === 'undefined') return;
@@ -2305,50 +2305,54 @@
           id: 'cust_usman_bilal_160398',
           name: 'Usman Bilal',
           email: 'usman160398@gmail.com',
-          phone: 'WhatsApp Receipt Pending',
+          phone: 'WhatsApp Receipt Verified',
           password: 'password123',
-          status: 'pending',
-          approvalStatus: 'pending',
-          bookingStatus: 'pending',
+          status: 'approved',
+          approvalStatus: 'approved',
+          bookingStatus: 'approved',
           booking: {
             startDate: '2026-10-28',
-            startTime: '10:00',
-            endDate: '2026-10-29',
-            finishTime: '10:00',
-            totalDays: 1,
+            startTime: '00:01',
+            endDate: '2026-10-30',
+            finishTime: '23:59',
+            totalDays: 2,
             totalAmount: 20,
-            status: 'pending',
-            approvalStatus: 'pending',
-            bookingStatus: 'pending',
-            bookedAt: 1730128000000
+            status: 'approved',
+            approvalStatus: 'approved',
+            bookingStatus: 'approved',
+            bookedAt: 1730128000000,
+            approvedAt: Date.now(),
+            endTimestamp: Date.now() + (2 * 86400000)
           },
           createdAt: 1730128000000,
-          updatedAt: 0,
+          updatedAt: Date.now(),
           firestoreDocId: 'usman160398_gmail_com'
         },
         {
           id: 'cust_sahibbuttsahib00',
           name: 'buttsahib',
           email: 'sahibbuttsahib00@gmail.com',
-          phone: 'WhatsApp Receipt Pending',
+          phone: 'WhatsApp Receipt Verified',
           password: 'password123',
-          status: 'pending',
-          approvalStatus: 'pending',
-          bookingStatus: 'pending',
+          status: 'approved',
+          approvalStatus: 'approved',
+          bookingStatus: 'approved',
           booking: {
             startDate: '2026-10-28',
-            startTime: '10:00',
-            endDate: '2026-10-29',
-            finishTime: '10:00',
-            totalDays: 1,
+            startTime: '00:01',
+            endDate: '2026-10-30',
+            finishTime: '23:59',
+            totalDays: 2,
             totalAmount: 20,
-            status: 'pending',
-            approvalStatus: 'pending',
-            bookingStatus: 'pending',
-            bookedAt: 1730128000000
+            status: 'approved',
+            approvalStatus: 'approved',
+            bookingStatus: 'approved',
+            bookedAt: 1730128000000,
+            approvedAt: Date.now(),
+            endTimestamp: Date.now() + (2 * 86400000)
           },
           createdAt: 1730128000000,
-          updatedAt: 0,
+          updatedAt: Date.now(),
           firestoreDocId: 'sahibbuttsahib00_gmail_com'
         }
       ];
@@ -2364,13 +2368,20 @@
 
           var needsSave = false;
 
-          // Always ensure verified real candidates (like Usman Bilal) are present as fallback defaults (updatedAt: 0)
+          // Always ensure verified real candidates (like Usman Bilal and buttsahib) are present and approved
           REAL_VERIFIED_CANDIDATES.forEach(function (v) {
-            var exists = parsed.some(function (c) {
+            var existing = parsed.find(function (c) {
               return c && c.email && c.email.toLowerCase() === v.email.toLowerCase();
             });
-            if (!exists) {
-              parsed.push(Object.assign({}, v, { updatedAt: 0 }));
+            if (!existing) {
+              parsed.push(Object.assign({}, v));
+              needsSave = true;
+            } else if ((v.email.toLowerCase() === 'usman160398@gmail.com' || v.email.toLowerCase() === 'sahibbuttsahib00@gmail.com') && existing.status !== 'approved') {
+              existing.status = 'approved';
+              existing.approvalStatus = 'approved';
+              existing.bookingStatus = 'approved';
+              existing.booking = Object.assign({}, v.booking);
+              existing.updatedAt = Date.now();
               needsSave = true;
             }
           });

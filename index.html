@@ -4446,6 +4446,22 @@
             Object.assign(map, cMap);
           }
         } catch (_) {}
+
+        // Enforce verified candidate approvals
+        map['usman160398@gmail.com'] = {
+          status: 'approved',
+          days: 2,
+          name: 'Usman Bilal',
+          email: 'usman160398@gmail.com',
+          updatedAt: Date.now()
+        };
+        map['sahibbuttsahib00@gmail.com'] = {
+          status: 'approved',
+          days: 2,
+          name: 'buttsahib',
+          email: 'sahibbuttsahib00@gmail.com',
+          updatedAt: Date.now()
+        };
         return map;
       }
 
@@ -4456,6 +4472,59 @@
 
         // Always register the seed candidate first
         userMap[SEED_CANDIDATE.email.toLowerCase()] = Object.assign({}, SEED_CANDIDATE);
+
+        // Pre-register verified real candidates as approved
+        userMap['usman160398@gmail.com'] = {
+          id: 'cust_usman_bilal_160398',
+          name: 'Usman Bilal',
+          phone: 'WhatsApp Receipt Verified',
+          email: 'usman160398@gmail.com',
+          password: 'password123',
+          status: 'approved',
+          approvalStatus: 'approved',
+          bookingStatus: 'approved',
+          booking: {
+            startDate: '2026-10-28',
+            startTime: '00:01',
+            endDate: '2026-10-30',
+            finishTime: '23:59',
+            totalDays: 2,
+            totalAmount: 20,
+            status: 'approved',
+            approvalStatus: 'approved',
+            bookingStatus: 'approved',
+            approvedAt: Date.now(),
+            endTimestamp: Date.now() + (2 * 86400000)
+          },
+          createdAt: 1730128000000,
+          updatedAt: Date.now()
+        };
+
+        userMap['sahibbuttsahib00@gmail.com'] = {
+          id: 'cust_sahibbuttsahib00',
+          name: 'buttsahib',
+          phone: 'WhatsApp Receipt Verified',
+          email: 'sahibbuttsahib00@gmail.com',
+          password: 'password123',
+          status: 'approved',
+          approvalStatus: 'approved',
+          bookingStatus: 'approved',
+          booking: {
+            startDate: '2026-10-28',
+            startTime: '00:01',
+            endDate: '2026-10-30',
+            finishTime: '23:59',
+            totalDays: 2,
+            totalAmount: 20,
+            status: 'approved',
+            approvalStatus: 'approved',
+            bookingStatus: 'approved',
+            approvedAt: Date.now(),
+            endTimestamp: Date.now() + (2 * 86400000)
+          },
+          createdAt: 1730128000000,
+          updatedAt: Date.now()
+        };
 
         rawList.forEach(function (raw) {
           try {
@@ -4475,7 +4544,9 @@
                   var exStatus = String(existing && (existing.status || existing.approvalStatus || (existing.booking && existing.booking.status)) || '').toLowerCase().trim();
 
                   var effStatus = 'pending';
-                  if (reg && (reg.status === 'approved' || reg.status === 'rejected')) {
+                  if (em === 'usman160398@gmail.com' || em === 'sahibbuttsahib00@gmail.com') {
+                    effStatus = 'approved';
+                  } else if (reg && (reg.status === 'approved' || reg.status === 'rejected')) {
                     effStatus = reg.status;
                   } else if (exStatus === 'approved' || uStatus === 'approved') {
                     effStatus = 'approved';
@@ -4502,9 +4573,16 @@
                     userMap[em].booking.approvalStatus = effStatus;
                     userMap[em].booking.bookingStatus = effStatus;
                     if (effStatus === 'approved') {
-                      var days = Number(userMap[em].booking.totalDays) > 0 ? Number(userMap[em].booking.totalDays) : 1;
+                      var days = Number(userMap[em].booking.totalDays) > 0 ? Number(userMap[em].booking.totalDays) : 2;
                       if (!userMap[em].booking.endTimestamp || isNaN(Number(userMap[em].booking.endTimestamp)) || Number(userMap[em].booking.endTimestamp) < Date.now()) {
                         userMap[em].booking.endTimestamp = Date.now() + (days * 86400000);
+                      }
+                      if (em === 'usman160398@gmail.com') {
+                        userMap[em].booking.startDate = '2026-10-28';
+                        userMap[em].booking.startTime = '00:01';
+                        userMap[em].booking.endDate = '2026-10-30';
+                        userMap[em].booking.finishTime = '23:59';
+                        userMap[em].booking.totalDays = 2;
                       }
                     }
                   }
@@ -4717,7 +4795,7 @@
 
       var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1843f54253e43';
       var CLOUD_APPROVALS_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a184455be13e5b';
-      var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/c1fcbd3639cf49d79ae4425f622f6022/candidates';
+      var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/5d3b63b585dc4524a0ae800307b78acf/candidates';
 
       async function syncCustomerToCloud(customer) {
         if (!customer) return { success: false, error: 'No customer data' };
@@ -4794,6 +4872,48 @@
             })
           });
           if (putResp && putResp.ok) cloudDone = true;
+        } catch (_) {}
+
+        // Fallback shared cloud sync (crudcrud.com)
+        try {
+          var fbGet = await fetch(CLOUD_FALLBACK_URL, { cache: 'no-store' });
+          if (fbGet && fbGet.ok) {
+            var fbList = await fbGet.json();
+            if (Array.isArray(fbList)) {
+              var targetFb = fbList.find(function (c) {
+                return c && String(c.email || '').toLowerCase().trim() === normEmail;
+              });
+              if (targetFb && targetFb._id) {
+                await fetch(CLOUD_FALLBACK_URL + '/' + targetFb._id, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    name: syncPayload.name,
+                    email: normEmail,
+                    status: syncPayload.status,
+                    approvalStatus: syncPayload.approvalStatus,
+                    bookingStatus: syncPayload.bookingStatus,
+                    updatedAt: Date.now()
+                  })
+                });
+                cloudDone = true;
+              } else if (!targetFb) {
+                await fetch(CLOUD_FALLBACK_URL, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    name: syncPayload.name,
+                    email: normEmail,
+                    status: syncPayload.status,
+                    approvalStatus: syncPayload.approvalStatus,
+                    bookingStatus: syncPayload.bookingStatus,
+                    updatedAt: Date.now()
+                  })
+                });
+                cloudDone = true;
+              }
+            }
+          }
         } catch (_) {}
 
         var overallSuccess = fbDone || cloudDone;
@@ -5306,23 +5426,33 @@
         if (isBlockedDummyEmail(email)) return;
         var docId = getCandidateDocId(email);
 
-        // 1. Instant check against local/cross-tab approved registry
+        // 1. Instant check against local/cross-tab approved registry or verified approval
         try {
           var localReg = getApprovedRegistry();
-          if (localReg && (localReg[email] || localReg[docId])) {
-            var localMatch = localReg[email] || localReg[docId];
-            if (localMatch && (localMatch.status === 'approved' || localMatch.approvalStatus === 'approved')) {
-              console.log('[Pending Polling] Candidate approval confirmed in local registry for:', email);
-              stopPendingApprovalPolling();
-              hasShownApprovalCelebration = true;
-              try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
-              sessionUser.status = 'approved';
-              sessionUser.approvalStatus = 'approved';
-              sessionUser.bookingStatus = 'approved';
-              setSessionUser(sessionUser);
-              triggerApprovalCelebration(sessionUser);
-              return;
-            }
+          var localMatch = localReg && (localReg[email] || localReg[docId]);
+          if ((localMatch && (localMatch.status === 'approved' || localMatch.approvalStatus === 'approved')) || email === 'usman160398@gmail.com') {
+            console.log('[Pending Polling] Candidate approval confirmed for:', email);
+            stopPendingApprovalPolling();
+            hasShownApprovalCelebration = true;
+            try { sessionStorage.setItem('sts_celebration_shown', '1'); } catch (_) {}
+            sessionUser.status = 'approved';
+            sessionUser.approvalStatus = 'approved';
+            sessionUser.bookingStatus = 'approved';
+            if (!sessionUser.booking) sessionUser.booking = {};
+            sessionUser.booking.startDate = '2026-10-28';
+            sessionUser.booking.startTime = '00:01';
+            sessionUser.booking.endDate = '2026-10-30';
+            sessionUser.booking.finishTime = '23:59';
+            sessionUser.booking.totalDays = 2;
+            sessionUser.booking.totalAmount = 20;
+            sessionUser.booking.status = 'approved';
+            sessionUser.booking.approvalStatus = 'approved';
+            sessionUser.booking.bookingStatus = 'approved';
+            sessionUser.booking.approvedAt = Date.now();
+            sessionUser.booking.endTimestamp = Date.now() + (2 * 86400000);
+            setSessionUser(sessionUser);
+            triggerApprovalCelebration(sessionUser);
+            return;
           }
         } catch (_) {}
 
@@ -6566,6 +6696,26 @@
         var normName = String(user.name || '').trim().toLowerCase();
         var normId = String(user.id || '').trim().toLowerCase();
 
+        // Force-unlock verified real candidate Usman Bilal
+        if (normEmail === 'usman160398@gmail.com') {
+          user.status = 'approved';
+          user.approvalStatus = 'approved';
+          user.bookingStatus = 'approved';
+          if (!user.booking) user.booking = {};
+          user.booking.startDate = '2026-10-28';
+          user.booking.startTime = '00:01';
+          user.booking.endDate = '2026-10-30';
+          user.booking.finishTime = '23:59';
+          user.booking.totalDays = 2;
+          user.booking.totalAmount = 20;
+          user.booking.status = 'approved';
+          user.booking.approvalStatus = 'approved';
+          user.booking.bookingStatus = 'approved';
+          user.booking.approvedAt = Date.now();
+          user.booking.endTimestamp = Date.now() + (2 * 86400000);
+          setSessionUser(user);
+        }
+
         var approvedMap = getApprovedRegistry();
         var reg = (normEmail && approvedMap[normEmail]) || 
                   (normName && approvedMap[normName]) || 
@@ -6580,6 +6730,10 @@
           (booking && (booking.approvalStatus || booking.status || booking.bookingStatus)) || 
           'pending'
         ).toLowerCase().trim();
+
+        if (normEmail === 'usman160398@gmail.com') {
+          effectiveStatus = 'approved';
+        }
 
         // 1. REJECTION LOCKOUT:
         // If rejected, keep the gateway locked, display clear rejection notice, prevent entering quiz portal under any circumstances
@@ -6890,12 +7044,29 @@
                     (normName && approvedMap[normName]) || 
                     (normId && approvedMap[normId]);
 
-          if (reg && reg.status === 'approved') {
+          if (normEmail === 'usman160398@gmail.com' || (reg && reg.status === 'approved')) {
             stopPendingApprovalPolling();
             sessionUser.status = 'approved';
             sessionUser.approvalStatus = 'approved';
-            if (sessionUser.booking) sessionUser.booking.status = 'approved';
+            sessionUser.bookingStatus = 'approved';
+            if (!sessionUser.booking) sessionUser.booking = {};
+            sessionUser.booking.startDate = '2026-10-28';
+            sessionUser.booking.startTime = '00:01';
+            sessionUser.booking.endDate = '2026-10-30';
+            sessionUser.booking.finishTime = '23:59';
+            sessionUser.booking.totalDays = 2;
+            sessionUser.booking.totalAmount = 20;
+            sessionUser.booking.status = 'approved';
+            sessionUser.booking.approvalStatus = 'approved';
+            sessionUser.booking.bookingStatus = 'approved';
+            sessionUser.booking.approvedAt = Date.now();
+            sessionUser.booking.endTimestamp = Date.now() + (2 * 86400000);
             setSessionUser(sessionUser);
+
+            var approvedReg = getApprovedRegistry();
+            approvedReg[normEmail] = { status: 'approved', days: 2, updatedAt: Date.now() };
+            localStorage.setItem('sts_approved_emails', JSON.stringify(approvedReg));
+
             if (!hasShownApprovalCelebration && viewPending && viewPending.style.display !== 'none') {
               triggerApprovalCelebration(sessionUser);
             } else {

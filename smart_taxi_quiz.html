@@ -584,6 +584,63 @@
       color: #10b981;
     }
 
+    /* LGV / HGV Truck Module Visual Elements */
+    .truck-category-header {
+      margin: 14px 0 6px;
+      padding: 6px 10px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: #f8fafc;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-left: 3px solid #f59e0b;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .truck-category-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .truck-category-badge {
+      font-size: 9px;
+      font-weight: 800;
+      background: #f59e0b;
+      color: #0f172a;
+      padding: 1px 6px;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+
+    .all-quiz-item.truck-module {
+      border-left: 3px solid #f59e0b;
+      background: #fffbeb;
+    }
+
+    .all-quiz-item.truck-module:hover {
+      background: #fef3c7;
+      border-color: #f59e0b;
+    }
+
+    .all-quiz-item.truck-module .all-quiz-badge {
+      background: #f59e0b;
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 9.5px;
+    }
+
+    .all-quiz-item.truck-module.active {
+      border-color: #d97706;
+      background: #fef3c7;
+      box-shadow: 0 0 0 1.5px #f59e0b;
+    }
+
     /* White Exercise Instruction & Details Box (Nested Directly Under Active Part) */
     .sidebar-exercise-card {
       background: #ffffff;
@@ -2901,6 +2958,38 @@
           minZoom: 4,
           maxZoom: 9,
           answer: null
+        },
+        {
+          sectionTitle: 'LGV/HGV Truck Modules',
+          id: 'Truck_Category_C1',
+          folder: 'CityRoute',
+          topic: 'Commercial Vehicles',
+          topicTitle: 'Category C1 (3.5t–7.5t Medium Truck)',
+          name: 'Category C1: 3.5t–7.5t Medium Goods Vehicle',
+          instructions: 'Commercial C1 (Medium Goods 3.5t–7.5t) Navigation: Observe weight limits, bridge height restrictions, and avoid narrow residential restrictions.',
+          defaultHomeCenter: [20.00, 33.00],
+          defaultHomeZoom: 5,
+          defaultStart: [19.80, 32.50],
+          defaultEnd: [20.20, 33.50],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
+        },
+        {
+          sectionTitle: 'LGV/HGV Truck Modules',
+          id: 'Truck_Category_C',
+          folder: 'RoundaboutsV1',
+          topic: 'Commercial Vehicles',
+          topicTitle: 'Category C (>7.5t Rigid Truck)',
+          name: 'Category C: Rigid Heavy Goods Vehicle (>7.5t)',
+          instructions: 'Heavy Goods Category C (>7.5t Rigid Truck) Navigation: Account for vehicle turning radius on multi-lane roundabouts, bridge clearances, and London Lorry Control Scheme restrictions.',
+          defaultHomeCenter: [74.00, 84.50],
+          defaultHomeZoom: 9,
+          defaultStart: [74.438, 84.557],
+          defaultEnd: [73.790, 84.281],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
         }
       ];
 
@@ -3348,6 +3437,11 @@
         { label: '20. High-Detail Keep Left — Keeping Left — High Detail Simulation', exIndex: 17, quizNum: 20 }
       ];
 
+      var TRUCK_DROPDOWN_ITEMS = [
+        { label: '🚛 Truck: Category C1 (3.5t–7.5t Medium Goods)', exIndex: 24, quizNum: 'C1' },
+        { label: '🚛 Truck: Category C (>7.5t Rigid Heavy Goods)', exIndex: 25, quizNum: 'C' }
+      ];
+
       function populateDropdowns() {
         // 1. Sidebar Dropdown (includes View All option)
         if (sidebarExerciseSelector) {
@@ -3363,6 +3457,17 @@
             opt.textContent = item.label;
             sidebarExerciseSelector.appendChild(opt);
           });
+
+          // Truck group
+          var truckGroupSidebar = document.createElement('optgroup');
+          truckGroupSidebar.label = '── LGV / HGV Truck Modules ──';
+          TRUCK_DROPDOWN_ITEMS.forEach(function (item) {
+            var opt = document.createElement('option');
+            opt.value = item.exIndex;
+            opt.textContent = item.label;
+            truckGroupSidebar.appendChild(opt);
+          });
+          sidebarExerciseSelector.appendChild(truckGroupSidebar);
         }
 
         // 2. Top Bar Dropdown
@@ -3374,6 +3479,17 @@
             opt.textContent = item.label;
             exerciseSelector.appendChild(opt);
           });
+
+          // Truck group
+          var truckGroupTop = document.createElement('optgroup');
+          truckGroupTop.label = '── LGV / HGV Truck Modules ──';
+          TRUCK_DROPDOWN_ITEMS.forEach(function (item) {
+            var opt = document.createElement('option');
+            opt.value = item.exIndex;
+            opt.textContent = item.label;
+            truckGroupTop.appendChild(opt);
+          });
+          exerciseSelector.appendChild(truckGroupTop);
         }
       }
       populateDropdowns();
@@ -3382,7 +3498,8 @@
       exerciseSelector.addEventListener('change', function () {
         var targetExIdx = parseInt(this.value, 10);
         currentViewMode = 'isolated';
-        var item = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === targetExIdx; });
+        var item = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === targetExIdx; }) ||
+                   TRUCK_DROPDOWN_ITEMS.find(function (d) { return d.exIndex === targetExIdx; });
         if (item) {
           activeQuizNum = item.quizNum;
         }
@@ -3398,7 +3515,8 @@
           } else {
             var targetExIdx = parseInt(this.value, 10);
             currentViewMode = 'isolated';
-            var item = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === targetExIdx; });
+            var item = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === targetExIdx; }) ||
+                       TRUCK_DROPDOWN_ITEMS.find(function (d) { return d.exIndex === targetExIdx; });
             if (item) {
               activeQuizNum = item.quizNum;
             }
@@ -3562,8 +3680,8 @@
               item.innerHTML = '<div class="all-quiz-item-left">' +
                 '<span class="all-quiz-badge">' + q.quizNum + '</span>' +
                 '<div class="all-quiz-title-box">' +
-                  '<div class="all-quiz-title">' + q.quizNum + '. ' + q.title + '</div>' +
-                  '<div class="all-quiz-sub">' + q.subtitle + partsCountText + '</div>' +
+                '<div class="all-quiz-title">' + q.quizNum + '. ' + q.title + '</div>' +
+                '<div class="all-quiz-sub">' + q.subtitle + partsCountText + '</div>' +
                 '</div>' +
               '</div>' +
               '<span class="all-quiz-status">Start ›</span>';
@@ -3577,6 +3695,50 @@
               sectionsListContainer.appendChild(item);
             });
           }
+
+          // Dedicated Section: LGV / HGV Truck Reference & Practice Modules
+          var truckHeader = document.createElement('div');
+          truckHeader.className = 'truck-category-header';
+          truckHeader.innerHTML = '<div class="truck-category-title">' +
+            '<span>🚛</span> LGV / HGV Truck Modules' +
+            '</div>' +
+            '<span class="truck-category-badge">C & C1</span>';
+          sectionsListContainer.appendChild(truckHeader);
+
+          var truckModules = [
+            {
+              code: 'C1',
+              title: 'Category C1 Truck (Medium Goods)',
+              desc: '3.5t–7.5t • Weight & Width Restrictions',
+              exIndex: 24
+            },
+            {
+              code: 'C',
+              title: 'Category C Truck (Rigid Heavy Goods)',
+              desc: '>7.5t • Large Radius & Lorry Scheme',
+              exIndex: 25
+            }
+          ];
+
+          truckModules.forEach(function (tm) {
+            var tItem = document.createElement('div');
+            var isCurrentActive = (currentExerciseIndex === tm.exIndex);
+            tItem.className = 'all-quiz-item truck-module' + (isCurrentActive ? ' active' : '');
+            tItem.innerHTML = '<div class="all-quiz-item-left">' +
+              '<span class="all-quiz-badge">' + tm.code + '</span>' +
+              '<div class="all-quiz-title-box">' +
+                '<div class="all-quiz-title">' + tm.title + '</div>' +
+                '<div class="all-quiz-sub">' + tm.desc + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<span class="all-quiz-status' + (isCurrentActive ? ' done' : '') + '">' + (isCurrentActive ? 'Active' : 'Open ›') + '</span>';
+
+            tItem.addEventListener('click', function () {
+              loadExercise(tm.exIndex);
+            });
+
+            sectionsListContainer.appendChild(tItem);
+          });
         }
 
         updateSectionsCompletedCount();
@@ -3596,6 +3758,9 @@
         // Determine which Quiz Number this index belongs to
         if (index === 0 || index === 18 || index === 19) {
           activeQuizNum = 1;
+        } else if (index === 24 || index === 25) {
+          // Dedicated LGV / HGV Truck Module
+          activeQuizNum = (index === 24 ? 'C1' : 'C');
         } else {
           var matchedItem = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === index; });
           if (matchedItem) {
@@ -3615,11 +3780,12 @@
         setDrawing(false);
 
         // Update Breadcrumb & Sidebar Card details
-        bcTopic.textContent = 'Quiz ' + activeQuizNum + ': ' + (currentEx.sectionTitle || currentEx.topic);
+        var isTruck = (index === 24 || index === 25);
+        bcTopic.textContent = isTruck ? ('Truck Module: ' + currentEx.topicTitle) : ('Quiz ' + activeQuizNum + ': ' + (currentEx.sectionTitle || currentEx.topic));
         bcExercise.textContent = currentEx.name;
         exerciseTitle.textContent = currentEx.name;
         exerciseInstructions.innerHTML = currentEx.instructions;
-        if (metaProgress) metaProgress.textContent = activeQuizNum + ' of 20 (Quiz ' + activeQuizNum + ')';
+        if (metaProgress) metaProgress.textContent = isTruck ? ('Category ' + activeQuizNum + ' Truck') : (activeQuizNum + ' of 20 (Quiz ' + activeQuizNum + ')');
         if (metaZoom) metaZoom.textContent = 'Zoom ' + map.getZoom();
         if (metaPoints) metaPoints.textContent = currentEx.route.length;
 

@@ -2990,6 +2990,22 @@
           minZoom: 4,
           maxZoom: 9,
           answer: null
+        },
+        {
+          sectionTitle: 'Railway Lines',
+          id: 'RailwayLinesV2',
+          folder: 'PassingRailwayLines',
+          topic: 'Infrastructure',
+          topicTitle: 'Railway Crossings',
+          name: 'Passing Railway Lines Part 2',
+          instructions: 'Cross railway lines only via certified road bridges, road tunnels, or public level crossings.',
+          defaultHomeCenter: [83.30, 115.80],
+          defaultHomeZoom: 9,
+          defaultStart: [82.48, 113.76],
+          defaultEnd: [84.14, 118.98],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
         }
       ];
 
@@ -3348,9 +3364,10 @@
         {
           quizNum: 13,
           title: 'Railway Lines',
-          subtitle: 'Passing Railway Lines',
+          subtitle: 'Passing Railway Lines (2 Parts)',
           parts: [
-            { partNum: 1, label: 'Passing Railway Lines', exIndex: 12 }
+            { partNum: 1, label: 'Passing Railway Lines', exIndex: 12 },
+            { partNum: 2, label: 'Part 2: Passing Railway Lines Part 2', exIndex: 26 }
           ]
         },
         {
@@ -3761,6 +3778,9 @@
         } else if (index === 24 || index === 25) {
           // Dedicated LGV / HGV Truck Module
           activeQuizNum = (index === 24 ? 'C1' : 'C');
+        } else if (index === 26) {
+          // Quiz 13 Part 2
+          activeQuizNum = 13;
         } else {
           var matchedItem = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === index; });
           if (matchedItem) {

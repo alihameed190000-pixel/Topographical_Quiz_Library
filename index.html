@@ -3038,6 +3038,22 @@
           minZoom: 4,
           maxZoom: 9,
           answer: null
+        },
+        {
+          sectionTitle: 'Footbridge',
+          id: 'PassingFootbridgeV3',
+          folder: 'PassingFootbridge',
+          topic: 'Infrastructure',
+          topicTitle: 'Footbridges',
+          name: 'Passing Footbridge Part 3',
+          instructions: 'Vehicles cannot cross pedestrian footbridges. Remain on designated public vehicular roadways.',
+          defaultHomeCenter: [74.93, 94.18],
+          defaultHomeZoom: 9,
+          defaultStart: [73.556, 92.156],
+          defaultEnd: [76.311, 96.206],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
         }
       ];
 
@@ -3380,10 +3396,11 @@
         {
           quizNum: 11,
           title: 'Footbridge',
-          subtitle: 'Passing Footbridges (2 Parts)',
+          subtitle: 'Passing Footbridges (3 Parts)',
           parts: [
             { partNum: 1, label: 'Passing Footbridges', exIndex: 10 },
-            { partNum: 2, label: 'Part 2: Passing Footbridge 2', exIndex: 28 }
+            { partNum: 2, label: 'Part 2: Passing Footbridge 2', exIndex: 28 },
+            { partNum: 3, label: 'Part 3: Passing Footbridge 3', exIndex: 29 }
           ]
         },
         {
@@ -3815,8 +3832,8 @@
         } else if (index === 26 || index === 27) {
           // Quiz 13 Part 2 & Part 3
           activeQuizNum = 13;
-        } else if (index === 28) {
-          // Quiz 11 Part 2
+        } else if (index === 28 || index === 29) {
+          // Quiz 11 Part 2 & Part 3
           activeQuizNum = 11;
         } else {
           var matchedItem = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === index; });

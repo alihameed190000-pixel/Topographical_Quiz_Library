@@ -3070,6 +3070,22 @@
           minZoom: 4,
           maxZoom: 9,
           answer: null
+        },
+        {
+          sectionTitle: 'Footpath',
+          id: 'PassingFootpathsV3',
+          folder: 'PassingFootpath',
+          topic: 'Infrastructure',
+          topicTitle: 'Passing Footpath',
+          name: 'Passing Footpaths Part 3',
+          instructions: 'Public footpaths are pedestrian-only thoroughfares. Do not route vehicles across them.',
+          defaultHomeCenter: [77.36, 104.63],
+          defaultHomeZoom: 8,
+          defaultStart: [78.15, 99.50],
+          defaultEnd: [76.57, 109.75],
+          minZoom: 4,
+          maxZoom: 9,
+          answer: null
         }
       ];
 
@@ -3422,10 +3438,11 @@
         {
           quizNum: 12,
           title: 'Footpath',
-          subtitle: 'Passing Footpaths (Pedestrian Only) (2 Parts)',
+          subtitle: 'Passing Footpaths (Pedestrian Only) (3 Parts)',
           parts: [
             { partNum: 1, label: 'Part 1: Passing Footpaths (Pedestrian Only)', exIndex: 11 },
-            { partNum: 2, label: 'Part 2: Passing Footpaths 2', exIndex: 30 }
+            { partNum: 2, label: 'Part 2: Passing Footpaths 2', exIndex: 30 },
+            { partNum: 3, label: 'Part 3: Passing Footpaths 3', exIndex: 31 }
           ]
         },
         {
@@ -3852,8 +3869,8 @@
         } else if (index === 28 || index === 29) {
           // Quiz 11 Part 2 & Part 3
           activeQuizNum = 11;
-        } else if (index === 30) {
-          // Quiz 12 Part 2
+        } else if (index === 30 || index === 31) {
+          // Quiz 12 Part 2 & Part 3
           activeQuizNum = 12;
         } else {
           var matchedItem = DROPDOWN_ITEMS_20.find(function (d) { return d.exIndex === index; });

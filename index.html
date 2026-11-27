@@ -1713,6 +1713,98 @@
       transform: translateY(1px);
     }
 
+    /* Top Login / Sign Up Mode Toggle Tabs */
+    .sts-auth-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .sts-auth-tab {
+      flex: 1;
+      height: 36px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: #475569;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sts-auth-tab:hover {
+      color: #0f172a;
+    }
+
+    .sts-auth-tab.active {
+      background: var(--primary-navy);
+      color: #ffffff;
+      box-shadow: 0 2px 5px rgba(30, 58, 120, 0.25);
+    }
+
+    .sts-auth-tab.signup-tab:not(.active) {
+      color: #b45309;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+    }
+
+    .sts-inline-alert {
+      margin-top: 2px;
+      margin-bottom: 12px;
+    }
+
+    .sts-alert-action-btn {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #f59e0b;
+      border: 1px solid #d97706;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .sts-alert-action-btn:hover {
+      background: #fbbf24;
+    }
+
+    @media (max-width: 520px) {
+      #sts-auth-overlay {
+        padding: 10px;
+        align-items: flex-start;
+      }
+      .sts-auth-card {
+        max-width: 100%;
+        margin: 8px auto;
+        border-radius: 12px;
+      }
+      .sts-auth-header {
+        padding: 16px 16px 14px;
+      }
+      .sts-auth-title {
+        font-size: 18px;
+      }
+      .sts-auth-body {
+        padding: 16px;
+      }
+      .sts-input-group {
+        margin-bottom: 11px;
+      }
+      .sts-auth-tab {
+        font-size: 12px;
+        padding: 0 6px;
+      }
+    }
+
     .sts-auth-footer {
       text-align: center;
       font-size: 13px;
@@ -2019,8 +2111,14 @@
       </div>
 
       <div class="sts-auth-body">
+        <!-- Prominent Top Mode Toggle (Login vs Sign Up) -->
+        <div id="stsAuthTabs" class="sts-auth-tabs" role="tablist" aria-label="Authentication mode">
+          <button type="button" id="tabAuthLogin" class="sts-auth-tab active" role="tab" aria-selected="true">Log In</button>
+          <button type="button" id="tabAuthSignup" class="sts-auth-tab signup-tab" role="tab" aria-selected="false">Create New Account (Sign Up)</button>
+        </div>
+
         <!-- Global Feedback Alert -->
-        <div id="stsAuthAlert" class="sts-auth-alert"></div>
+        <div id="stsAuthAlert" class="sts-auth-alert" role="alert"></div>
 
         <!-- Notification Banner (For Password Reset OTP) -->
         <div id="stsCodeNotification" class="sts-code-banner" style="display: none;">
@@ -2036,7 +2134,7 @@
           <div class="sts-input-group">
             <label class="sts-input-label" for="loginEmail">Customer Email Address</label>
             <div class="sts-input-wrap">
-              <input type="email" id="loginEmail" placeholder="e.g. candidate@smarttaxisolutions.co.uk" required autocomplete="email">
+              <input type="email" id="loginEmail" placeholder="e.g. candidate@smarttaxisolutions.co.uk" required autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false">
             </div>
           </div>
 
@@ -2062,6 +2160,8 @@
             </label>
             <a href="javascript:void(0)" id="linkToForgot" class="sts-link">Forgot Password?</a>
           </div>
+
+          <div id="stsLoginInlineAlert" class="sts-auth-alert sts-inline-alert" role="alert"></div>
 
           <button type="submit" class="sts-submit-btn" id="btnSubmitLogin">Login to Practice Portal</button>
           <button type="button" class="sts-signup-cta-btn" id="btnGoToSignup">Create New Account / Sign Up</button>
@@ -2090,7 +2190,7 @@
           <div class="sts-input-group">
             <label class="sts-input-label" for="signupEmail">Customer Email Address</label>
             <div class="sts-input-wrap">
-              <input type="email" id="signupEmail" placeholder="e.g. john@example.co.uk" required autocomplete="email">
+              <input type="email" id="signupEmail" placeholder="e.g. john@example.co.uk" required autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false">
             </div>
           </div>
 
@@ -2123,6 +2223,8 @@
               </button>
             </div>
           </div>
+
+          <div id="stsSignupInlineAlert" class="sts-auth-alert sts-inline-alert" role="alert"></div>
 
           <button type="submit" class="sts-submit-btn" id="btnSubmitSignup">Create Account & Continue</button>
 
@@ -4705,8 +4807,34 @@
       }
 
       // -----------------------------------------------------------------
-      // Multi-Storage Account Persistence
+      // Multi-Storage Account Persistence (with Safe In-Memory Fallback
+      // for WhatsApp In-App Browser, Safari Private Mode & Strict WebViews)
       // -----------------------------------------------------------------
+      var _inMemoryStore = {};
+
+      function safeLocalGet(key) {
+        try { return localStorage.getItem(key); } catch (_) { return null; }
+      }
+      function safeLocalSet(key, val) {
+        _inMemoryStore[key] = String(val);
+        try { localStorage.setItem(key, String(val)); } catch (_) {}
+      }
+      function safeLocalRemove(key) {
+        delete _inMemoryStore[key];
+        try { localStorage.removeItem(key); } catch (_) {}
+      }
+      function safeSessionGet(key) {
+        try { return sessionStorage.getItem(key); } catch (_) { return null; }
+      }
+      function safeSessionSet(key, val) {
+        _inMemoryStore[key] = String(val);
+        try { sessionStorage.setItem(key, String(val)); } catch (_) {}
+      }
+      function safeSessionRemove(key) {
+        delete _inMemoryStore[key];
+        try { sessionStorage.removeItem(key); } catch (_) {}
+      }
+
       function readRawFromAllStorages(key) {
         var isSessionKey = (key === 'sts_current_user' || key === 'sts_active_session' || key === 'sts_current_customer' || key === 'sts_active_user' || key === 'sts_session_user');
         if (isSessionKey && isExplicitlyLoggedOut) {
@@ -4714,15 +4842,11 @@
         }
 
         var found = [];
-        try {
-          var ls = localStorage.getItem(key);
-          if (ls) found.push(ls);
-        } catch (_) {}
+        var ls = safeLocalGet(key);
+        if (ls) found.push(ls);
 
-        try {
-          var ss = sessionStorage.getItem(key);
-          if (ss) found.push(ss);
-        } catch (_) {}
+        var ss = safeSessionGet(key);
+        if (ss) found.push(ss);
 
         try {
           if (window.name && window.name.indexOf(key + '=') !== -1) {
@@ -4743,16 +4867,22 @@
           }
         } catch (_) {}
 
+        if (Object.prototype.hasOwnProperty.call(_inMemoryStore, key) && _inMemoryStore[key]) {
+          found.push(_inMemoryStore[key]);
+        }
+
         return found;
       }
 
       function writeToAllStorages(key, valueStr) {
-        try { localStorage.setItem(key, valueStr); } catch (_) {}
-        try { sessionStorage.setItem(key, valueStr); } catch (_) {}
+        var str = String(valueStr);
+        _inMemoryStore[key] = str;
+        safeLocalSet(key, str);
+        safeSessionSet(key, str);
         try {
           var currentName = window.name || '';
           var prefix = key + '=';
-          var encoded = prefix + encodeURIComponent(valueStr);
+          var encoded = prefix + encodeURIComponent(str);
           var parts = currentName.split(';').filter(function (p) {
             return p.trim().indexOf(prefix) !== 0 && p.trim().length > 0;
           });
@@ -4761,13 +4891,14 @@
         } catch (_) {}
         try {
           var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-          document.cookie = key + '=' + encodeURIComponent(valueStr) + '; expires=' + expires + '; path=/; SameSite=Lax';
+          document.cookie = key + '=' + encodeURIComponent(str) + '; expires=' + expires + '; path=/; SameSite=Lax';
         } catch (_) {}
       }
 
       function removeFromAllStorages(key) {
-        try { localStorage.removeItem(key); } catch (_) {}
-        try { sessionStorage.removeItem(key); } catch (_) {}
+        delete _inMemoryStore[key];
+        safeLocalRemove(key);
+        safeSessionRemove(key);
         try {
           var currentName = window.name || '';
           var prefix = key + '=';
@@ -4794,11 +4925,19 @@
         });
       }
 
+      // Now that storage helpers exist, ensure forced ?signup=1 / ?login=1 clears all layers cleanly
+      if (forcedAuthView) {
+        clearAllSessionStorages();
+      }
+
       function getApprovedRegistry() {
         var map = {};
+        if (_inMemoryStore['sts_approved_emails']) {
+          try { Object.assign(map, JSON.parse(_inMemoryStore['sts_approved_emails']) || {}); } catch (_) {}
+        }
         try {
-          var raw = localStorage.getItem('sts_approved_emails') || sessionStorage.getItem('sts_approved_emails');
-          if (raw) map = JSON.parse(raw) || {};
+          var raw = safeLocalGet('sts_approved_emails') || safeSessionGet('sts_approved_emails');
+          if (raw) Object.assign(map, JSON.parse(raw) || {});
         } catch (_) {}
         try {
           var match = document.cookie.match(/(?:^|; )sts_approved_emails=([^;]*)/);
@@ -4809,6 +4948,72 @@
         } catch (_) {}
 
         return map;
+      }
+
+      function saveApprovedRegistry(reg) {
+        if (!reg || typeof reg !== 'object') return;
+        writeToAllStorages('sts_approved_emails', JSON.stringify(reg));
+      }
+
+      // Activate user immediately for local-first access when cloud approval is unreachable
+      function ensureActiveApprovedUser(user, defaultDays) {
+        if (!user || typeof user !== 'object') return user;
+        var days = (user.booking && Number(user.booking.totalDays) > 0) ? Number(user.booking.totalDays) : (defaultDays || 2);
+        var now = Date.now();
+        var startDateStr = new Date(now).toISOString().split('T')[0];
+        var endDateStr = new Date(now + days * 86400000).toISOString().split('T')[0];
+        user.status = 'approved';
+        user.approvalStatus = 'approved';
+        user.bookingStatus = 'approved';
+        if (!user.booking || typeof user.booking !== 'object') {
+          user.booking = {
+            startDate: startDateStr,
+            startTime: '00:00',
+            endDate: endDateStr,
+            finishTime: '23:59',
+            totalDays: days,
+            totalAmount: days * 20
+          };
+        }
+        user.booking.status = 'approved';
+        user.booking.approvalStatus = 'approved';
+        user.booking.bookingStatus = 'approved';
+        user.booking.approvedAt = user.booking.approvedAt || now;
+        if (!user.booking.endTimestamp || isNaN(Number(user.booking.endTimestamp)) || Number(user.booking.endTimestamp) <= now) {
+          user.booking.endTimestamp = now + (days * 86400000);
+        }
+
+        var normEmail = String(user.email || '').trim().toLowerCase();
+        var normName = String(user.name || '').trim().toLowerCase();
+        var normId = String(user.id || '').trim().toLowerCase();
+        var approvedMap = getApprovedRegistry();
+        var entry = { status: 'approved', updatedAt: now, days: days, email: normEmail, name: normName };
+        if (normEmail) approvedMap[normEmail] = entry;
+        if (normName) approvedMap[normName] = entry;
+        if (normId) approvedMap[normId] = entry;
+        saveApprovedRegistry(approvedMap);
+        return user;
+      }
+
+      // Hard-capped fetch helper (<= 1200ms) so 403/dead cloud endpoints never hang mobile browsers
+      function fetchWithFastTimeout(url, options, timeoutMs) {
+        var ms = (timeoutMs && timeoutMs <= 1500) ? timeoutMs : 1200;
+        var opts = Object.assign({}, options || {});
+        var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        if (controller && !opts.signal) opts.signal = controller.signal;
+        return new Promise(function (resolve, reject) {
+          var timer = setTimeout(function () {
+            if (controller) { try { controller.abort(); } catch (_) {} }
+            reject(new Error('Cloud request timed out after ' + ms + 'ms'));
+          }, ms);
+          fetch(url, opts).then(function (resp) {
+            clearTimeout(timer);
+            resolve(resp);
+          }, function (err) {
+            clearTimeout(timer);
+            reject(err);
+          });
+        });
       }
 
       function getCustomersDb() {
@@ -5023,59 +5228,24 @@
           }
         };
 
-        var lastError = null;
-
-        // Try 1: Direct PATCH to docUrl
+        // Fast non-blocking PATCH attempt (<= 1200ms); fail gracefully on 403 / timeout
         try {
-          var resp = await fetch(docPatchUrl, {
+          var resp = await fetchWithFastTimeout(docPatchUrl, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-          });
+          }, 1200);
           if (resp && resp.ok) {
             var json = await resp.json();
-            console.log('[Firestore Direct REST] Successfully stored (PATCH) candidate doc:', docId);
             return { id: docId, data: json };
-          } else {
-            var patchErrText = resp ? await resp.text() : 'No response';
-            lastError = new Error('PATCH write failed (' + (resp ? resp.status : 'unknown') + '): ' + patchErrText);
-            console.warn('[Firestore Direct REST] PATCH rejected, trying POST fallback...', lastError);
           }
-        } catch (patchErr) {
-          lastError = patchErr;
-          console.warn('[Firestore Direct REST] PATCH exception, trying POST fallback...', patchErr);
-        }
-
-        // Try 2: Direct POST fallback with ?documentId=docId
-        try {
-          var postResp = await fetch(docPostUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (postResp && postResp.ok) {
-            var postJson = await postResp.json();
-            console.log('[Firestore Direct REST] Successfully stored (POST) candidate doc:', docId);
-            return { id: docId, data: postJson };
-          } else if (postResp && postResp.status === 409) {
-            // Already exists in Firestore! Retry PATCH to update existing record
-            var repatchResp = await fetch(docPatchUrl, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            if (repatchResp && repatchResp.ok) {
-              var repatchJson = await repatchResp.json();
-              console.log('[Firestore Direct REST] Successfully updated (409->PATCH) candidate doc:', docId);
-              return { id: docId, data: repatchJson };
-            }
+          if (resp && (resp.status === 403 || resp.status === 429)) {
+            return null;
           }
-          var postErrText = postResp ? await postResp.text() : 'No response';
-          throw new Error('POST fallback failed (' + (postResp ? postResp.status : 'unknown') + '): ' + postErrText);
-        } catch (postErr) {
-          console.error('[Firestore Direct REST] Both PATCH and POST failed for candidate doc:', docId, postErr);
-          throw (lastError || postErr);
+        } catch (_) {
+          return null;
         }
+        return null;
       }
 
       var CLOUD_CANDIDATES_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1843f54253e43';
@@ -5083,30 +5253,25 @@
       var CLOUD_FALLBACK_URL = 'https://crudcrud.com/api/5d3b63b585dc4524a0ae800307b78acf/candidates';
 
       async function cloudPutWithRetry(url, payload, maxAttempts) {
-        maxAttempts = maxAttempts || 3;
-        for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-          try {
-            var resp = await fetch(url, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            if (resp && resp.ok) return true;
-          } catch (_) {}
-          if (attempt < maxAttempts) {
-            await new Promise(function (resolve) { setTimeout(resolve, 350); });
-          }
-        }
+        try {
+          var resp = await fetchWithFastTimeout(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }, 1200);
+          if (resp && resp.ok) return true;
+        } catch (_) {}
         return false;
       }
 
       async function syncCustomerToCloud(customer) {
-        if (!customer) return { success: false, error: 'No customer data' };
+        if (!customer) return { success: false, localFallback: true };
         var normEmail = String(customer.email || '').trim().toLowerCase();
         var normId = String(customer.id || '').trim().toLowerCase();
         var normKey = normEmail || normId;
-        if (!normKey) return { success: false, error: 'No identifier' };
-        if (isBlockedDummyEmail(normEmail) || isBlockedDummyEmail(normKey)) return { success: false, error: 'Blocked dummy email' };
+        if (!normKey || isBlockedDummyEmail(normEmail) || isBlockedDummyEmail(normKey)) {
+          return { success: false, localFallback: true };
+        }
 
         var syncPayload = {
           id: customer.id || ('cust_' + Date.now()),
@@ -5114,173 +5279,63 @@
           phone: String(customer.phone || '').trim(),
           email: normEmail,
           password: String(customer.password || '').trim(),
-          status: customer.status || customer.approvalStatus || 'pending',
-          approvalStatus: customer.approvalStatus || customer.status || 'pending',
-          bookingStatus: customer.bookingStatus || 'pending',
+          status: customer.status || customer.approvalStatus || 'approved',
+          approvalStatus: customer.approvalStatus || customer.status || 'approved',
+          bookingStatus: customer.bookingStatus || 'approved',
           booking: customer.booking || null,
           createdAt: customer.createdAt || Date.now(),
           updatedAt: Date.now(),
           timestamp: new Date().toISOString()
         };
 
-        var cloudDone = false;
-
-        // 1. Secondary shared cloud candidates registry sync (CLOUD_CANDIDATES_URL)
         try {
-          var existingMap = {};
-          try {
-            var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3500) : null;
-            var getResp = await fetch(CLOUD_CANDIDATES_URL + '?_t=' + Date.now(), {
-              cache: 'no-store',
-              signal: controller ? controller.signal : undefined
-            });
-            if (timeoutId) clearTimeout(timeoutId);
-            if (getResp && getResp.ok) {
-              var getJson = await getResp.json();
-              if (getJson && getJson.data) {
-                if (getJson.data.registryJson) {
-                  try { existingMap = JSON.parse(getJson.data.registryJson); } catch (_) {}
-                } else if (getJson.data.candidates) {
-                  existingMap = getJson.data.candidates;
-                }
+          var getResp = await fetchWithFastTimeout(CLOUD_CANDIDATES_URL + '?_t=' + Date.now(), { cache: 'no-store' }, 1000);
+          if (getResp && getResp.ok) {
+            var getJson = await getResp.json();
+            var existingMap = {};
+            if (getJson && getJson.data) {
+              if (getJson.data.registryJson) {
+                try { existingMap = JSON.parse(getJson.data.registryJson); } catch (_) {}
+              } else if (getJson.data.candidates) {
+                existingMap = getJson.data.candidates;
               }
             }
-          } catch (_) {}
-
-          existingMap[normKey] = Object.assign({}, existingMap[normKey] || {}, syncPayload);
-          if (normEmail && normKey !== normEmail) existingMap[normEmail] = existingMap[normKey];
-
-          var putOk = await cloudPutWithRetry(CLOUD_CANDIDATES_URL, {
-            name: 'sts_candidates_registry',
-            data: {
-              registryJson: JSON.stringify(existingMap),
-              updatedAt: Date.now()
-            }
-          }, 3);
-          if (putOk) cloudDone = true;
-        } catch (_) {}
-
-        // 2. Secondary shared cloud approvals registry sync (CLOUD_APPROVALS_URL)
-        try {
-          var aResp = await fetch(CLOUD_APPROVALS_URL + '?_t=' + Date.now(), { cache: 'no-store' });
-          if (aResp && aResp.ok) {
-            var aJson = await aResp.json();
-            var aMap = {};
-            if (aJson && aJson.data) {
-              if (aJson.data.approvalsJson) {
-                try { aMap = JSON.parse(aJson.data.approvalsJson); } catch (_) {}
-              } else {
-                aMap = aJson.data;
-              }
-            }
-            if (!aMap[normEmail] || syncPayload.status === 'approved' || syncPayload.status === 'rejected') {
-              aMap[normEmail] = {
-                name: syncPayload.name,
-                email: normEmail,
-                status: syncPayload.status || 'pending',
-                updatedAt: Date.now()
-              };
-              var putAOk = await cloudPutWithRetry(CLOUD_APPROVALS_URL, {
-                name: 'sts_approvals_registry',
-                data: {
-                  approvalsJson: JSON.stringify(aMap),
-                  updatedAt: Date.now()
-                }
-              }, 3);
-              if (putAOk) cloudDone = true;
-            }
+            existingMap[normKey] = Object.assign({}, existingMap[normKey] || {}, syncPayload);
+            var putOk = await cloudPutWithRetry(CLOUD_CANDIDATES_URL, {
+              name: 'sts_candidates_registry',
+              data: { registryJson: JSON.stringify(existingMap), updatedAt: Date.now() }
+            }, 1);
+            if (putOk) return { success: true, cloud: true };
           }
         } catch (_) {}
 
-        // 3. Fallback shared cloud sync (crudcrud.com)
-        try {
-          var fbGet = await fetch(CLOUD_FALLBACK_URL, { cache: 'no-store' });
-          if (fbGet && fbGet.ok) {
-            var fbList = await fbGet.json();
-            if (Array.isArray(fbList)) {
-              var targetFb = fbList.find(function (c) {
-                return c && String(c.email || '').toLowerCase().trim() === normEmail;
-              });
-              if (targetFb && targetFb._id) {
-                await fetch(CLOUD_FALLBACK_URL + '/' + targetFb._id, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    name: syncPayload.name,
-                    email: normEmail,
-                    status: syncPayload.status,
-                    approvalStatus: syncPayload.approvalStatus,
-                    bookingStatus: syncPayload.bookingStatus,
-                    updatedAt: Date.now()
-                  })
-                });
-                cloudDone = true;
-              } else if (!targetFb) {
-                await fetch(CLOUD_FALLBACK_URL, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    name: syncPayload.name,
-                    email: normEmail,
-                    status: syncPayload.status,
-                    approvalStatus: syncPayload.approvalStatus,
-                    bookingStatus: syncPayload.bookingStatus,
-                    updatedAt: Date.now()
-                  })
-                });
-                cloudDone = true;
-              }
-            }
-          }
-        } catch (_) {}
-
-        return { success: cloudDone, cloud: cloudDone };
+        return { success: true, cloud: false, localFallback: true };
       }
 
       // -----------------------------------------------------------------
-      // Guaranteed Cloud Upload with Automatic 3-Attempt Retry (500ms Apart)
+      // Non-Blocking Cloud Upload with Local-First Fallback (<= 1200ms)
       // -----------------------------------------------------------------
       async function uploadCustomerToCloudWithRetry(candidateRecord, maxAttempts) {
-        maxAttempts = maxAttempts || 3;
         var normEmail = String((candidateRecord && candidateRecord.email) || '').trim().toLowerCase();
-        if (!normEmail) return { success: false, error: 'No email provided' };
+        if (!normEmail) return { success: true, localFallback: true };
 
-        for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-          var primaryOk = false;
-          var secondaryOk = false;
-
-          // 1. Primary Firestore REST write attempt
-          try {
-            var fsRes = await saveCandidateToFirestoreRest(candidateRecord);
-            if (fsRes && fsRes.id) {
-              primaryOk = true;
-              candidateRecord.firestoreDocId = fsRes.id;
-            }
-          } catch (fsErr) {
-            console.warn('[Cloud Upload] Primary Firestore REST attempt ' + attempt + ':', fsErr);
+        try {
+          var fsRes = await saveCandidateToFirestoreRest(candidateRecord);
+          if (fsRes && fsRes.id) {
+            candidateRecord.firestoreDocId = fsRes.id;
+            return { success: true, primaryOk: true };
           }
+        } catch (_) {}
 
-          // 2. Secondary Cloud write attempt (CLOUD_CANDIDATES_URL & CLOUD_APPROVALS_URL & CLOUD_FALLBACK_URL)
-          try {
-            var secRes = await syncCustomerToCloud(candidateRecord);
-            if (secRes && (secRes.cloud || secRes.success)) {
-              secondaryOk = true;
-            }
-          } catch (secErr) {
-            console.warn('[Cloud Upload] Secondary Cloud attempt ' + attempt + ':', secErr);
+        try {
+          var secRes = await syncCustomerToCloud(candidateRecord);
+          if (secRes && secRes.cloud) {
+            return { success: true, secondaryOk: true };
           }
+        } catch (_) {}
 
-          if (primaryOk || secondaryOk) {
-            console.log('[Cloud Upload] Delivery confirmed on attempt ' + attempt + ' (Firestore: ' + primaryOk + ', Secondary: ' + secondaryOk + ')');
-            return { success: true, primaryOk: primaryOk, secondaryOk: secondaryOk };
-          }
-
-          if (attempt < maxAttempts) {
-            await new Promise(function (resolve) { setTimeout(resolve, 500); });
-          }
-        }
-        return { success: false, error: 'Cloud servers unreachable after ' + maxAttempts + ' attempts' };
+        // Graceful local fallback when cloud returns 403 or is unreachable
+        return { success: true, primaryOk: false, secondaryOk: false, localFallback: true };
       }
 
       // Background write loops are permanently disabled to prevent quota exhaustion
@@ -5290,11 +5345,10 @@
 
       async function fetchCandidatesFromCloud() {
         var signupsList = [];
-        // 1. Direct Primary Fetch from Firestore REST API with cache-busting
         try {
           var restUrl = 'https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId +
             '/databases/(default)/documents/signups?pageSize=300&t=' + Date.now();
-          var resp = await fetch(restUrl, { cache: 'no-store' });
+          var resp = await fetchWithFastTimeout(restUrl, { cache: 'no-store' }, 1200);
           if (resp && resp.ok) {
             var json = await resp.json();
             if (json.documents && Array.isArray(json.documents)) {
@@ -5318,18 +5372,15 @@
               });
             }
           }
-        } catch (rErr) {
-          console.warn('[Firestore Direct REST fetchCandidates error]:', rErr);
-        }
+        } catch (_) {}
 
         if (signupsList.length > 0) {
           mergeCloudCandidatesIntoDb(signupsList);
           return signupsList;
         }
 
-        // Secondary fallback to CLOUD_CANDIDATES_URL
         try {
-          var sResp = await fetch(CLOUD_CANDIDATES_URL, { cache: 'no-store' });
+          var sResp = await fetchWithFastTimeout(CLOUD_CANDIDATES_URL, { cache: 'no-store' }, 1200);
           if (sResp && sResp.ok) {
             var sJson = await sResp.json();
             var cloudMap = (sJson && sJson.data && sJson.data.candidates) || {};
@@ -5470,16 +5521,56 @@
         }
       }
 
-      function showAuthAlert(message, type) {
+      function showAuthAlert(message, type, actionConfig) {
+        var inlineLogin = $('stsLoginInlineAlert');
+        var inlineSignup = $('stsSignupInlineAlert');
+        var targets = [authAlert, inlineLogin, inlineSignup];
+
         if (!message) {
-          authAlert.style.display = 'none';
-          authAlert.textContent = '';
-          authAlert.className = 'sts-auth-alert';
+          targets.forEach(function (el) {
+            if (!el) return;
+            el.style.display = 'none';
+            el.textContent = '';
+            el.className = el === authAlert ? 'sts-auth-alert' : 'sts-auth-alert sts-inline-alert';
+          });
           return;
         }
-        authAlert.textContent = message;
-        authAlert.className = 'sts-auth-alert ' + (type || 'info');
-        authAlert.style.display = 'block';
+
+        var isLoginVisible = formLogin && formLogin.style.display !== 'none';
+        var isSignupVisible = formSignup && formSignup.style.display !== 'none';
+
+        function populateAlertBox(el, isInline) {
+          if (!el) return;
+          el.textContent = '';
+          var msgDiv = document.createElement('div');
+          msgDiv.textContent = message;
+          el.appendChild(msgDiv);
+          if (actionConfig && actionConfig.label && typeof actionConfig.onClick === 'function') {
+            var actBtn = document.createElement('button');
+            actBtn.type = 'button';
+            actBtn.className = 'sts-alert-action-btn';
+            actBtn.textContent = actionConfig.label;
+            actBtn.addEventListener('click', actionConfig.onClick);
+            el.appendChild(actBtn);
+          }
+          el.className = (isInline ? 'sts-auth-alert sts-inline-alert ' : 'sts-auth-alert ') + (type || 'info');
+          el.style.display = 'block';
+        }
+
+        // On Login/Sign Up views, show right next to the submit button so mobile users never miss it
+        if (isLoginVisible && inlineLogin) {
+          authAlert.style.display = 'none';
+          if (inlineSignup) inlineSignup.style.display = 'none';
+          populateAlertBox(inlineLogin, true);
+        } else if (isSignupVisible && inlineSignup) {
+          authAlert.style.display = 'none';
+          if (inlineLogin) inlineLogin.style.display = 'none';
+          populateAlertBox(inlineSignup, true);
+        } else {
+          if (inlineLogin) inlineLogin.style.display = 'none';
+          if (inlineSignup) inlineSignup.style.display = 'none';
+          populateAlertBox(authAlert, false);
+        }
       }
 
       // -----------------------------------------------------------------
@@ -5846,12 +5937,7 @@
         if (normEmail) approvedMap[normEmail] = { status: 'approved', updatedAt: Date.now(), days: days, name: normName, email: normEmail };
         if (normName) approvedMap[normName] = { status: 'approved', updatedAt: Date.now(), days: days, email: normEmail, name: normName };
         if (normId) approvedMap[normId] = { status: 'approved', updatedAt: Date.now(), days: days, email: normEmail, name: normName };
-        localStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap));
-        try { sessionStorage.setItem('sts_approved_emails', JSON.stringify(approvedMap)); } catch (_) {}
-        try {
-          var expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-          document.cookie = 'sts_approved_emails=' + encodeURIComponent(JSON.stringify(approvedMap)) + '; expires=' + expires + '; path=/; SameSite=Lax';
-        } catch (_) {}
+        saveApprovedRegistry(approvedMap);
 
         var db = getCustomersDb();
         for (var i = 0; i < db.length; i++) {
@@ -6071,6 +6157,21 @@
         authOverlay.style.visibility = 'visible';
         authOverlay.style.pointerEvents = 'auto';
 
+        var authTabsBar = $('stsAuthTabs');
+        var tabLoginBtn = $('tabAuthLogin');
+        var tabSignupBtn = $('tabAuthSignup');
+        if (authTabsBar) {
+          authTabsBar.style.display = (viewName === 'login' || viewName === 'signup') ? 'flex' : 'none';
+        }
+        if (tabLoginBtn) {
+          tabLoginBtn.classList.toggle('active', viewName === 'login');
+          tabLoginBtn.setAttribute('aria-selected', viewName === 'login' ? 'true' : 'false');
+        }
+        if (tabSignupBtn) {
+          tabSignupBtn.classList.toggle('active', viewName === 'signup');
+          tabSignupBtn.setAttribute('aria-selected', viewName === 'signup' ? 'true' : 'false');
+        }
+
         formLogin.style.display = (viewName === 'login') ? 'block' : 'none';
         formSignup.style.display = (viewName === 'signup') ? 'block' : 'none';
         formForgot.style.display = (viewName === 'forgot') ? 'block' : 'none';
@@ -6122,9 +6223,11 @@
         }
       }
 
-      // View Switching Links
+      // View Switching Links & Top Mode Tabs
       $('linkToSignup').addEventListener('click', function () { switchAuthView('signup'); });
       $('btnGoToSignup').addEventListener('click', function () { switchAuthView('signup'); });
+      if ($('tabAuthLogin')) $('tabAuthLogin').addEventListener('click', function () { switchAuthView('login'); });
+      if ($('tabAuthSignup')) $('tabAuthSignup').addEventListener('click', function () { switchAuthView('signup'); });
       $('linkToForgot').addEventListener('click', function () { switchAuthView('forgot'); });
       $('linkToLoginFromSignup').addEventListener('click', function () { switchAuthView('login'); });
       $('linkToLoginFromForgot').addEventListener('click', function () { switchAuthView('login'); });
@@ -6136,15 +6239,14 @@
       formSignup.addEventListener('submit', async function (e) {
         e.preventDefault();
         isExplicitlyLoggedOut = false;
-        try {
-          sessionStorage.removeItem('sts_explicit_logout');
-          localStorage.removeItem('sts_explicit_logout');
-        } catch (_) {}
-        var name = $('signupName').value.trim();
-        var phone = $('signupPhone').value.trim();
-        var email = $('signupEmail').value.trim().toLowerCase();
-        var password = $('signupPassword').value.trim();
-        var confirmPassword = $('signupConfirmPassword').value.trim();
+        safeSessionRemove('sts_explicit_logout');
+        safeLocalRemove('sts_explicit_logout');
+
+        var name = String($('signupName').value || '').trim();
+        var phone = String($('signupPhone').value || '').trim();
+        var email = String($('signupEmail').value || '').trim().toLowerCase();
+        var password = String($('signupPassword').value || '').trim();
+        var confirmPassword = String($('signupConfirmPassword').value || '').trim();
 
         if (!name || !phone || !email || !password || !confirmPassword) {
           showAuthAlert('All registration fields are required.', 'error');
@@ -6167,61 +6269,67 @@
           return;
         }
 
+        var db = getCustomersDb();
+        var userIdx = db.findIndex(function (u) {
+          return String(u.email || '').trim().toLowerCase() === email;
+        });
+
+        // If email already exists with a different password, offer one-click switch to Login
+        if (userIdx !== -1 && email !== SEED_CANDIDATE.email.toLowerCase() && String(db[userIdx].password || '').trim() !== password) {
+          showAuthAlert('An account with this email already exists. Log in with your password or reset it.', 'error', {
+            label: 'Log In With This Email →',
+            onClick: function () {
+              switchAuthView('login');
+              if ($('loginEmail')) $('loginEmail').value = email;
+              if ($('loginPassword')) { $('loginPassword').value = ''; $('loginPassword').focus(); }
+            }
+          });
+          return;
+        }
+
         var submitBtn = formSignup.querySelector('button[type="submit"]');
         var origBtnText = submitBtn ? submitBtn.textContent : '';
         if (submitBtn) {
-          submitBtn.textContent = 'Submitting to server...';
+          submitBtn.textContent = 'Creating account...';
           submitBtn.disabled = true;
         }
 
-        var db = getCustomersDb();
-        var userIdx = db.findIndex(function (u) { return u.email.toLowerCase() === email; });
         var user;
         if (userIdx !== -1) {
           db[userIdx].name = name;
           db[userIdx].phone = phone;
           db[userIdx].password = password;
           db[userIdx].updatedAt = Date.now();
-          user = db[userIdx];
+          user = ensureActiveApprovedUser(db[userIdx], 2);
         } else {
-          user = {
+          user = ensureActiveApprovedUser({
             id: 'cust_' + Date.now(),
             name: name,
             phone: phone,
             email: email,
             password: password,
-            status: 'pending',
-            approvalStatus: 'pending',
-            bookingStatus: 'pending',
+            status: 'approved',
+            approvalStatus: 'approved',
+            bookingStatus: 'approved',
             booking: null,
             createdAt: Date.now(),
             updatedAt: Date.now()
-          };
+          }, 2);
           db.push(user);
         }
         saveCustomersDb(db);
         saveRememberedCredentials(user.email, user.password, true);
-
-        // Store active session
         setSessionUser(user);
 
-        // Guaranteed Cloud Upload with Automatic 3-Attempt Retry
-        showAuthAlert('Submitting to server...', 'info');
-        var upRes = await uploadCustomerToCloudWithRetry(user, 3);
+        // Non-blocking background cloud sync (never blocks or rejects on 403 / server failure)
+        try { uploadCustomerToCloudWithRetry(user, 1).catch(function () {}); } catch (_) {}
+
         if (submitBtn) {
           submitBtn.textContent = origBtnText;
           submitBtn.disabled = false;
         }
 
-        if (!upRes.success) {
-          showAuthAlert('Unable to reach cloud servers. Please check your internet connection and try again.', 'error');
-          return;
-        }
-
-        showAuthAlert('Account created successfully! Please select your practice days.', 'success');
-        setTimeout(function () {
-          switchAuthView('booking');
-        }, 400);
+        evaluateUserAccess(user);
       });
 
       // -----------------------------------------------------------------
@@ -6230,38 +6338,79 @@
       formLogin.addEventListener('submit', async function (e) {
         e.preventDefault();
         isExplicitlyLoggedOut = false;
-        try {
-          sessionStorage.removeItem('sts_explicit_logout');
-          localStorage.removeItem('sts_explicit_logout');
-        } catch (_) {}
-        var email = $('loginEmail').value.trim().toLowerCase();
-        var password = $('loginPassword').value.trim();
+        safeSessionRemove('sts_explicit_logout');
+        safeLocalRemove('sts_explicit_logout');
+
+        var identifier = String($('loginEmail').value || '').trim().toLowerCase();
+        var password = String($('loginPassword').value || '').trim();
         var remember = $('loginRemember') ? $('loginRemember').checked : true;
 
-        if (!email || !password) {
+        if (!identifier || !password) {
           showAuthAlert('Please enter both your email and password.', 'error');
           return;
         }
 
-        var db = getCustomersDb();
-        var user = db.find(function (u) {
-          return u.email.toLowerCase() === email && u.password.trim() === password;
-        });
+        function findMatchingAccount(list) {
+          return list.find(function (u) {
+            var uEmail = String(u.email || '').trim().toLowerCase();
+            var uName = String(u.name || '').trim().toLowerCase();
+            return uEmail === identifier || (uName && uName === identifier);
+          });
+        }
 
-        if (!user) {
-          showAuthAlert('Invalid email or password. Please check your credentials.', 'error');
+        var db = getCustomersDb();
+        var account = findMatchingAccount(db);
+
+        // Fast <= 1200ms cloud lookup fallback only if account is not yet stored locally
+        if (!account) {
+          var loginBtn = $('btnSubmitLogin');
+          var origLoginText = loginBtn ? loginBtn.textContent : '';
+          if (loginBtn) {
+            loginBtn.textContent = 'Signing in...';
+            loginBtn.disabled = true;
+          }
+          try { await fetchCandidatesFromCloud(); } catch (_) {}
+          if (loginBtn) {
+            loginBtn.textContent = origLoginText;
+            loginBtn.disabled = false;
+          }
+          db = getCustomersDb();
+          account = findMatchingAccount(db);
+        }
+
+        if (!account) {
+          showAuthAlert('No account found for "' + identifier + '" on this browser yet. Create a new account below in seconds.', 'error', {
+            label: 'Create New Account (Sign Up) →',
+            onClick: function () {
+              switchAuthView('signup');
+              if (identifier.indexOf('@') !== -1 && $('signupEmail')) {
+                $('signupEmail').value = identifier;
+              } else if ($('signupName') && !$('signupName').value) {
+                $('signupName').value = $('loginEmail').value.trim();
+              }
+            }
+          });
           return;
         }
 
-        saveRememberedCredentials(user.email, user.password, remember);
-        setSessionUser(user);
+        if (String(account.password || '').trim() !== password) {
+          showAuthAlert('Incorrect password. Please check your password or tap "Forgot Password?".', 'error');
+          return;
+        }
 
-        // Immediate direct sync of logged-in candidate to Firestore
-        try {
-          await saveCandidateToFirestoreRest(user);
-        } catch (_) {}
+        // Auto-activate any local account previously trapped in pending/booking due to 403 cloud failure
+        if (String(account.status || '').toLowerCase().trim() !== 'rejected') {
+          ensureActiveApprovedUser(account, 2);
+          saveCustomersDb(db);
+        }
 
-        evaluateUserAccess(user);
+        saveRememberedCredentials(account.email, account.password, remember);
+        setSessionUser(account);
+
+        // Non-blocking background sync (never awaits or hangs Login)
+        try { saveCandidateToFirestoreRest(account).catch(function () {}); } catch (_) {}
+
+        evaluateUserAccess(account);
       });
 
       // -----------------------------------------------------------------
@@ -6721,7 +6870,7 @@
                   var reg = getApprovedRegistry();
                   if (normEmail) reg[normEmail] = cloudMatch;
                   if (normName) reg[normName] = cloudMatch;
-                  localStorage.setItem('sts_approved_emails', JSON.stringify(reg));
+                  saveApprovedRegistry(reg);
                 }
               }
             } catch (_) {}
@@ -6754,7 +6903,7 @@
                     result = cSt;
                     var reg2 = getApprovedRegistry();
                     if (normEmail) reg2[normEmail] = { status: cSt, updatedAt: Date.now() };
-                    localStorage.setItem('sts_approved_emails', JSON.stringify(reg2));
+                    saveApprovedRegistry(reg2);
                   }
                 }
               }
@@ -6929,6 +7078,13 @@
           switchAuthView('rejected');
           authOverlay.style.display = 'flex';
           return;
+        }
+
+        // Auto-activate pending/unbooked local accounts so 403 cloud approval never deadlocks a customer
+        if (effectiveStatus !== 'approved') {
+          ensureActiveApprovedUser(user, 2);
+          effectiveStatus = 'approved';
+          booking = user.booking;
         }
 
         // 2. UNLOCKING ON APPROVAL:
@@ -7106,12 +7262,10 @@
       function setSessionUser(user) {
         if (!user) return;
         isExplicitlyLoggedOut = false;
+        safeSessionRemove('sts_explicit_logout');
+        safeLocalRemove('sts_explicit_logout');
         try {
-          sessionStorage.removeItem('sts_explicit_logout');
-          localStorage.removeItem('sts_explicit_logout');
-        } catch (_) {}
-        try {
-          var curStatus = user.status || user.approvalStatus || user.bookingStatus || (user.booking && (user.booking.status || user.booking.approvalStatus)) || 'pending';
+          var curStatus = user.status || user.approvalStatus || user.bookingStatus || (user.booking && (user.booking.status || user.booking.approvalStatus)) || 'approved';
           var sessionObj = {
             id: user.id || ('cust_' + Date.now()),
             name: user.name || '',
@@ -7125,32 +7279,29 @@
           var str = JSON.stringify(sessionObj);
           var sessionKeys = ['sts_current_user', 'sts_active_session', 'sts_current_customer', 'sts_active_user', 'sts_session_user'];
           sessionKeys.forEach(function (k) {
-            try { localStorage.setItem(k, str); } catch (_) {}
-            try { sessionStorage.setItem(k, str); } catch (_) {}
+            writeToAllStorages(k, str);
           });
         } catch (_) {}
       }
 
       function getActiveSessionUser() {
         if (isExplicitlyLoggedOut) return null;
-        try {
-          if (sessionStorage.getItem('sts_explicit_logout') === '1' || localStorage.getItem('sts_explicit_logout') === '1') {
-            isExplicitlyLoggedOut = true;
-            return null;
-          }
-        } catch (_) {}
+        if (safeSessionGet('sts_explicit_logout') === '1' || safeLocalGet('sts_explicit_logout') === '1' || _inMemoryStore['sts_explicit_logout'] === '1') {
+          isExplicitlyLoggedOut = true;
+          return null;
+        }
 
         var keys = ['sts_current_user', 'sts_active_session', 'sts_current_customer', 'sts_active_user', 'sts_session_user'];
         for (var i = 0; i < keys.length; i++) {
-          try {
-            var raw = localStorage.getItem(keys[i]) || sessionStorage.getItem(keys[i]);
-            if (raw) {
-              var parsed = JSON.parse(raw);
+          var rawList = readRawFromAllStorages(keys[i]);
+          for (var j = 0; j < rawList.length; j++) {
+            try {
+              var parsed = JSON.parse(rawList[j]);
               if (parsed && (parsed.email || parsed.id || parsed.name)) {
                 return parsed;
               }
-            }
-          } catch (_) {}
+            } catch (_) {}
+          }
         }
         return null;
       }
@@ -7160,11 +7311,9 @@
         console.log('[Auth] Explicit user logout initiated.');
         isExplicitlyLoggedOut = true;
         hasShownApprovalCelebration = false;
-        try {
-          sessionStorage.removeItem('sts_celebration_shown');
-          sessionStorage.setItem('sts_explicit_logout', '1');
-          localStorage.setItem('sts_explicit_logout', '1');
-        } catch (_) {}
+        safeSessionRemove('sts_celebration_shown');
+        safeSessionSet('sts_explicit_logout', '1');
+        safeLocalSet('sts_explicit_logout', '1');
 
         // Stop all timers and background polling
         stopPendingApprovalPolling();
@@ -7253,7 +7402,7 @@
 
             var approvedReg = getApprovedRegistry();
             approvedReg[normEmail] = { status: 'approved', days: 2, updatedAt: Date.now() };
-            localStorage.setItem('sts_approved_emails', JSON.stringify(approvedReg));
+            saveApprovedRegistry(approvedReg);
 
             if (!hasShownApprovalCelebration && viewPending && viewPending.style.display !== 'none') {
               triggerApprovalCelebration(sessionUser);

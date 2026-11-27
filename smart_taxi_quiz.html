@@ -1686,6 +1686,33 @@
       transform: translateY(1px);
     }
 
+    /* Prominent "Create New Account / Sign Up" call-to-action (login view) */
+    .sts-signup-cta-btn {
+      width: 100%;
+      height: 42px;
+      background: #f59e0b;
+      color: #0f172a;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      border: 2px solid #d97706;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+      transition: all 0.15s ease;
+      margin-top: -4px;
+      margin-bottom: 14px;
+    }
+
+    .sts-signup-cta-btn:hover {
+      background: #fbbf24;
+      box-shadow: 0 4px 10px rgba(217, 119, 6, 0.45);
+    }
+
+    .sts-signup-cta-btn:active {
+      transform: translateY(1px);
+    }
+
     .sts-auth-footer {
       text-align: center;
       font-size: 13px;
@@ -2037,6 +2064,7 @@
           </div>
 
           <button type="submit" class="sts-submit-btn" id="btnSubmitLogin">Login to Practice Portal</button>
+          <button type="button" class="sts-signup-cta-btn" id="btnGoToSignup">Create New Account / Sign Up</button>
 
           <div class="sts-auth-footer">
             Don't have an account? <a href="javascript:void(0)" id="linkToSignup" class="sts-link">Sign Up</a>
@@ -4598,6 +4626,29 @@
         }
       })();
 
+      // Direct-link auth entry: ?signup=1 opens Sign Up, ?login=1 opens Login.
+      // Runs BEFORE any saved session is read, so a previous customer's session
+      // on a shared device can never hide the registration / login screen.
+      var forcedAuthView = (function () {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.get('signup') === '1') return 'signup';
+          if (params.get('login') === '1') return 'login';
+        } catch (_) {}
+        return null;
+      })();
+      if (forcedAuthView) {
+        try { clearAllSessionStorages(); } catch (_) {}
+        // Strip the parameter so a later refresh does not wipe the new session again
+        try {
+          var cleanParams = new URLSearchParams(window.location.search);
+          cleanParams.delete('signup');
+          cleanParams.delete('login');
+          var cleanQuery = cleanParams.toString();
+          history.replaceState(null, '', window.location.pathname + (cleanQuery ? '?' + cleanQuery : '') + window.location.hash);
+        } catch (_) {}
+      }
+
       // Seed candidate account (always accessible)
       var SEED_CANDIDATE = {
         id: 'cust_seed_1',
@@ -6073,6 +6124,7 @@
 
       // View Switching Links
       $('linkToSignup').addEventListener('click', function () { switchAuthView('signup'); });
+      $('btnGoToSignup').addEventListener('click', function () { switchAuthView('signup'); });
       $('linkToForgot').addEventListener('click', function () { switchAuthView('forgot'); });
       $('linkToLoginFromSignup').addEventListener('click', function () { switchAuthView('login'); });
       $('linkToLoginFromForgot').addEventListener('click', function () { switchAuthView('login'); });
@@ -7299,6 +7351,19 @@
         });
       } else {
         checkActiveSession();
+      }
+
+      // Apply ?signup=1 / ?login=1 after the normal start-up checks (which default to Login)
+      function applyForcedAuthView() {
+        if (!forcedAuthView || getActiveSessionUser()) return;
+        switchAuthView(forcedAuthView);
+        authOverlay.style.display = 'flex';
+        authOverlay.style.visibility = 'visible';
+        authOverlay.style.pointerEvents = 'auto';
+      }
+      applyForcedAuthView();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyForcedAuthView);
       }
 
     })();
